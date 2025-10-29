@@ -1,0 +1,13 @@
+RunSeq:
+  - "configOfferAndProd.yaml"
+  - "configCBEC.yaml"
+  - "configZoneMap.yaml"
+  - "configPPReAttr.yaml"
+  - "configPPUsageEvent.yaml"
+  - "configPPParameterTable.yaml"
+  - "configPPConsumeTypeBenefit.yaml"
+  - "configPPUsageTariff.yaml"
+  - "configPPUsageAdvancedTariff.yaml"
+  - "configPPRecurringTariff.yaml"
+  - "configPPBillDiscount.yaml"
+  - "configBillingTax.yaml"

@@ -1,0 +1,14 @@
+UserList:
+  sic_new
+
+BoBNeed:
+  61_SIC.IC_ACC_NBR_CLASS:
+    "select * from IC_ACC_NBR_CLASS"
+
+  62_SIC.IC_GM_GOODS_CATG:
+    "select * from IC_GM_GOODS_CATG"
+  63_SIC.IC_GM_SPU:
+    "select * from IC_GM_SPU"
+  64_SIC.IC_GM_MODEL:
+    "select * from IC_GM_MODEL"
+

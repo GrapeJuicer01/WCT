@@ -1,0 +1,102 @@
+# 字段的说明：All_Rule是根目录，不能动
+#              Format: 这个文字不能动
+#                 这个部分，其实就是检查python内部格式的，就是可以通过判断：某字符串出现的次数来判断是否合法
+#                 Check_Print:   这个是可以自行命名的，只要不重复就可以了
+#                    几个有用的字段： name, rule-string,number(表示出现了这么多次，就告警）
+#                    ErrorType:1-Major Error, 2-Normal Error, 5-Suggest
+#              Function: 无法通过Format来判断的，都需要硬编码去检查
+#                 Check_#, 类似这个东西，不能修改，和代码强相关
+#                 这个下面最重要的就是code，代码写死，然后进行强编码的
+
+
+All_Rule:
+  Format:
+    Check_Print:
+      name: '检查print出现的次数'
+      code: 'Check Print'
+      rule:
+        string: 'print'
+        number: 6
+      ErrorType: 2
+
+    Check_Printlog:
+      name: '检查PrintLog出现的次数'
+      code: 'Check PrintLog'
+      rule:
+        string: 'PrintLog'
+        number: 6
+      ErrorType: 2
+
+
+    Check_Import:
+      name: '检查import是否存在'
+      code: 'Check import'
+      rule:
+        string: 'import'
+        number: 1
+      ErrorType: 1
+
+    Check_GetAttr:
+      name: '检查GetAttr(是否存在'
+      code: 'Check GetAttr'
+      rule:
+        string: 'GetAttr('
+        number: 1
+      ErrorType: 2
+
+    Check_Eval:
+      name: '检查eval(是否存在'
+      code: 'Check eval'
+      rule:
+        string: 'eval('
+        number: 1
+      ErrorType: 2
+
+    Check_SysExit:
+      name: '禁止调用sys.exit()函数退出'
+      code: 'check exit'
+      rule:
+        string: 'sys.exit()'
+        number: 1
+      ErrorType: 1
+
+    Check_Except:
+      name: '使用打印日志代替抛异常'
+      code: 'check except'
+      rule:
+        string: 'except'
+        number: 1
+      ErrorType: 1
+
+  Function:
+    Check_#:
+      name: '检查#在语句之后'
+      code: 'check #'
+      rule:
+        comments: '有3个检查点1. 注释顶格，2. 和下一行代码齐，还有一个啥的'
+      ErrorType: 3
+
+    Check_Chinese:
+      name: '禁止使用中文注解'
+      code: 'check Chinese'
+      ErrorType: 1
+
+    Check_MultipleSentence:
+      name: '不允许单行有多个表达式'
+      code: 'check ;'
+      ErrorType: 5
+
+    Check_Get_Code:
+      name: '检查python中的get函数，用Code代替ID'
+      code: 'check_get_code'
+      ErrorType: 5
+
+NeedInhance:
+  Format:
+    Check#:
+      name: '检查#在语句之后'
+      code: 'check #'
+      rule:
+        rule: 0
+        comments: '有3个检查点1. 注释顶格，2. 和下一行代码齐，还有一个啥的'
+

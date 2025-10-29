@@ -1,0 +1,14 @@
+TableList:
+    - CIC_CONFIG
+    - CIC_EVENT
+    - cic_event_flow
+
+TableSql:
+    CIC_CONFIG:
+        SELECT * FROM CIC_CONFIG WHERE CONFIG_ID>0;
+AfterImportSql:
+SequenceList:
+ThreadNumber: 8
+TablePrimaryKey:
+PageLimit: 1000
+userName: cic

@@ -1,0 +1,1150 @@
+create:
+  DC_PROC_PRICE:
+        CREATE OR REPLACE PROCEDURE DC_PROC_PRICE IS
+        v_pp_name varchar2(200);
+        v_pp_id number(10);
+        v_pp_ver_id number(10);
+        v_prio number(10);
+        v_price_set_id number(10);
+        v_re_ps_id number(10);
+        v_flag number(2);
+        v_re_id number(10);
+        v_rate_plan_id number(10);
+        v_re_name varchar2(200);
+        v_zone_name varchar2(200);
+        v_map_id varchar2(200);
+        v_price_ver_id number(10);
+        v_featur varchar2(40);
+        v_featur_id varchar2(60);
+        v_featur_id_m varchar2(60);
+        v_zone_map_id varchar2(60);
+        v_zone_map_id_m varchar2(60);
+        v_rate_plan_zone_id number(10);
+        v_zone_id number(10);
+        v_ref_value_id_con varchar2(60);
+        v_con_res_id varchar2(60);
+        v_con_res_id_m varchar2(60);
+        v_ref_value_id_price varchar2(60);
+        v_re_attr varchar2(10);
+        v_re_attr_m varchar2(10);
+        v_price_value varchar2(60);
+        v_price_value_m varchar2(60);
+        v_price_id number(20);
+        v_bal_source_id number(20);
+        v_first_work_node_id number(20);
+        v_work_node_id number(20);
+        v_work_action_id number(20);
+        v_action_price_id number(20);
+        v_rum number(12);
+        v_min_rum number(12);
+        v_rate_plan_name varchar2(100);
+        v_mapping_type varchar2(10);
+        v_work_condition_id_seq number(10);
+        v_rank_up_id number(10);
+        v_precision number(10);
+        v_highest_prio varchar2(4);
+
+        begin
+        for cur_pp in  (select * from DC_CONFIG_PP_Usage_Tariff order by price_plan_name ) loop
+          if cur_pp.price_plan_id is null then
+            select cur_pp.price_plan_name into v_pp_name from dual;
+            select count(1) into v_flag from price_plan where price_plan_name=v_pp_name;
+            if v_flag=1 then
+              select price_plan_id into v_pp_id from price_plan where price_plan_name=v_pp_name;
+            elsif v_flag=0 then
+              select price_plan_id_seq.nextval into v_pp_id from dual;
+              select COALESCE(max(PRIORITY) + 1, 1) into v_prio from price_plan;
+              INSERT INTO PRICE_PLAN (PRICE_PLAN_ID,PRICE_PLAN_NAME,PRICE_PLAN_CODE,APPLY_LEVEL,PRICE_PLAN_TYPE,PRICE_PLAN_GENRE,PRIORITY,LOCK_FLAG,PRICE_PLAN_CATALOG,SP_ID,STATE,ACTIVE_DATE,ACTIVE_STAFF_ID,INACTIVE_DATE,INACTIVE_STAFF_ID,PRICE_PLAN_EXIT,POLICY_PLAN_FLAG)
+              VALUES (v_pp_id,v_pp_name,substr(v_pp_name,0,58),'S','3','A',v_prio,'N',null,null,'A',null,null,null,null,'N','N');
+            else
+              insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP ID!',null);
+              continue;
+            end if;
+          else
+            select cur_pp.price_plan_id into v_pp_id from dual;
+            select count(1) into v_flag from price_plan where price_plan_id=v_pp_id;
+            if v_flag=1 then
+              select price_plan_id into v_pp_id from price_plan where price_plan_id=v_pp_id;
+            elsif v_flag=0 then
+              select cur_pp.price_plan_name into v_pp_name from dual;
+              select COALESCE(max(PRIORITY) + 1, 1) into v_prio from price_plan;
+              INSERT INTO PRICE_PLAN (PRICE_PLAN_ID,PRICE_PLAN_NAME,PRICE_PLAN_CODE,APPLY_LEVEL,PRICE_PLAN_TYPE,PRICE_PLAN_GENRE,PRIORITY,LOCK_FLAG,PRICE_PLAN_CATALOG,SP_ID,STATE,ACTIVE_DATE,ACTIVE_STAFF_ID,INACTIVE_DATE,INACTIVE_STAFF_ID,PRICE_PLAN_EXIT,POLICY_PLAN_FLAG)
+              VALUES (v_pp_id,v_pp_name,substr(v_pp_name,0,58),'S','3','A',v_prio,'N',null,null,'A',null,null,null,null,'N','N');
+            else
+              insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP ID!',null);
+              continue;
+            end if;
+          end if;
+
+          select count(1) into v_flag from price_plan_ver where price_plan_id=v_pp_id;
+          if v_flag=1 then
+            select price_plan_ver_id into v_pp_ver_id from price_plan_ver where price_plan_id=v_pp_id;
+          elsif v_flag=0 then
+            select price_plan_ver_id_seq.nextval into  v_pp_ver_id from dual;
+            INSERT INTO PRICE_PLAN_VER(PRICE_PLAN_VER_ID,PRICE_PLAN_ID,SEQ,SP_ID,EFF_DATE,EXP_DATE,USING_STATE,STATE,CREATED_DATE,CREATED_STAFF_ID,RELEASE_DATE,RELEASE_STAFF_ID,RETIRE_DATE,RETIRE_STAFF_ID,SUBMIT_DATE,SUBMIT_STAFF_ID,APPROVED_DATE,APPROVED_STAFF_ID)
+            VALUES(v_pp_ver_id,v_pp_id,1,null,to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'),null,'A','A',to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'),null,null,null,null,null,null,null,null,null);
+
+          else
+            insert into DC_CONFIG_PP_Usage_Tariff_LOG
+            values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP VER!',null);
+            continue;
+          end if;
+
+
+          select count(1) into v_flag from PRICE_PLAN_MEMBER where price_plan_ver_id=v_pp_ver_id;
+          if v_flag=1 then
+            select price_set_id into v_price_set_id from PRICE_PLAN_MEMBER where price_plan_ver_id=v_pp_ver_id;
+          elsif v_flag=0 then
+            select price_set_id_seq.nextval into v_price_set_id from dual;
+            INSERT INTO PRICE_SET (PRICE_SET_ID, APPLY_LEVEL, PRICE_SET_PRIORITY_ID, PRIORITY, SP_ID)
+            values(v_price_set_id,'S',10000,1,null);
+            INSERT INTO PRICE_PLAN_MEMBER (PRICE_PLAN_VER_ID, PRICE_SET_ID, CREATED_DATE, SP_ID)
+            values(v_pp_ver_id,v_price_set_id,to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'),null);
+          else
+            insert into DC_CONFIG_PP_Usage_Tariff_LOG
+            values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP MEMBER!',null);
+            continue;
+          end if;
+
+          select cur_pp.re_name into v_re_name from dual;
+          select cur_pp.re_id into v_re_id from dual;
+          select case
+          when to_number(cur_pp.price)=0 then 'Y'
+          else null
+          end into v_highest_prio from dual;
+          select count(1) into v_flag from re_price_set where price_set_id=v_price_set_id and re_id=v_re_id;
+          if v_flag=1 then
+            select re_price_set_id into v_re_ps_id from re_price_set where price_set_id=v_price_set_id and re_id=v_re_id;
+          elsif v_flag=0 then
+            select re_price_set_id_seq.nextval into v_re_ps_id from dual;
+            insert into RE_PRICE_SET (RE_PRICE_SET_ID, RE_ID, PRICE_SET_ID, WORKFLOW_ID, SP_ID , POST_WORKFLOW_ID, PARAM, SCRIPT_TEMPLET_ID, RULE_SCRIPT, SCRIPT_PAGE, RULE_COMMENTS, HIGHEST_PRIORITY)
+            values (v_re_ps_id, v_re_id, v_price_set_id, null, null , null, null, null, null, null , null, v_highest_prio);
+          else
+            insert into DC_CONFIG_PP_Usage_Tariff_LOG
+            values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP EVENT!',null);
+            continue;
+          end if;
+
+          if cur_pp.zone_name is not null then
+            select cur_pp.zone_name into v_zone_name from dual;
+          end if;
+
+          select case
+          when nvl(cur_pp.connect_type,'N')='Y' then v_re_name||' connect'
+            when nvl(cur_pp.connect_type,'N')='N' then v_re_name
+          end into v_rate_plan_name from dual;
+
+
+          select count(1) into v_flag from rate_plan where re_price_set_id=v_re_ps_id and rate_plan_name = v_rate_plan_name;
+          if v_flag=1 then
+            select rate_plan_id,mapping_type into v_rate_plan_id,v_mapping_type from rate_plan where re_price_set_id=v_re_ps_id and rate_plan_name = v_rate_plan_name;
+            if cur_pp.zone_name is null then
+              if v_mapping_type<>'D' then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP MAPPING TYPE ERROR!should be D!',null);
+                continue;
+              end if;
+            else
+              if v_mapping_type<>'1' then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP MAPPING TYPE ERROR!should be 1!',null);
+                continue;
+              end if;
+            end if;
+          elsif v_flag=0 then
+            if cur_pp.zone_name is null then
+              select rate_plan_id_seq.nextval into v_rate_plan_id from dual;
+              select COALESCE(max(PRIORITY) + 1, 1) into v_prio from RATE_PLAN where RE_PRICE_SET_ID = v_re_ps_id;
+              insert into RATE_PLAN (RATE_PLAN_ID, RATE_PLAN_NAME, RATE_PLAN_TYPE, RATE_CHARGE_TYPE, RE_PRICE_SET_ID, MAPPING_TYPE, PRIORITY, COMMENTS, CREATED_DATE, STATE, STATE_DATE, MAPPING_EXIT, SP_ID)
+              values (v_rate_plan_id, v_rate_plan_name, 1, 'M', v_re_ps_id,'D',v_prio, null, to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'),'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), null, null);
+            else
+              select rate_plan_id_seq.nextval into v_rate_plan_id from dual;
+              select COALESCE(max(PRIORITY) + 1, 1) into v_prio from RATE_PLAN where RE_PRICE_SET_ID = v_re_ps_id;
+              insert into RATE_PLAN (RATE_PLAN_ID, RATE_PLAN_NAME, RATE_PLAN_TYPE, RATE_CHARGE_TYPE, RE_PRICE_SET_ID, MAPPING_TYPE, PRIORITY, COMMENTS, CREATED_DATE, STATE, STATE_DATE, MAPPING_EXIT, SP_ID)
+              values (v_rate_plan_id, v_rate_plan_name, 1, 'M', v_re_ps_id,'1',v_prio, null, to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'),'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), 'Y', null);
+            end if;
+          else
+            insert into DC_CONFIG_PP_Usage_Tariff_LOG
+            values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP RATEPLAN!',null);
+            continue;
+          end if;
+
+          if cur_pp.zone_name is null then
+            select count(1) into v_flag from mapping where rate_plan_id=v_rate_plan_id;
+            if v_flag=1 then
+              select mapping_id into v_map_id from mapping where rate_plan_id=v_rate_plan_id;
+            elsif v_flag=0 then
+              select mapping_id_seq.nextval into v_map_id from dual;
+              INSERT INTO MAPPING (MAPPING_ID,MAPPING_NAME,RATE_PLAN_ID,PRIORITY,MAPPING_DEFAULT,SP_ID)
+              VALUES(v_map_id, v_re_name, v_rate_plan_id, 1, null, null);
+            else
+              insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP MAPPING!',null);
+              continue;
+            end if;
+
+          else
+            select count(1) into v_flag from mapping where rate_plan_id=v_rate_plan_id and mapping_name=v_zone_name;
+            if v_flag=1 then
+              select mapping_id into v_map_id from mapping where rate_plan_id=v_rate_plan_id and mapping_name=v_zone_name;
+            elsif v_flag=0 then
+              select COALESCE(max(PRIORITY) + 1, 1) into v_prio from mapping where RATE_PLAN_ID=v_rate_plan_id;
+              select mapping_id_seq.nextval into v_map_id from dual;
+              insert into mapping (MAPPING_ID, MAPPING_NAME, RATE_PLAN_ID, PRIORITY, MAPPING_DEFAULT,SP_ID) values (v_map_id,v_zone_name, v_rate_plan_id,v_prio , null , null);
+            else
+              insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PP MAPPING!',null);
+              continue;
+            end if;
+          end if;
+
+          select count(1) into v_flag from price_ver where mapping_id=v_map_id;
+          if v_flag=1 then
+            select price_ver_id into v_price_ver_id from price_ver where mapping_id=v_map_id;
+          elsif v_flag=0 then
+            SELECT PRICE_VER_ID_SEQ.NEXTVAL into v_price_ver_id  FROM DUAL;
+            insert into PRICE_VER (PRICE_VER_ID, MAPPING_ID, EFF_DATE, EXP_DATE, SP_ID) values (v_price_ver_id, v_map_id, to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), null, null);
+          else
+            insert into DC_CONFIG_PP_Usage_Tariff_LOG
+            values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PRICE VER!',null);
+            continue;
+          end if;
+
+
+          if cur_pp.zone_name is not null then
+            select count(1) into v_flag from rate_plan_zone where rate_plan_id=v_rate_plan_id;
+            select cur_pp.featur into v_featur  from dual;
+            select zone_map_id into v_zone_map_id from zone_map where zone_map_name=cur_pp.zone_map_name;
+            select re_attr into v_featur_id from re_attr where re_attr_name=v_featur;
+            if v_flag=1 then
+              select mapping_src_value,mapping_des_value into v_featur_id_m,v_zone_map_id_m from rate_plan_zone where rate_plan_id=v_rate_plan_id;
+              if v_featur_id<>v_featur_id_m then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'mapping_src_value error!',
+                  'update rate_plan_zone set mapping_src_value='||v_featur_id||' where rate_plan_id='||v_rate_plan_id||';');
+                continue;
+              end if;
+
+              if v_zone_map_id<>v_zone_map_id_m then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'maping_des_value eror!',
+                  'update rate_plan_zone set maping_des_value='||v_zone_map_id||' where rate_plan_id='||v_rate_plan_id||';');
+                continue;
+              end if;
+
+              select rate_plan_zone_id into v_rate_plan_zone_id from rate_plan_zone where rate_plan_id=v_rate_plan_id;
+
+            elsif v_flag=0 then
+              SELECT RATE_PLAN_ZONE_ID_SEQ.NEXTVAL into v_rate_plan_zone_id FROM DUAL;
+              insert into RATE_PLAN_ZONE (RATE_PLAN_ZONE_ID, RATE_PLAN_ID, PRIORITY, SP_ID, MAPPING_SRC_TYPE , MAPPING_SRC_VALUE, MAPPING_DES_TYPE, MAPPING_DES_VALUE, LABEL_SHOW)
+              values(v_rate_plan_zone_id, v_rate_plan_id, 1, null, '1' , v_featur_id, '0', v_zone_map_id, null);
+            else
+              insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PRICE RATE_PLAN_ZONE!',null);
+              continue;
+            end if;
+          end if;
+
+          if cur_pp.zone_name is not null then
+            select  zone_id into v_zone_id from zone where zone_name=v_zone_name and zone_map_id=v_zone_map_id;
+            select count(1) into v_flag from mapping_unit where rate_plan_zone_id=v_rate_plan_zone_id and mapping_value=v_zone_id;
+            if v_flag=0 then
+              insert into MAPPING_UNIT (MAPPING_ID, RATE_PLAN_ZONE_ID, SP_ID, MAPPING_MATCH_TYPE, MAPPING_TYPE , MAPPING_VALUE)
+              values(v_map_id,v_rate_plan_zone_id,null,'A','0',v_zone_id);
+            elsif v_flag>1 then
+              insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE mapping_unit!',null);
+              continue;
+            end if;
+          end if;
+
+          select cur_pp.con_res_id into v_con_res_id from dual;
+          if cur_pp.bal_source_type=1 then
+            select case
+            when cur_pp.unit='occ' then 10002
+            when cur_pp.unit='min' then 10000
+            when cur_pp.unit='mb' then 10003
+            when cur_pp.unit='con' then 10000
+            end into v_re_attr from dual;
+            select case
+            when cur_pp.unit='occ' then 1
+            when cur_pp.unit='min' then 60
+            when cur_pp.unit='mb' then 1048576
+            when cur_pp.unit='con' then 60
+            end into v_rum from dual;
+            select case
+            when cur_pp.unit='occ' then null
+            when cur_pp.unit='min' then nvl(cur_pp.pulse,1)
+            when cur_pp.unit='mb' then nvl(cur_pp.pulse,10240)
+            when cur_pp.unit='con' then null
+            end into v_min_rum from dual;
+          else
+            select case
+            when cur_pp.unit='occ' then 10002
+            when cur_pp.unit='min' then 10000
+            when cur_pp.unit='mb' then 10003
+            end into v_re_attr from dual;
+            select case
+            when cur_pp.unit='occ' then 1
+            when cur_pp.unit='min' then 1
+            when cur_pp.unit='mb' then 1
+            end into v_rum from dual;
+            select case
+            when cur_pp.unit='occ' then null
+            when cur_pp.unit='min' then null
+            when cur_pp.unit='mb' then null
+            end into v_min_rum from dual;
+          end if;
+          if v_min_rum>=v_rum then
+            select null into v_min_rum from dual;
+          end if;
+          select cur_pp.bal_source_type into v_bal_source_id from dual;
+          select case
+          when v_bal_source_id= 1 then nvl(cur_pp.precision,8)
+          when v_bal_source_id= 4 then 0
+          end into v_precision from dual;
+          select to_char(round(cur_pp.price,v_precision)) into v_price_value from dual;
+          if v_price_value like '.%%' then
+            select replace(v_price_value,'.','0.') into v_price_value from dual;
+          end if;
+          if nvl(cur_pp.connect_type,'N')='N' then
+            select count(1) into v_flag from price a,PRICE_WORK_NODE b,WORK_NODE c,WORK_ACTION d,ACTION_PRICE e,ref_value f,con_res g
+            where a.price_ver_id=v_price_ver_id
+            and a.price_id=b.price_id
+            and b.work_node_id=c.work_node_id
+            and c.is_first_node='Y'
+            and c.work_node_id=d.work_node_id
+            and d.work_action_id=e.work_action_id
+            and e.con_res_id=f.ref_value_id
+            and f.ref_value_type='9'
+            and g.con_res_id=f.value_string
+            and g.bal_source_type=v_bal_source_id;
+            if v_flag=1 then
+              select a.price_id,f.ref_value_id,f.value_string into v_price_id,v_ref_value_id_con,v_con_res_id_m from price a,PRICE_WORK_NODE b,WORK_NODE c,WORK_ACTION d,ACTION_PRICE e,ref_value f,con_res g
+              where a.price_ver_id=v_price_ver_id
+              and a.price_id=b.price_id
+              and b.work_node_id=c.work_node_id
+              and c.is_first_node='Y'
+              and c.work_node_id=d.work_node_id
+              and d.work_action_id=e.work_action_id
+              and e.con_res_id=f.ref_value_id
+              and f.ref_value_type='9'
+              and g.con_res_id=f.value_string
+              and g.bal_source_type=v_bal_source_id;
+
+              select a.ref_value_id,e.re_attr,f.value_string into v_ref_value_id_price,v_re_attr_m,v_price_value_m from price a,PRICE_WORK_NODE b,WORK_NODE c,WORK_ACTION d,ACTION_PRICE e,ref_value f
+              where a.price_id=v_price_id
+              and a.price_id=b.price_id
+              and b.work_node_id=c.work_node_id
+              and c.is_first_node='Y'
+              and c.work_node_id=d.work_node_id
+              and d.work_action_id=e.work_action_id
+              and a.ref_value_id=f.ref_value_id
+              and f.ref_value_type='1';
+              if v_con_res_id_m<>v_con_res_id then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'the main balance consume id is error!',
+                'update ref_value set value_string='||v_con_res_id||' where ref_value_id='||v_ref_value_id_con||';');
+                continue;
+              end if;
+              if v_re_attr<>v_re_attr_m then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'the main balance consume type is error!',
+                'update ACTION_PRICE set re_attr='||v_re_attr||' where ref_value_id='||v_ref_value_id_price||'; update price set re_attr='||v_re_attr||' where price_id='||v_price_id||';');
+                continue;
+              end if;
+              if v_price_value_m<>v_price_value then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'the main balance consume money is error!',
+                'update ref_value set value_string='''||v_price_value||''' where ref_value_id='||v_ref_value_id_price||';');
+                continue;
+              end if;
+            elsif v_flag=0 then
+              SELECT PRICE_ID_SEQ.NEXTVAL INTO v_price_id FROM DUAL;
+              select COALESCE(max(PRIORITY) + 1, 1) into v_prio from PRICE where PRICE_VER_ID =v_price_ver_id;
+              SELECT WORK_NODE_ID_SEQ.NEXTVAL into v_work_node_id FROM DUAL;
+              insert into WORK_NODE (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID, WORK_NODE_TYPE , WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+              values (v_work_node_id,'price', 'Y', v_work_node_id, 'A' , null, '{"position":"[130,23]","type":"price"}', null, null);
+              SELECT WORK_ACTION_ID_SEQ.NEXTVAL into  v_work_action_id from DUAL;
+              insert into WORK_ACTION (WORK_ACTION_ID, WORK_ACTION_TYPE, EXEC_SEQ, WORK_NODE_ID, WORK_ACTION_NAME , POSITION, COMMENTS, SP_ID)
+              values (v_work_action_id, 'price', 1, v_work_node_id, 'price action' , null, null, null);
+              SELECT REF_VALUE_ID_SEQ.NEXTVAL into v_ref_value_id_price FROM DUAL;
+              insert into REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COL_ID, RE_ATTR , BUNDLE_MEMBER_ALISA, FUNCTION_PARAM1, FUNCTION_PARAM2, COMMENTS, STAFF_ID , CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID , PRICE_SET_ID, SP_ID)
+              values (v_ref_value_id_price, '1', v_price_value, null, null , null, null, null, null, null , to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), 'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), null, v_rate_plan_id, v_price_set_id, null);
+              SELECT REF_VALUE_ID_SEQ.NEXTVAL into v_ref_value_id_con FROM DUAL;
+              insert into REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COL_ID, RE_ATTR , BUNDLE_MEMBER_ALISA, FUNCTION_PARAM1, FUNCTION_PARAM2, COMMENTS, STAFF_ID , CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID , PRICE_SET_ID, SP_ID)
+              values (v_ref_value_id_con, '9', v_con_res_id, null, null , null, null, null, null, null , to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), 'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), null, v_rate_plan_id , v_price_set_id, null);
+              SELECT ACTION_PRICE_ID_SEQ.NEXTVAL into v_action_price_id FROM DUAL;
+              insert into ACTION_PRICE (ACTION_PRICE_ID, WORK_ACTION_ID, RUM, OVERLAP_FLAG, COMMENTS , RE_ATTR, CON_RES_ID, REF_VALUE_ID, SP_ID, MIN_RUM)
+              values (v_action_price_id, v_work_action_id, v_rum, null, null , v_re_attr, v_ref_value_id_con, v_ref_value_id_price, null, v_min_rum);
+              insert into PRICE (PRICE_ID, PRICE_NAME, REF_VALUE_ID, RUM, RE_ATTR , PRICE_TYPE, CALC_TYPE, PRICE_VER_ID, CON_RES_ID, CURRENCY_TYPE_ID , COMMENTS, PRIORITY, SRC_PRICE_ID, SP_ID, CONFIGURE_TYPE , MIN_RUM)
+              values (v_price_id, v_re_name||' Price', v_ref_value_id_price, v_rum, v_re_attr , null, null, v_price_ver_id, null, null , null, v_prio, null, null, '1' , v_min_rum);
+              select COALESCE(max(SEQ) + 1, 1) into v_prio from PRICE_WORK_NODE where PRICE_ID = v_price_id;
+              insert into PRICE_WORK_NODE (PRICE_ID, SEQ, PRICE_NODE_NAME, WORK_NODE_ID, COMMENTS , SP_ID) values (v_price_id, v_prio, 'start', v_work_node_id, null , null);
+              update REF_VALUE set STATE_DATE = to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), PRICE_ID = v_price_id, RATE_PLAN_ID = v_rate_plan_id, PRICE_SET_ID = v_price_set_id where REF_VALUE_ID = v_ref_value_id_price;
+              update REF_VALUE set STATE_DATE = to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), PRICE_ID = v_price_id, RATE_PLAN_ID = v_rate_plan_id, PRICE_SET_ID = v_price_set_id where REF_VALUE_ID = v_ref_value_id_con;
+            else
+              insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'DUPLICATE PRICE',null);
+              continue;
+            end if;
+          end if;
+
+          if nvl(cur_pp.connect_type,'N')='Y' then
+            select count(1) into v_flag from price a,PRICE_WORK_NODE b,WORK_NODE c,WORK_ACTION d,ACTION_PRICE e,ref_value f,
+              con_res g,work_condition h,COND_RANK i, work_node j,ref_value k
+              where a.price_ver_id=v_price_ver_id
+              and a.price_id=b.price_id
+              and b.work_node_id=c.work_node_id
+              and c.is_first_node='Y'
+              and c.work_node_id=h.work_node_id
+              and h.work_condition_id=i.work_condition_id
+              and h.work_out_node_id=j.work_node_id
+              and j.first_work_node_id=c.work_node_id
+              and d.work_node_id=j.work_node_id
+              and d.work_action_id=e.work_action_id
+              and e.con_res_id=f.ref_value_id
+              and e.ref_value_id=k.ref_value_id
+              and f.ref_value_type='9'
+              and k.ref_value_type='1'
+              and g.con_res_id=f.value_string
+              and g.bal_source_type=v_bal_source_id;
+
+              if v_flag=2 then
+
+                  select f.ref_value_id,f.value_string, k.ref_value_id,k.value_string,d.work_action_id into v_ref_value_id_con,v_con_res_id_m,v_ref_value_id_price,v_price_value_m,v_work_action_id
+                from price a,PRICE_WORK_NODE b,WORK_NODE c,WORK_ACTION d,ACTION_PRICE e,ref_value f,
+                con_res g,work_condition h,COND_RANK i, work_node j,ref_value k
+                where a.price_ver_id=v_price_ver_id
+                and a.price_id=b.price_id
+                and b.work_node_id=c.work_node_id
+                and c.is_first_node='Y'
+                and c.work_node_id=h.work_node_id
+                and h.work_condition_id=i.work_condition_id
+                and h.work_out_node_id=j.work_node_id
+                and j.first_work_node_id=c.work_node_id
+                and d.work_node_id=j.work_node_id
+                and d.work_action_id=e.work_action_id
+                and e.con_res_id=f.ref_value_id
+                and e.ref_value_id=k.ref_value_id
+                and f.ref_value_type='9'
+                and k.ref_value_type='1'
+                and g.con_res_id=f.value_string
+                and i.offset=0
+                and g.bal_source_type=v_bal_source_id;
+
+                if v_con_res_id_m<>v_con_res_id then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'the main balance consume id is error!',
+                'update ref_value set value_string='||v_con_res_id||' where ref_value_id='||v_ref_value_id_con||';');
+                continue;
+              end if;
+              if v_price_value_m<>v_price_value then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'the main balance consume money is error!',
+                'update ref_value set value_string='''||v_price_value||''' where ref_value_id='||v_ref_value_id_price||';'||CHR(10)
+                ||'update WORK_ACTION set WORK_ACTION_NAME='''||v_price_value||'/60(Second)Duration'''||' where work_action_id='||v_work_action_id||';');
+                continue;
+              end if;
+
+                  select f.ref_value_id,f.value_string, k.ref_value_id,k.value_string,d.work_action_id into v_ref_value_id_con,v_con_res_id_m,v_ref_value_id_price,v_price_value_m,v_work_action_id
+                from price a,PRICE_WORK_NODE b,WORK_NODE c,WORK_ACTION d,ACTION_PRICE e,ref_value f,
+                con_res g,work_condition h,COND_RANK i, work_node j,ref_value k
+                where a.price_ver_id=v_price_ver_id
+                and a.price_id=b.price_id
+                and b.work_node_id=c.work_node_id
+                and c.is_first_node='Y'
+                and c.work_node_id=h.work_node_id
+                and h.work_condition_id=i.work_condition_id
+                and h.work_out_node_id=j.work_node_id
+                and j.first_work_node_id=c.work_node_id
+                and d.work_node_id=j.work_node_id
+                and d.work_action_id=e.work_action_id
+                and e.con_res_id=f.ref_value_id
+                and e.ref_value_id=k.ref_value_id
+                and f.ref_value_type='9'
+                and k.ref_value_type='1'
+                and g.con_res_id=f.value_string
+                and i.offset=60
+                and g.bal_source_type=v_bal_source_id;
+
+                if v_con_res_id_m<>v_con_res_id then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'the main balance consume id is error!',
+                'update ref_value set value_string='||v_con_res_id||' where ref_value_id='||v_ref_value_id_con||';');
+                continue;
+              end if;
+              if v_price_value_m<>0 then
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+                values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'the main balance consume money is error!',
+                'update ref_value set value_string=0 where ref_value_id='||v_ref_value_id_price||';'||CHR(10)
+                ||'update WORK_ACTION set WORK_ACTION_NAME='''||'0/60(Second)Duration'''||' where work_action_id='||v_work_action_id||';');
+                continue;
+              end if;
+
+              elsif v_flag=0 then
+                SELECT PRICE_ID_SEQ.NEXTVAL INTO v_price_id FROM DUAL;
+
+              select COALESCE(max(PRIORITY) + 1, 1) into v_prio from PRICE where PRICE_VER_ID =v_price_ver_id;
+              SELECT WORK_NODE_ID_SEQ.NEXTVAL into v_first_work_node_id FROM DUAL;
+              insert into WORK_NODE (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID, WORK_NODE_TYPE , WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+              values (v_first_work_node_id,'rank', 'Y', v_first_work_node_id, 'C' , null, '{"position":"[130,23]","type":"price"}', null, null);
+
+              SELECT WORK_NODE_ID_SEQ.NEXTVAL into v_work_node_id FROM DUAL;
+                insert into work_node (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID, WORK_NODE_TYPE,
+                WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+                values(v_work_node_id,'rank','N',v_first_work_node_id,'A',NULL,'{"position":[480,29],"type":"price"}',NULL,NULL);
+
+                select work_condition_id_seq.nextval into  v_work_condition_id_seq from dual;
+              insert into WORK_CONDITION (WORK_CONDITION_ID, WORK_CONDITION_TYPE, EXEC_SEQ, WORK_NODE_ID, WORK_CONDITION_NAME, WORK_OUT_NODE_ID, POSITION, COMMENTS, SP_ID)
+                values(v_work_condition_id_seq,'rank','1',v_first_work_node_id,'0~60',v_work_node_id,NULL,NULL,NULL);
+
+
+                select rank_up_id_seq.nextval into v_rank_up_id from dual;
+                insert into COND_RANK (RANK_UP_ID, SEQ, WORK_CONDITION_ID, OFFSET, DURATION, INTERVALS, LOOPTIME, OFFSET_TYPE, COMMENTS, SP_ID, SETUP_FEE_FLAG)
+              values(v_rank_up_id,'1',v_work_condition_id_seq,'0','60',NULL,NULL,NULL,'',NULL,'Y');
+
+              SELECT WORK_ACTION_ID_SEQ.NEXTVAL into  v_work_action_id from DUAL;
+                insert into WORK_ACTION (WORK_ACTION_ID, WORK_ACTION_TYPE, EXEC_SEQ, WORK_NODE_ID, WORK_ACTION_NAME, POSITION, COMMENTS, SP_ID)
+                values(v_work_action_id,'price','1',v_work_node_id,v_price_value||'/60(Second)Duration',NULL,NULL,NULL);
+
+
+              SELECT REF_VALUE_ID_SEQ.NEXTVAL into v_ref_value_id_price FROM DUAL;
+                insert into REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COL_ID, RE_ATTR , BUNDLE_MEMBER_ALISA, FUNCTION_PARAM1, FUNCTION_PARAM2, COMMENTS, STAFF_ID , CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID , PRICE_SET_ID, SP_ID)
+                values (v_ref_value_id_price, '1', v_price_value, null, null , null, null, null, null, null , to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), 'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), v_price_id, v_rate_plan_id, v_price_set_id, null);
+
+                SELECT REF_VALUE_ID_SEQ.NEXTVAL into v_ref_value_id_con FROM DUAL;
+                insert into REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COL_ID, RE_ATTR , BUNDLE_MEMBER_ALISA, FUNCTION_PARAM1, FUNCTION_PARAM2, COMMENTS, STAFF_ID , CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID , PRICE_SET_ID, SP_ID)
+                values (v_ref_value_id_con, '9', v_con_res_id, null, null , null, null, null, null, null , to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), 'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), v_price_id, v_rate_plan_id , v_price_set_id, null);
+
+                SELECT ACTION_PRICE_ID_SEQ.NEXTVAL into v_action_price_id FROM DUAL;
+                insert into ACTION_PRICE (ACTION_PRICE_ID, WORK_ACTION_ID, RUM, OVERLAP_FLAG, COMMENTS , RE_ATTR, CON_RES_ID, REF_VALUE_ID, SP_ID, MIN_RUM)
+                values (v_action_price_id, v_work_action_id, v_rum, 'N', null , v_re_attr, v_ref_value_id_con, v_ref_value_id_price, null, null);
+
+
+                SELECT WORK_NODE_ID_SEQ.NEXTVAL into v_work_node_id FROM DUAL;
+              insert into work_node (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID, WORK_NODE_TYPE,
+              WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+              values(v_work_node_id,'rank','N',v_first_work_node_id,'A',NULL,'{"position":[477,128],"type":"price"}',NULL,NULL);
+
+              select work_condition_id_seq.nextval into  v_work_condition_id_seq from dual;
+              insert into WORK_CONDITION (WORK_CONDITION_ID, WORK_CONDITION_TYPE, EXEC_SEQ, WORK_NODE_ID, WORK_CONDITION_NAME, WORK_OUT_NODE_ID, POSITION, COMMENTS, SP_ID)
+              values(v_work_condition_id_seq,'rank','2',v_first_work_node_id,'60~99999999',v_work_node_id,NULL,NULL,NULL);
+
+              select rank_up_id_seq.nextval into v_rank_up_id from dual;
+              insert into COND_RANK (RANK_UP_ID, SEQ, WORK_CONDITION_ID, OFFSET, DURATION, INTERVALS, LOOPTIME, OFFSET_TYPE, COMMENTS, SP_ID, SETUP_FEE_FLAG)
+              values(v_rank_up_id,'1',v_work_condition_id_seq,'60','99999939',NULL,NULL,NULL,'',NULL,'Y');
+
+              SELECT WORK_ACTION_ID_SEQ.NEXTVAL into  v_work_action_id from DUAL;
+              insert into WORK_ACTION (WORK_ACTION_ID, WORK_ACTION_TYPE, EXEC_SEQ, WORK_NODE_ID, WORK_ACTION_NAME, POSITION, COMMENTS, SP_ID)
+              values(v_work_action_id,'price','1',v_work_node_id,'0/60(Second)Duration',NULL,NULL,NULL);
+
+              SELECT REF_VALUE_ID_SEQ.NEXTVAL into v_ref_value_id_price FROM DUAL;
+              insert into REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COL_ID, RE_ATTR , BUNDLE_MEMBER_ALISA, FUNCTION_PARAM1, FUNCTION_PARAM2, COMMENTS, STAFF_ID , CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID , PRICE_SET_ID, SP_ID)
+              values (v_ref_value_id_price, '1', '0', null, null , null, null, null, null, null , to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), 'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), v_price_id, v_rate_plan_id, v_price_set_id, null);
+
+              SELECT REF_VALUE_ID_SEQ.NEXTVAL into v_ref_value_id_con FROM DUAL;
+              insert into REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COL_ID, RE_ATTR , BUNDLE_MEMBER_ALISA, FUNCTION_PARAM1, FUNCTION_PARAM2, COMMENTS, STAFF_ID , CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID , PRICE_SET_ID, SP_ID)
+              values (v_ref_value_id_con, '9', v_con_res_id, null, null , null, null, null, null, null , to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), 'A', to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss'), v_price_id, v_rate_plan_id , v_price_set_id, null);
+
+              SELECT ACTION_PRICE_ID_SEQ.NEXTVAL into v_action_price_id FROM DUAL;
+              insert into ACTION_PRICE (ACTION_PRICE_ID, WORK_ACTION_ID, RUM, OVERLAP_FLAG, COMMENTS , RE_ATTR, CON_RES_ID, REF_VALUE_ID, SP_ID, MIN_RUM)
+              values (v_action_price_id, v_work_action_id, v_rum, 'N', null , v_re_attr, v_ref_value_id_con, v_ref_value_id_price, null, null);
+
+              insert into PRICE (PRICE_ID, PRICE_NAME, REF_VALUE_ID, RUM, RE_ATTR , PRICE_TYPE, CALC_TYPE, PRICE_VER_ID, CON_RES_ID, CURRENCY_TYPE_ID , COMMENTS, PRIORITY, SRC_PRICE_ID, SP_ID, CONFIGURE_TYPE , MIN_RUM)
+              values (v_price_id, v_re_name||' Price', null, -1, v_re_attr , null, null, v_price_ver_id, null, null , null, v_prio, null, null, '2' , null);
+              select COALESCE(max(SEQ) + 1, 1) into v_prio from PRICE_WORK_NODE where PRICE_ID = v_price_id;
+              insert into PRICE_WORK_NODE (PRICE_ID, SEQ, PRICE_NODE_NAME, WORK_NODE_ID, COMMENTS , SP_ID) values (v_price_id, v_prio, 'start', v_first_work_node_id, null , null);
+              else
+                insert into DC_CONFIG_PP_Usage_Tariff_LOG
+              values (cur_pp.price_plan_id,cur_pp.price_plan_name,cur_pp.re_id,cur_pp.re_name,cur_pp.zone_map_name,cur_pp.zone_name,cur_pp.featur,cur_pp.connect_type,cur_pp.price,cur_pp.precision,cur_pp.unit,cur_pp.pulse,cur_pp.con_res_id,cur_pp.bal_source_type,cur_pp.con_res_name,'The number of set up rank price is error!!!',null);
+              continue;
+              end if;
+          end if;
+        end loop;
+        end;
+  DC_PROC_ADD_ACCT_RES:
+    - |
+      create or replace procedure DC_PROC_ADD_ACCT_RES(P_ACCT_NAME      IN VARCHAR2,
+                                                       P_BAL_TYPE       IN NUMBER,
+                                                       P_ACCT_UNIT_NAME IN varchar2,
+                                                       P_ACCT_RES_ID    OUT NUMBER)
+      /*
+        Author: Ma Shaohua 0027008775
+        P_ACCT_NAME: 帐本名字
+        P_BAL_TYPE:
+          1 Basic Balance
+          4 Non Currency Balance
+          2 Limited Balance
+          3 Given Balance
+          5 Bonus Balance
+          6 Credit Balance
+        P_ACCT_UNIT_NAME: 帐本的单位名字，因为这个参数涉及到资金和非资金，ID有重复的，所以使用名字
+          currency:
+            1 United States Dollar
+            2 European Dollar
+            3 Chinese Yuan
+            4 Britain Pound
+            10000 Belarusian Ruble
+          no currency:
+            1  Second
+            2  Minute
+            3  Hour
+            4  Byte
+            5  KB
+            6  MB
+            7  GB
+            8  Occurrence
+            9  Dollar
+            10  Cent
+        P_ACCT_RES_ID： 输出参数，帐本ID
+        PS:支持新增帐本，已存在名字相同的不新增，可重复执行
+        */
+       AS
+        v_Count   number;
+        v_Unit_Id number;
+
+        v_Insert_CbecAcctRes_SQL varchar2(2000);
+      BEGIN
+        v_Insert_CbecAcctRes_SQL := 'insert into cbec_acct_res
+          (ACCT_RES_ID,
+          BAL_TYPE,
+          ACCT_RES_NAME,
+          IS_CURRENCY,
+          STD_CODE,
+          UNIT_ID,
+          UNIT_PRECISION,
+          CURRENCY_TYPE_ID,
+          PARENT_ACCT_RES_ID, COMMENTS, MAX_VALUE, PACK_INNER, REFILLABLE, PRIORITY,  OVERDRAFT_FLAG, EFF_TYPE, STATE, SP_ID, CREATED_DATE, PARTY_TYPE, PARTY_CODE, EXCLUDE_PACK_INNER, IS_CHANNEL_BAL)
+            values
+          (:1,
+          :2,
+          :3,
+          :4,
+          :5,
+          :6,
+          :7,
+          :8,
+          null, null, null, ''Y'', null, null, ''N'', null, ''A'', 0, sysdate, null, null, ''N'', null)';
+        --检查是否存在帐本
+        SELECT count(*)
+          into v_Count
+          FROM cbec_acct_res a
+         WHERE a.acct_res_name = P_ACCT_NAME;
+        --new acct
+        if v_Count = 0 then
+          SELECT count(*)
+            into v_Count
+            FROM cbec_currency_type a
+           WHERE a.currency_name = P_ACCT_UNIT_NAME;
+          --no currency
+          if v_Count = 0 then
+            SELECT count(*)
+              into v_Count
+              FROM cbec_unit cu
+             WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+            if v_Count = 0 then
+              DBMS_OUTPUT.PUT_LINE('unit type error!!');
+            else
+              SELECT cu.unit_id
+                into v_Unit_Id
+                FROM cbec_unit cu
+               WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+              SELECT cbec_acct_res_seq.nextval into P_ACCT_RES_ID FROM dual;
+              execute immediate v_Insert_CbecAcctRes_SQL
+                using P_ACCT_RES_ID, P_BAL_TYPE, P_ACCT_NAME, 'N', P_ACCT_RES_ID, v_Unit_Id, 1, '';
+            end if;
+            --currency
+          else
+            SELECT a.currency_type_id
+              into v_Unit_Id
+              FROM cbec_currency_type a
+             WHERE a.currency_name = P_ACCT_UNIT_NAME;
+            SELECT cbec_acct_res_seq.nextval into P_ACCT_RES_ID FROM dual;
+            execute immediate v_Insert_CbecAcctRes_SQL
+              using P_ACCT_RES_ID, P_BAL_TYPE, P_ACCT_NAME, 'Y', P_ACCT_RES_ID, '', -100000000, v_Unit_Id;
+          end if;
+          DBMS_OUTPUT.PUT_LINE('帐本新增成功, P_ACCT_RES_ID: ' || P_ACCT_RES_ID);
+        else
+          SELECT A.ACCT_RES_ID
+            INTO P_ACCT_RES_ID
+            FROM cbec_acct_res A
+           WHERE A.ACCT_RES_NAME = P_ACCT_NAME;
+          DBMS_OUTPUT.PUT_LINE('帐本已存在，不需要新增, P_ACCT_RES_ID: ' || P_ACCT_RES_ID);
+        end if;
+      END;
+
+  DC_PROC_ADD_ACCT_ITEM:
+    - |
+      create or replace procedure DC_PROC_ADD_ACCT_ITEM(P_ACCT_ITEM_NAME IN VARCHAR2,
+                                                        P_ACCT_ITEM_ID   OUT NUMBER,
+                                                        P_ACCT_ITEM_TAX  IN NUMBER := null,
+                                                        P_ACCT_ID        IN NUMBER := 1,
+                                                        P_ACCT_ITEM_CODE IN VARCHAR2 := null)
+      /*
+        P_ACCT_ITEM_NAME:帐目的名字
+        P_ACCT_ITEM_ID:输出字段，新增帐目的ID
+        P_ACCT_ITEM_TAX：帐目的税，默认为空，不加税
+        P_ACCT_ID：帐目关联帐本的ID，默认为1主帐本
+        P_ACCT_ITEM_CODE：帐目的CODE，默认为空,当默认时与ID一样
+
+        PS:支持帐目新增，名字一样的不新增，可重复跑
+        支持新增一个税，如果已存在税，则不新增税
+        */
+       as
+        v_AcctItemTypeTAX_ID int;
+        v_Count              int;
+
+        Exists_Exception    exception;
+        ExistsTax_Exception exception;
+      begin
+        --new acct item
+        select count(*)
+          into v_Count
+          from cbec_acct_item_type a
+         WHERE a.acct_item_type_name = P_ACCT_ITEM_NAME
+           and a.state = 'A';
+        if v_Count = 0 then
+          --SELECT NVL(MAX(a.acct_item_type_id)+1, 1) into P_ACCT_ITEM_ID FROM cbec_acct_item_type a;
+          SELECT cbec_acct_item_type_seq.nextval into P_ACCT_ITEM_ID FROM dual;
+          if P_ACCT_ITEM_CODE is null then
+            insert into cbec_acct_item_type
+              (ACCT_ITEM_TYPE_ID,
+               ACCT_RES_ID,
+               PARENT_ID,
+               EXCHANGE_ITEM_TYPE_ID,
+               ACCT_ITEM_TYPE_NAME,
+               COMMENTS,
+               ACCT_ITEM_TYPE_CODE,
+               USAGE_TYPE,
+               GST_TYPE,
+               STATE,
+               SP_ID,
+               CREATED_DATE,
+               PARTY_TYPE,
+               PARTY_CODE,
+               EMERGENCY_FEE)
+            values
+              (P_ACCT_ITEM_ID,
+               P_ACCT_ID,
+               null,
+               null,
+               P_ACCT_ITEM_NAME,
+               null,
+               to_char(P_ACCT_ITEM_ID),
+               null,
+               null,
+               'A',
+               null,
+               sysdate,
+               null,
+               null,
+               'Y');
+          else
+            insert into cbec_acct_item_type
+              (ACCT_ITEM_TYPE_ID,
+               ACCT_RES_ID,
+               PARENT_ID,
+               EXCHANGE_ITEM_TYPE_ID,
+               ACCT_ITEM_TYPE_NAME,
+               COMMENTS,
+               ACCT_ITEM_TYPE_CODE,
+               USAGE_TYPE,
+               GST_TYPE,
+               STATE,
+               SP_ID,
+               CREATED_DATE,
+               PARTY_TYPE,
+               PARTY_CODE,
+               EMERGENCY_FEE)
+            values
+              (P_ACCT_ITEM_ID,
+               P_ACCT_ID,
+               null,
+               null,
+               P_ACCT_ITEM_NAME,
+               null,
+               P_ACCT_ITEM_CODE,
+               null,
+               null,
+               'A',
+               null,
+               sysdate,
+               null,
+               null,
+               'Y');
+          end if;
+          dbms_output.put_line('AcctItem add sucessful! AcctItem_ID:' || P_ACCT_ITEM_ID || ',Acct_item_name:' || P_ACCT_ITEM_NAME);
+        else
+          select a.acct_item_type_id
+            into P_ACCT_ITEM_ID
+            from cbec_acct_item_type a
+           WHERE a.acct_item_type_name = P_ACCT_ITEM_NAME
+             and a.state = 'A';
+          --只是新增帐本的，不新增税
+          if P_ACCT_ITEM_TAX is null then
+            raise Exists_Exception;
+          end if;
+        end if;
+
+        --new tax for acct item
+        if P_ACCT_ITEM_TAX is not null then
+          select count(*)
+            into v_Count
+            from CBEC_ACCT_ITEM_TYPE_TAX_RATE a
+           WHERE a.acct_item_type_id = P_ACCT_ITEM_ID;
+          if v_Count = 0 then
+            --SELECT NVL(MAX(A.ACCT_ITEM_TYPE_TAX_RATE_ID)+1, 1) INTO v_AcctItemTypeTAX_ID FROM CBEC_ACCT_ITEM_TYPE_TAX_RATE A;
+            SELECT CBEC_ACCT_IT_TAX_R_SEQ.Nextval
+              into v_AcctItemTypeTAX_ID
+              FROM dual;
+            insert into CBEC_ACCT_ITEM_TYPE_TAX_RATE
+              (ACCT_ITEM_TYPE_TAX_RATE_ID,
+               ACCT_ITEM_TYPE_ID,
+               RESULT_ACCT_ITEM_TYPE_ID,
+               GST_TYPE,
+               TAX_RATE,
+               EFF_DATE,
+               EXP_DATE,
+               STATE,
+               CREATED_DATE,
+               PARTY_TYPE,
+               PARTY_CODE,
+               CONDITION_GROUP_NBR,
+               SP_ID)
+            values
+              (v_AcctItemTypeTAX_ID,
+               P_ACCT_ITEM_ID,
+               P_ACCT_ITEM_ID,
+               'G',
+               P_ACCT_ITEM_TAX,
+               SYSDATE,
+               to_date('31-12-2029 10:15:20', 'dd-mm-yyyy hh24:mi:ss'),
+               'A',
+               null,
+               null,
+               null,
+               null,
+               null);
+            dbms_output.put_line('AcctItem TAX add sucessful! AcctItem_ID: ' || P_ACCT_ITEM_ID || ', TAX: ' || P_ACCT_ITEM_TAX);
+          else
+            raise ExistsTax_Exception;
+          end if;
+        end if;
+
+      exception
+        when Exists_Exception then
+          dbms_output.put_line('Error:' || P_ACCT_ITEM_NAME || '帐本已经存在，不允许新增，ID：' || P_ACCT_ITEM_ID);
+        when ExistsTax_Exception then
+          DBMS_OUTPUT.PUT_LINE('Exception: ' || P_ACCT_ITEM_NAME || '和税都存在!!');
+      end;
+
+  DC_PROC_ADD_CON_RES:
+    - |
+      create or replace procedure DC_PROC_ADD_CON_RES(P_CON_RES_NAME    IN VARCHAR2,
+                                                      P_ACCT_ITEM_TYPE  IN number,
+                                                      P_ACCT_UNIT_NAME  IN varchar2,
+                                                      P_CON_RES_ID      OUT NUMBER,
+                                                      P_BAL_SOURCE_TYPE IN NUMBER := 1,
+                                                      P_ACCT_LIST       IN VARCHAR2 := '1')
+      /*
+        P_CON_RES_NAME:消费 类型的名字
+        P_ACCT_ITEM_TYPE：消费 类型下关联的帐目ID
+        P_ACCT_UNIT_NAME：帐本的单位名字，因为这个参数涉及到资金和非资金，ID有重复的，所以使用名字
+          currency:
+            1 United States Dollar
+            2 European Dollar
+            3 Chinese Yuan
+            4 Britain Pound
+            10000 Belarusian Ruble
+          no currency:A
+            1 Second
+            2 Minute
+            3 Hour
+            4 Byte
+            5 KB
+            6 MB
+            7 GB
+            8 Occurrence
+            9 Dollar
+            10  Cent
+        P_CON_RES_ID: 输出的消费类型ID
+        P_BAL_SOURCE_TYPE：默认为1 主帐本
+          1 Basic Balance
+          2 Limited Balance
+          3 Given Balance
+          4 Non Currency Balance
+          5 Bonus Balance
+        P_ACCT_LIST：帐本列表，默认为主帐本
+          '123,343,22'
+
+        PS:支持新增消费类型 ，存在名字一样的消费类型则不新增，界面是可以新增相同的消费类型的，
+        这里限制是为了脚本可重复执行
+        消费类型下只能绑定一个帐目名字，后续可扩展
+        支持消费类型下绑多个帐本,已绑定的帐本不会再绑定
+        */
+       AS
+        --v_ConRes_Id int;
+        v_ConResDetail_Id int;
+        v_Unit_Id         int;
+        v_Count           int;
+        v_Account_Id      int;
+
+        v_Insert_ConRes_SQL       varchar2(1000);
+        v_Insert_ConResDetail_SQL varchar2(1000);
+
+        Exists_Exception exception;
+      BEGIN
+        v_Insert_ConRes_SQL := 'insert into con_res (CON_RES_ID, BAL_SOURCE_TYPE, CON_RES_NAME,
+          DEDUCT_TYPE, CON_RES_CODE, COMMENTS, PRICE_ID,
+          IS_CURRENCY, UNIT_ID, CURRENCY_TYPE_ID, UNIT_PRECISION, SP_ID)
+          values (:1, :2, :3,
+          null, null, null, null,
+          :4, :5, :6, -100000000, null)';
+
+        v_Insert_ConResDetail_SQL := 'insert into con_res_detail (CON_RES_DETAIL_ID, CON_RES_ID, ACCT_RES_ID, ACCT_ITEM_TYPE_ID,
+          PAY_INDICATOR, EXCHANGE_RATE, EXCHANGE_VALUE, PRIORITY, COMMENTS, SP_ID)
+          values (:1, :2, :3, :4,
+          ''000'', 100, 100, 0, null, null)';
+
+        --new consume res
+        SELECT count(*)
+          into v_Count
+          FROM con_res cr
+         WHERE cr.con_res_name = P_CON_RES_NAME;
+        if v_Count = 0 then
+          SELECT count(*)
+            into v_Count
+            FROM cbec_currency_type a
+           WHERE a.currency_name = P_ACCT_UNIT_NAME;
+          --no currency
+          if v_Count = 0 then
+            SELECT count(*)
+              into v_Count
+              FROM cbec_unit cu
+             WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+            if v_Count = 0 then
+              DBMS_OUTPUT.PUT_LINE('unit type error!!');
+            else
+              SELECT cu.unit_id
+                into v_Unit_Id
+                FROM cbec_unit cu
+               WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+              SELECT con_res_id_seq.nextval into P_CON_RES_ID from dual;
+              execute immediate v_Insert_ConRes_SQL
+                using P_CON_RES_ID, P_BAL_SOURCE_TYPE, P_CON_RES_NAME, 'N', v_Unit_Id, '';
+            end if;
+          else
+            --currency
+            SELECT a.currency_type_id
+              into v_Unit_Id
+              FROM cbec_currency_type a
+             WHERE a.currency_name = P_ACCT_UNIT_NAME;
+            SELECT con_res_id_seq.nextval into P_CON_RES_ID from dual;
+            execute immediate v_Insert_ConRes_SQL
+              using P_CON_RES_ID, P_BAL_SOURCE_TYPE, P_CON_RES_NAME, 'Y', '', v_Unit_Id;
+          end if;
+          dbms_output.put_line('Consume res add successful! ID:' || P_CON_RES_ID);
+        else
+          SELECT cr.con_res_id
+            into P_CON_RES_ID
+            FROM con_res cr
+           WHERE cr.con_res_name = P_CON_RES_NAME;
+        end if;
+
+        --get acct list
+        for i in (SELECT to_number(REGEXP_SUBSTR(P_ACCT_LIST, '[^,]+', 1, rownum)) account_id
+                    from dual
+                  connect by rownum <=
+                             LENGTH(P_ACCT_LIST) -
+                             LENGTH(regexp_replace(P_ACCT_LIST, ',', '')) + 1) loop
+          SELECT count(*)
+            into v_Count
+            FROM con_res_detail crd
+           WHERE crd.con_res_id = P_CON_RES_ID
+             and crd.acct_res_id = i.account_id;
+          if v_Count = 0 then
+            SELECT con_res_detail_id_seq.nextval
+              into v_ConResDetail_Id
+              FROM dual;
+            execute immediate v_Insert_ConResDetail_SQL
+              using v_ConResDetail_Id, P_CON_RES_ID, i.account_id, P_ACCT_ITEM_TYPE;
+            dbms_output.put_line('Consumption type:' || P_CON_RES_NAME || ' and account:' || i.account_id || ' bind relationship add successful.');
+          else
+            v_Account_Id := i.account_id;
+            raise Exists_Exception;
+          end if;
+        end loop;
+
+      exception
+        when Exists_Exception then
+          dbms_output.put_line('Exception:消费类型:' || P_CON_RES_NAME || '和帐本:' || v_Account_Id || ' 已经存在绑定关系，不需要新增，ID：' || P_CON_RES_ID);
+      END;
+  DC_PROC_ADD_PP:
+    - |
+      create or replace procedure DC_PROC_ADD_PP(P_PP_NAME  IN VARCHAR2,
+                                                 P_PP_CODE  IN VARCHAR2,
+                                                 P_PP_ID    OUT NUMBER,
+                                                 P_PP_TYPE  IN CHAR := '3',
+                                                 P_PP_GENRE IN CHAR := 'A',
+                                                 P_PP_LEVEL IN CHAR := 'S') as
+        /*
+        P_PP_NAME
+        P_PP_CODE
+        P_PP_ID
+        P_PP_TYPE: default 3
+          1:global
+          3:individual
+        P_PP_GENRE: default A
+          A Common
+          B  Overlap
+          E  Trigger
+          F  Acm
+          H  Bill Discount
+        P_PP_LEVEL: default S
+          A:account
+          S:subscriber
+        */
+        v_Priority           int;
+        v_Count              int;
+        v_PP_Ver             int;
+        v_PriceSet_Id        int;
+        v_PricePlanVer_State char(1);
+        v_PricePlan_State    char(1);
+        v_PricePlan_Name     varchar2(400);
+        --v_PricePlan_Code varchar2(50);
+
+        v_Insert_PP_SQL       varchar2(2000);
+        v_insert_PPV_SQL      varchar2(2000);
+        v_Insert_PriceSet_SQL varchar2(2000);
+        v_Insert_PP_Mem_SQL   varchar2(2000);
+      begin
+        v_Insert_PP_SQL := 'INSERT INTO PRICE_PLAN (PRICE_PLAN_ID,
+          PRICE_PLAN_NAME,
+          PRICE_PLAN_CODE,
+          APPLY_LEVEL,
+          PRICE_PLAN_TYPE,
+          PRICE_PLAN_GENRE,
+          PRIORITY,
+          LOCK_FLAG, PRICE_PLAN_CATALOG, SP_ID, STATE, ACTIVE_DATE, ACTIVE_STAFF_ID, INACTIVE_DATE, INACTIVE_STAFF_ID, PRICE_PLAN_EXIT, POLICY_PLAN_FLAG)
+          VALUES (:1,
+          :2,
+          :3,
+          :4,
+          :5,
+          :6,
+          :7,
+          ''N'', null,null,''B'',add_months(sysdate,-12),3044336,null,null,''N'',''N'')';
+
+        v_insert_PPV_SQL := 'INSERT INTO PRICE_PLAN_VER (PRICE_PLAN_VER_ID,
+          PRICE_PLAN_ID,
+          SEQ, SP_ID, EFF_DATE, EXP_DATE, USING_STATE, STATE, CREATED_DATE, CREATED_STAFF_ID, RELEASE_DATE, RELEASE_STAFF_ID, RETIRE_DATE, RETIRE_STAFF_ID, SUBMIT_DATE, SUBMIT_STAFF_ID, APPROVED_DATE, APPROVED_STAFF_ID)
+          VALUES (:1,
+          :2,
+          1, null, add_months(sysdate,-12),null, ''A'', ''D'', add_months(sysdate,-12), 3044336, add_months(sysdate,-12), 3044336, null, null, add_months(sysdate,-12), 3044336, add_months(sysdate,-12), 3044336)';
+
+        v_Insert_PriceSet_SQL := 'INSERT INTO PRICE_SET (PRICE_SET_ID, APPLY_LEVEL, PRICE_SET_PRIORITY_ID, PRIORITY, SP_ID)
+                  values(:1,:2,10000,1,null)';
+
+        v_Insert_PP_Mem_SQL := 'INSERT INTO PRICE_PLAN_MEMBER (PRICE_PLAN_VER_ID, PRICE_SET_ID, CREATED_DATE, SP_ID)
+                  values(:1 ,:2 ,add_months(sysdate,-12), null)';
+
+        SELECT COUNT(*)
+          INTO v_Count
+          FROM PRICE_PLAN PP
+         WHERE PP.Price_Plan_Code = P_PP_CODE;
+        --NEW PRICE PLAN
+        if v_Count = 0 then
+          dbms_output.put_line('----------------Add price plan start!----------------');
+          --price_plan
+          SELECT price_plan_id_seq.nextval into P_PP_ID FROM DUAL;
+          select COALESCE(max(PRIORITY) + 1, 1) into v_Priority from price_plan;
+          execute immediate v_Insert_PP_SQL
+            using P_PP_ID, P_PP_NAME, P_PP_CODE, P_PP_LEVEL, P_PP_TYPE, P_PP_GENRE, v_Priority;
+
+          --price_plan_ver
+          SELECT price_plan_ver_id_seq.nextval into v_PP_Ver FROM DUAL;
+          execute immediate v_insert_PPV_SQL
+            using v_PP_Ver, P_PP_ID;
+
+          --price_plan_memeber,PRICE_SET
+          select price_set_id_seq.nextval into v_PriceSet_Id from dual;
+          execute immediate v_Insert_PriceSet_SQL
+            using v_PriceSet_Id, P_PP_LEVEL;
+          execute immediate v_Insert_PP_Mem_SQL
+            using v_PP_Ver, v_PriceSet_Id;
+          dbms_output.put_line('++++add price plan successful! price_plan_id:' || P_PP_ID || ',price_plan_name:' || P_PP_NAME);
+          dbms_output.put_line('----------------Add price plan end!----------------');
+        else
+          dbms_output.put_line('----------------Exists price plan start!----------------');
+          SELECT PP.PRICE_PLAN_ID,
+                 PP.PRICE_PLAN_NAME,
+                 PP.STATE,
+                 PPV.PRICE_PLAN_VER_ID,
+                 PPV.STATE,
+                 PPM.PRICE_SET_ID
+            INTO P_PP_ID,
+                 v_PricePlan_Name,
+                 v_PricePlan_State,
+                 v_PP_Ver,
+                 v_PricePlanVer_State,
+                 v_PriceSet_Id
+            FROM PRICE_PLAN        PP,
+                 PRICE_PLAN_VER    PPV,
+                 PRICE_PLAN_MEMBER PPM,
+                 PRICE_SET         PS
+           WHERE pp.Price_Plan_Code = P_PP_CODE
+             AND PP.PRICE_PLAN_ID = PPV.PRICE_PLAN_ID
+             AND PPV.PRICE_PLAN_VER_ID = PPM.PRICE_PLAN_VER_ID
+             AND PPM.PRICE_SET_ID = PS.PRICE_SET_ID;
+          dbms_output.put_line('++++price_plan_id:' || P_PP_ID || ',price_plan_name' || P_PP_NAME);
+
+          --UPDATE price plan name
+          if v_PricePlan_Name != P_PP_NAME then
+            update price_plan pp
+               set pp.price_plan_name = P_PP_NAME
+             WHERE pp.price_plan_code = P_PP_CODE;
+            dbms_output.put_line('++++modify price plan name, old:' || v_PricePlan_Name || ', new:' || P_PP_NAME);
+          end if;
+
+          --UPDATE PRICE_PLAN PP SET PP.PRICE_PLAN_CODE = 'PP_'||P_PP_CODE WHERE PP.PRICE_PLAN_CODE = P_PP_CODE;
+
+          --update price plan vesion state
+          if v_PricePlanVer_State != 'D' then
+            update price_plan_ver ppv
+               set ppv.state = 'D'
+             WHERE ppv.price_plan_ver_id = v_PP_Ver;
+          end if;
+          --update price plan state
+          IF v_PricePlan_State != 'B' THEN
+            update price_plan pp
+               set pp.state = 'B'
+             WHERE pp.price_plan_id = P_PP_ID;
+          END IF;
+          dbms_output.put_line('----------------Exists price plan end!------------------');
+        end if;
+      end;
+
+create_list:
+    DC_PROC_PRICE:
+        - PROC_PP_INSERT
+        - V20190515
+        - procedure
+    DC_PROC_ADD_ACCT_RES:
+        - MSH_PROC
+        - V20200410
+        - procedure
+    DC_PROC_ADD_ACCT_ITEM:
+        - MSH_PROC
+        - V20200414
+        - procedure
+    DC_PROC_ADD_CON_RES:
+      - MSH_PROC
+      - V20200414
+      - procedure
+    DC_PROC_ADD_PP:
+      - MSH_PROC
+      - V20200415
+      - procedure

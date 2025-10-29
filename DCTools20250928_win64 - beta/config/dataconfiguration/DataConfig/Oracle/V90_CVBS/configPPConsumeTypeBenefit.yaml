@@ -1,0 +1,39 @@
+PricePlanConsumeTYpeBenefit:
+  dst_table:
+    - cpc.con_res
+    - cpc.con_res_detail
+
+  mid_table:
+    - DC_CONFIG_CONSUME_TYPE_BENEFIT
+
+  insert_con_res:
+    - |
+      INSERT INTO cpc.CON_RES (CON_RES_ID,BAL_SOURCE_TYPE,CON_RES_NAME,CON_RES_CODE,
+        Is_CURRENCY,UNIT_ID,UNIT_PRECISION)
+      select CON_RES_DETAIL_ID_SEQ.nextval, B.* from (
+      SELECT distinct '4', A.M_CON_RES_NAME,A.O_CON_RES_CODE,'N',
+      decode(a.m_unit,'sec','1','occ','8','byte','4'),1
+      FROM DC_CONFIG_CONSUME_TYPE_BENEFIT A
+       left join CON_RES a1
+         on a1.CON_RES_NAME = a.M_CON_RES_NAME
+      where a1.CON_RES_NAME is null
+      ) B
+
+    - |
+      INSERT INTO cpc.con_res_detail
+      select CON_RES_DETAIL_ID_SEQ.nextval,
+             d.con_res_id,b.acct_res_id,c.acct_item_type_id,
+            '000','100','100',nvl(a.o_priority,0),null,null
+      from DC_CONFIG_CONSUME_TYPE_BENEFIT A
+         inner join  cbec_acct_res b
+          on a.m_acct_res_name=b.acct_res_name
+         inner join   cbec_acct_item_type c
+          on a.m_acct_item_type_name=c.acct_item_type_name
+           and c.acct_res_id=b.acct_res_id
+         inner join  con_res d
+          on  a.m_con_res_name=d.con_res_name
+         left join con_res_detail  t
+          on t.ACCT_ITEM_TYPE_ID = c.ACCT_ITEM_TYPE_ID
+          and t.ACCT_RES_ID = b.ACCT_RES_ID
+          and  t.CON_RES_ID =d.CON_RES_ID
+       where t.CON_RES_DETAIL_ID is null

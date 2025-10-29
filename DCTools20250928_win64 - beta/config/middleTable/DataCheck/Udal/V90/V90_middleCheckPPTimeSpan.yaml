@@ -1,0 +1,13 @@
+ErrorData:
+  TIME_SPAN_ID_IS_ERROR:
+    select * from dc_config_timespan where m_time_span_id<10000
+
+  TIME_SPAN_SEQ_IS_EMPITY:
+    select * from dc_config_timespan where m_time_span_id in (
+    select m_time_span_id from dc_config_timespan group by m_time_span_id
+    having count(1)>1 ) and o_seq is null
+
+  TIME_SPAN_SEQ_IS_DUMPLICATE:
+    select m_time_span_id, o_seq ,count(1)  from dc_config_timespan where m_time_span_id in (
+    select m_time_span_id from dc_config_timespan group by m_time_span_id
+    having count(1)>1 ) group by m_time_span_id, o_seq having count(1)>1

@@ -1,0 +1,25 @@
+PricePlanConsumeTYpeBenefit:
+  dst_table:
+    - cpc.con_res
+    - cpc.con_res_detail
+
+  mid_table:
+    - DC_CONFIG_CONSUME_TYPE_BENEFIT
+
+  insert_con_res:
+    - |
+      INSERT INTO cpc.CON_RES (CON_RES_ID,BAL_SOURCE_TYPE,CON_RES_NAME,CON_RES_CODE,Is_CURRENCY,UNIT_ID,UNIT_PRECISION)
+      select CON_RES_DETAIL_ID_SEQ.nextval, B.* from (
+      SELECT distinct '4', A.M_CON_RES_NAME,A.O_CON_RES_CODE,'N',
+      decode(a.m_unit,'sec','1','occ','8','byte','4'),1
+      FROM DC_CONFIG_CONSUME_TYPE_BENEFIT A ) B
+
+    - |
+      INSERT INTO cpc.con_res_detail
+      select CON_RES_DETAIL_ID_SEQ.nextval,d.con_res_id,b.acct_res_id,c.acct_item_type_id,
+      '000','100','100',nvl(a.o_priority,0),null,null
+      from DC_CONFIG_CONSUME_TYPE_BENEFIT A,cbec_acct_res b,cbec_acct_item_type c,con_res d
+      where a.m_con_res_name=d.con_res_name
+      and a.m_acct_res_name=b.acct_res_name
+      and a.m_acct_item_type_name=c.acct_item_type_name
+      and c.acct_res_id=b.acct_res_id;

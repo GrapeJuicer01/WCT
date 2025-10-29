@@ -1,0 +1,4 @@
+ErrorData:
+  ZONE_VALUE_CONFLICT:
+    select m_zone_map_name,m_zone_value from DC_CONFIG_ZONE_MAP
+    group by m_zone_map_name,m_zone_value having count(1)>1

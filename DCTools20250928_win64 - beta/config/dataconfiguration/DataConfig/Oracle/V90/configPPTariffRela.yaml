@@ -1,0 +1,12 @@
+TariffRela:
+  dst_table:
+    - cpc.tariff_plan
+    - cpc.tariff_plan_rela
+    - cpc.tariff_plan_rela_apply
+
+  mid_table:
+    - DC_CONFIG_PP_TARIFF_RELA
+
+  insert_offer_tariff_rela:
+    - |
+      exec:DC_PROC_TARIFF_RELA

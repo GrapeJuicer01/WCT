@@ -1,0 +1,29 @@
+DefaultUser:
+    cc
+
+delete:
+    DC_price_check_result_selftab:
+        delete from DC_price_check_result_selftab
+
+
+#insert into middle table
+insert_result_tab:
+    insert into DC_PRICE_CHECK_RESULT_SELFTAB (check_file_name,check_group,check_item,check_sql,check_result,check_topic)
+    values (:1,:2,:item,:sql,:result,:check_topic)
+
+export_result:
+    DC_PRICE_CHECK_RESULT_SELFTAB:
+        select check_file_name as file_name,
+        check_group as topic_name,
+        check_item as title_name,
+        check_sql as sql_content,
+        case when check_result = 0 then 'success' else 'fail' end as result,
+        check_result as error_count,
+        to_char(create_date,'yyyy/mm/dd hh24:mi:ss') as check_time
+        from DC_PRICE_CHECK_RESULT_SELFTAB
+        where check_topic = %(check_type)s
+        and check_file_name = %(file_name)s
+        and check_group = %(topic)s
+        and check_item = %(title)s
+        and check_result <> %(only_failed)s
+

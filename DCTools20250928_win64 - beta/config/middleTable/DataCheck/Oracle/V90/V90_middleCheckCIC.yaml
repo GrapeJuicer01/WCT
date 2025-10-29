@@ -1,0 +1,226 @@
+BadData:
+  DC_CIC_TRIGGER_TEMPLATE_NAME_INVALID:
+    SELECT *
+    FROM DC_CIC_TRIGGER
+    WHERE TEMPLATE_NAME NOT IN
+    (SELECT TEMPLATE_NAME
+    FROM DC_MSG_TEMPLATE
+    UNION
+    SELECT TEMPLATE_NAME
+    FROM CIC.CIC_MSG_TEMPLATE)
+  DC_TEMPLATE_OFFER_TEMPLATE_NAME_INVALID:
+    SELECT *
+    FROM DC_TEMPLATE_OFFER
+    WHERE TEMPLATE_NAME NOT IN
+    (SELECT TEMPLATE_NAME
+    FROM DC_MSG_TEMPLATE
+    UNION
+    SELECT TEMPLATE_NAME
+    FROM CIC.CIC_MSG_TEMPLATE)
+  DC_MSG_TEMPLATE_DUPLICATE_RECORD:
+    SELECT template_name,language_name FROM dc_msg_template group by template_name,language_name having count(1) > 1
+  DC_MSG_TEMPLATE_TEMPLATE_NAME_IS_INVALID:
+    SELECT *
+    FROM DC_MSG_TEMPLATE
+    where TEMPLATE_NAME not in (select TEMPLATE_NAME
+    from Dc_Cic_Trigger
+    union
+    select template_name
+    from DC_TEMPLATE_OFFER)
+    and TEMPLATE_NAME not in (select TEMPLATE_NAME from dc_cic_template_rel)
+  DC_CIC_TEMPLATE_REL_ATTR_CODE_PATH_IS_INVALID:
+    SELECT *
+    FROM DC_CIC_TEMPLATE_REL t
+    left join cic.cic_event ce
+    on t.event_code = ce.event_code
+    where ATTR_CODE_PATH NOT IN
+    (select ATTR_CODE_PATH
+    from cic.cic_inter_event_attr
+    where inter_event_id = ce.event_id)
+  DC_CIC_TEMPLATE_REL_LABEL_EVENT_IS_INVALID:
+    SELECT *
+    FROM (SELECT case template_label_name
+    when 'Offer Order Success' then
+    'ORDER_OFFER_COMPLETE'
+    when 'Offer Expired' then
+    'ORDER_OFFER_COMPLETE'
+    when 'N Days Before OFFER EXP REMINDER' then
+    'OC_OFFER_EXP_REMINDER'
+    when 'Recurring Success' then
+    'Rent Success Advice'
+    when 'Recurring Fail' then
+    'Rent Fail Advice'
+    when 'Rent Fee Advance' then
+    'Rent Fee Advance notice'
+    when 'Bal Trigger' then
+    'Usage Fee Bal Trigger Advice'
+    when 'ORDER FUNC PROD Success' then
+    'ORDER_FUNC_PROD_COMPLETE'
+    when 'Deactive FUNC PROD' then
+    'ORDER_FUNC_PROD_COMPLETE'
+    end r_event_code,
+    template_name
+    FROM DC_CIC_TEMPLATE_REL) dr,
+    DC_CIC_TEMPLATE_REL dr2
+    where dr.r_event_code != dr2.event_code
+    and dr2.template_name = dr.template_name
+  DC_MSG_TEMPLATE_PARAM_TEMPLATE_NAME_IS_INVALID:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM
+    where template_name NOT IN (select template_name from dc_msg_template)
+  DC_MSG_TEMPLATE_PARAM_FIELD_CODE_PATH_IS_INVALID:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM t
+    LEFT join cic.cic_enrich_service cs
+    on t.enrich_service_name = cs.enrich_service_name
+    where substr(FIELD_CODE_PATH, 3, length(FIELD_CODE_PATH) - 3) NOT IN
+    (select FIELD_CODE_PATH
+    from CIC.Cic_Serv_Rtn
+    where reg_service_id = cs.reg_service_id)
+    and t.enrich_service_name is not null
+  DC_MSG_TEMPLATE_PARAM_ATTR_CODE_PATH_IS_INVALID:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM t
+    left join cic.cic_event ce
+    on t.event_code = ce.event_code
+    where substr(ATTR_CODE_PATH, 3, length(ATTR_CODE_PATH) - 3) NOT IN
+    (select ATTR_CODE_PATH
+    from cic.cic_inter_event_attr
+    where inter_event_id = ce.event_id)
+    and t.ATTR_CODE_PATH is not null
+  DC_MSG_TEMPLATE_PARAM_OLD_PARAM_NAME_IS_INVALID:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM t
+    left join DC_MSG_TEMPLATE dt
+    on t.template_name = dt.template_name
+    where instr(text, t.old_param_name) = 0
+  DC_MSG_TEMPLATE_JUDGE_FIELD_CODE_PATH_IS_INVALID:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_JUDGE t
+    LEFT join cic.cic_enrich_service cs
+    on t.enrich_service_name = cs.enrich_service_name
+    where FIELD_CODE_PATH NOT IN
+    (select FIELD_CODE_PATH
+    from CIC.Cic_Serv_Rtn
+    where reg_service_id = cs.reg_service_id)
+    and t.enrich_service_name is not null
+  DC_MSG_TEMPLATE_JUDGE_ATTR_CODE_PATH_IS_INVALID:
+      SELECT *
+      FROM DC_MSG_TEMPLATE_JUDGE t
+      left join cic.cic_event ce
+      on t.event_code = ce.event_code
+      where ATTR_CODE_PATH NOT IN
+      (select ATTR_CODE_PATH
+      from cic.cic_inter_event_attr
+      where inter_event_id = ce.event_id)
+      and t.ATTR_CODE_PATH is not null
+
+ErrorData:
+  DC_CIC_TRIGGER_TEMPLATE_NAME_IS_NULL:
+    SELECT * FROM DC_CIC_TRIGGER where TEMPLATE_NAME is null
+  DC_CIC_TRIGGER_PRICE_PLAN_NAME_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_CIC_TRIGGER
+    where OFFER_PRICE_PLAN_NAME NOT IN
+    (SELECT PRICE_PLAN_NAME
+    FROM CPC.PRICE_PLAN
+    UNION
+    SELECT PRICE_PLAN_NAME
+    FROM DC_CONFIG_PRICE_PLAN_BASIC_INFO) OR OFFER_PRICE_PLAN_NAME IS NULL
+  DC_CIC_TRIGGER_ACCT_RES_NAME_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_CIC_TRIGGER
+    where ACCT_RES_NAME NOT IN
+    (SELECT ACCT_RES_NAME
+    FROM CPC.CBEC_ACCT_RES
+    UNION
+    SELECT ACCT_RES_NAME
+    FROM Dc_Config_Basic_Balance_Info)
+    or ACCT_RES_NAME is null
+  DC_CIC_TRIGGER_IS_RATIO_IS_NULL:
+    SELECT * FROM DC_CIC_TRIGGER where IS_RATIO is null
+  DC_CIC_TRIGGER_THRESHOLD_IS_NULL:
+    SELECT * FROM DC_CIC_TRIGGER where THRESHOLD is null
+  DC_TEMPLATE_OFFER_IS_NULL:
+    SELECT *
+    FROM DC_TEMPLATE_OFFER do
+    where do.template_name is null
+    OR OFFER_NAME IS NULL
+  DC_TEMPLATE_OFFER_OFFER_NAME_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_TEMPLATE_OFFER do
+    where do.offer_name not in
+    (select offer_name
+    from cpc.offer
+    union
+    select offer_name
+    from DC_CONFIG_OFFER_BASIC_INFO)
+  DC_MSG_TEMPLATE_IS_NULL:
+    SELECT *
+    FROM dc_msg_template
+    WHERE template_name is null
+    or text is null
+  DC_MSG_TEMPLATE_LANGUATE_NAME_IS_NOT_EXIST:
+    SELECT *
+    FROM dc_msg_template
+    WHERE language_name not in
+    (select attr_value_name
+    from cpc.attr_value
+    where attr_id = (select attr_id
+    from cpc.attr_spec t
+    where t.attr_nbr = 'INT_SUBS_LANGUAGE')) OR language_name IS NULL
+  DC_CIC_TEMPLATE_REL_TEMPLATE_NAME_IS_NULL:
+    SELECT * FROM DC_CIC_TEMPLATE_REL WHERE TEMPLATE_NAME IS NULL
+  DC_CIC_TEMPLATE_REL_CATALOG_NAME_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_CIC_TEMPLATE_REL
+    where catalog_name not in (select catalog_name from cic.cic_catalog)
+    and catalog_name is null
+  DC_CIC_TEMPLATE_REL_SRC_NBR_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_CIC_TEMPLATE_REL
+    where src_nbr not in (select src_nbr from cic.cic_source_nbr)
+    and src_nbr is null
+  DC_CIC_TEMPLATE_REL_ACTION_NAME_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_CIC_TEMPLATE_REL
+    where ACTION_NAME not in (select ACTION_NAME from cic.cic_action)
+    and ACTION_NAME is null
+  DC_CIC_TEMPLATE_REL_TEMPLATE_LABEL_NAME_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_CIC_TEMPLATE_REL
+    where TEMPLATE_LABEL_NAME not in (select TEMPLATE_LABEL_NAME from cic.cic_label)
+    and TEMPLATE_LABEL_NAME is null
+  DC_CIC_TEMPLATE_REL_EVENT_CODE_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_CIC_TEMPLATE_REL
+    where EVENT_CODE not in (select EVENT_CODE from cic.cic_event)
+    and EVENT_CODE is null
+  DC_MSG_TEMPLATE_PARAM_OLD_PARAM_NAME_IS_NULL:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM
+    where old_param_name is null
+  DC_MSG_TEMPLATE_PARAM_EVENT_CODE_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM
+    where EVENT_CODE not in (select EVENT_CODE from cic.cic_event)
+    and EVENT_CODE is null
+  DC_MSG_TEMPLATE_PARAM_TEMPLATE_NAME_IS_NULL:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM
+    where TEMPLATE_NAME is null
+  DC_MSG_TEMPLATE_PARAM_FIELD_CODE_PATH_IS_NULL:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_PARAM
+    where FIELD_CODE_PATH is null and ENRICH_SERVICE_NAME is not null
+  DC_MSG_TEMPLATE_JUDGE_IS_NULL_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_JUDGE
+    where TEMPLATE_LABEL_NAME not in (select TEMPLATE_LABEL_NAME from cic.Cic_Label)
+    and TEMPLATE_LABEL_NAME is null
+  DC_MSG_TEMPLATE_JUDGE_EVENT_CODE_IS_NOT_EXIST:
+    SELECT *
+    FROM DC_MSG_TEMPLATE_JUDGE
+    where EVENT_CODE not in (select EVENT_CODE from cic.cic_event)
+    and EVENT_CODE is null
+

@@ -1,0 +1,355 @@
+create:
+  DC_CONFIG_LIFECYCLE_CONVERSION:
+    - |
+      create table DC_CONFIG_LIFECYCLE_CONVERSION
+      (
+        lifecycle_name      VARCHAR2(64),
+        convert_type        VARCHAR2(500),
+        target_subs         VARCHAR2(255),
+        block_reason        VARCHAR2(250),
+        elapsed_time        VARCHAR2(30),
+        trigger_event       VARCHAR2(50),
+        clear_bal_mode      VARCHAR2(60)
+      )
+    - comment on table DC_CONFIG_LIFECYCLE_CONVERSION is 'Lifecycle And State Convert Detail'
+    - comment on column DC_CONFIG_LIFECYCLE_CONVERSION.lifecycle_name is 'Lifecycle Name:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_CONVERSION.convert_type is ' State Conversion:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_CONVERSION.target_subs is 'Target Subscribers:Requried if Block reson is null Expect "Initial-Active"'
+    - comment on column DC_CONFIG_LIFECYCLE_CONVERSION.block_reason is 'Block reson:Requried if Target Subscribers is null Expect "Initial-Active"'
+    - comment on column DC_CONFIG_LIFECYCLE_CONVERSION.elapsed_time is 'Elapsed Time:Reuqired Expect "Initial-Active";e.g.30Day or 1Month or 1CalenderMonth'
+    - comment on column DC_CONFIG_LIFECYCLE_CONVERSION.trigger_event is 'Trigger Event:Reuqired Expect "Initial-Active"'
+    - comment on column DC_CONFIG_LIFECYCLE_CONVERSION.clear_bal_mode is 'Balance Process Mode Expect "Initial-Active"'
+
+  DC_CONFIG_LIFECYCLE_NOFITY:
+    - |
+      create table DC_CONFIG_LIFECYCLE_NOFITY
+      (
+        lifecycle_name     VARCHAR2(64),
+        convert_type       VARCHAR2(500),
+        trigger_event      VARCHAR2(50),
+        reminder_flow      VARCHAR2(150),
+        prior_day          VARCHAR2(3),
+        elapsed_time        VARCHAR2(30)
+      )
+    - comment on table DC_CONFIG_LIFECYCLE_NOFITY is 'Lifecycle Notify Detail'
+    - comment on column DC_CONFIG_LIFECYCLE_NOFITY.lifecycle_name is 'Lifecycle Name:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_NOFITY.convert_type is ' State Conversion:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_NOFITY.trigger_event is 'Trigger Event:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_NOFITY.reminder_flow is 'Lifecycle Reminder Flow Name from CIC:Required'
+    - comment on column DC_CONFIG_LIFECYCLE_NOFITY.prior_day is 'Advance Days Notification Send Before State Conversion:Required'
+    - comment on column DC_CONFIG_LIFECYCLE_NOFITY.elapsed_time is 'Elapsed Time:Reuqired Expect "Initial-Active";e.g.30Day or 1Month or 1CalenderMonth'
+
+  DC_CONFIG_LIFECYCLE_OFFER_REL:
+    - |
+      create table DC_CONFIG_LIFECYCLE_OFFER_REL
+      (
+        lifecycle_name VARCHAR2(64),
+        offer_name     VARCHAR2(250)
+      )
+    - comment on table DC_CONFIG_LIFECYCLE_OFFER_REL is 'Lifecycle And Offer Relation'
+    - comment on column DC_CONFIG_LIFECYCLE_OFFER_REL.lifecycle_name is 'Lifecycle Name:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_OFFER_REL.offer_name is 'Offer Name:Reuqired'
+
+
+  DC_GET_SID:
+    - |
+      create OR REPLACE FUNCTION dc_get_sid RETURN VARCHAR IS
+        guid VARCHAR(50);
+      BEGIN
+        guid := RAWTOHEX(sys_guid());
+        RETURN 'sid' || '-' || substr(guid, 1, 8) || '-' || substr(guid, 9, 4) || '-' ||
+               substr(guid,13,4) || '-' || substr(guid,17,4) || '-' || substr(guid,21,12);
+      END dc_get_sid;
+
+  DC_GET_LOCATION:
+    - |
+      create or replace function dc_get_location(total_cnt in number,
+                                              order_cnt in number) return varchar is
+        r        integer;
+        center_x integer;
+        center_y integer;
+      begin
+        r        := 150;
+        center_x := 350;
+        center_y := 170;
+        return round(r * cos(4 * asin(1) * order_cnt / total_cnt * (-1) - asin(1)) +
+                     center_x) || ',' || round(r * sin(4 * asin(1) * order_cnt /
+                                                       total_cnt * (-1) - asin(1)) +
+                                               center_y);
+      end dc_get_location;
+
+  DC_UPDATE_LIFECYCLE_FLOWLAYOUT:
+    - |
+      create or replace procedure dc_update_lifecycle_flowlayout Authid Current_User is
+        v_lifecycle_info clob;
+        v_temp_clob      clob;
+      begin
+        for lifecycle_cursor in (select t2.lifecycle_id
+                                   from dc_config_lifecycle_conversion t1
+                                  inner join coc.cc_lifecycle t2
+                                     on t1.lifecycle_name = t2.lifecycle_name
+                                  group by t2.lifecycle_id) loop
+
+          --初始化插入节点的信息
+          insert into DC_TMP_LIFECYCLE_ELEMENT_INFO
+            (LIFECYCLE_ID, ELEMENT_TYPE, STATUS_CD, SID)
+            select t2.lifecycle_id, 1, status_cd, dc_get_sid()
+              from (select t1.lifecycle_name, t2.attr_value status_cd
+                      from dc_config_lifecycle_conversion t1
+                      left join cpc.attr_value t2
+                        on substr(t1.convert_type,
+                                  0,
+                                  instr(t1.convert_type, '-') - 1) =
+                           trim(attr_value_name)
+                       and t2.attr_id = 800052302
+                       and t2.status_cd = '1000'
+                    union
+                    select t1.lifecycle_name, t2.attr_value status_cd
+                      from dc_config_lifecycle_conversion t1
+                      left join cpc.attr_value t2
+                        on substr(t1.convert_type, instr(t1.convert_type, '-') + 1) =
+                           trim(attr_value_name)
+                       and t2.attr_id = 800052302
+                       and t2.status_cd = '1000') t1
+             inner join coc.cc_lifecycle t2
+                on t1.lifecycle_name = t2.lifecycle_name
+             where t2.lifecycle_id = lifecycle_cursor.lifecycle_id;
+          --计算Node节点坐标,更新DC_TMP_LIFECYCLE_ELEMENT_INFO对应信息
+          update DC_TMP_LIFECYCLE_ELEMENT_INFO tt1
+             set (point_1, node_string) =
+                 (select point_info,
+                         '{"elementType":"Rect","options":{"style":{"isAllowEdit":true,"text":"' ||
+                         node_text ||
+                         '","textFont":"12px Microsoft YaHei","fill":"' ||
+                         node_color || '","rich":{}},"position":[' || point_info ||
+                         '],"shape":{"width":120,"height":60,"r":60},"operationIcons":[{"name":"DEL"},{"name":"STRAIGHT"},{"name":"JAGGED"},{"name":"CURVE"}],"name":"stateNode","id":"' ||
+                         node_id || '"},"userData":{"stateName":"' || node_text ||
+                         '","statusCd":"' || to_char(status_cd) || '"}}'
+                    from (select t1.lifecycle_id,
+                                 t1.status_cd,
+                                 t1.sid node_id,
+                                 dc_get_location(t3.total_num,
+                                                 (row_number()
+                                                  over(order by t2.node_order)) - 1) point_info,
+                                 t2.state_name node_text,
+                                 t2.node_color node_color
+                            from DC_TMP_LIFECYCLE_ELEMENT_INFO t1
+                           inner join DC_DIM_LIFECYCLE_PROD_STATE t2
+                              on t1.status_cd = t2.state_code
+                            left join (select count(*) total_num
+                                        from DC_TMP_LIFECYCLE_ELEMENT_INFO
+                                       where lifecycle_id = lifecycle_id) t3
+                              on 1 = 1
+                           where t1.lifecycle_id = lifecycle_cursor.lifecycle_id) t1
+                   where tt1.lifecycle_id = t1.lifecycle_id
+                     and tt1.status_cd = t1.status_cd)
+           where tt1.lifecycle_id = lifecycle_cursor.lifecycle_id
+             and tt1.element_type = 1;
+
+          --初始化convert线条信息
+          insert into DC_TMP_LIFECYCLE_ELEMENT_INFO
+            (LIFECYCLE_ID,
+             ELEMENT_TYPE,
+             CONVERT_TYPE,
+             POINT_1,
+             POINT_2,
+             node_string)
+            select LIFECYCLE_ID,
+                   2,
+                   CONVERT_TYPE,
+                   t.point1_x || ',' || t.point1_y,
+                   t.point2_x || ',' || t.point2_y,
+                   '{"userData":' || case
+                     when t.auto_flag = 'Y' then
+                      '{"isDotted": "Y","convertType": ' || t.convert_type || '}'
+                     else
+                      '{"convertType":' || t.convert_type || ',"fromStateName": "' ||
+                      t.fromStateName || '","toStateName": "' || t.toStateName ||
+                      '","objProdState": "' || t.obj_prod_state ||
+                      '","srcProdState": "' || t.src_prod_state || '"}'
+                   end || ',"elementType":"connection","startNodeId":"' ||
+                   t.source_id || '","endNodeId":"' || t.target_id ||
+                   '","options":{"symbol":{"type":"arrow","size":10,"color":"#000","both":false,"offset":0},"style":{"lineWidth":1,"stroke":"#000","lineType":"straight"' || case
+                     when t.auto_flag = 'Y' then
+                      ',"lineDash":[5]'
+                     else
+                      ''
+                   end ||
+                   '},"hoverStyle":{"lineWidth":2,"stroke":"#74B7E0","fill":null},"arrowHoverStyle":{"fill":"#74B7E0","stroke":null},"shape":{"points":[[' ||
+                   t.point1_x || ',' || t.point1_y || '],[' || t.point2_x || ',' ||
+                   t.point2_y ||
+                   ']],"smooth":false,"smoothConstraint":null},"position":{"startPos":"left","endPos":"right","startOffset":[0,0],"endOffset":[0,0],"escapeDistance":[30,30],"points":null},"autoChangePosition":false,"textContextMenu":null,"isEdit":true,"text":{"text":" ","color":"#000000","textFont":"12px Microsoft YaHei","textPos":"center"},"z":0,"dockers":[{"x":' ||
+                   t.point1_x || ',"y":' || t.point1_y || '},{"x":' || t.point2_x ||
+                   ',"y":' || t.point2_y || '}]},"icons":[]}'
+              from (select t1.lifecycle_id,
+                           t1.convert_type,
+                           t1.src_prod_state,
+                           t3.state_name fromStateName,
+                           t1.obj_prod_state,
+                           t4.state_name toStateName,
+                           to_number(substr(t5.point_1,
+                                            0,
+                                            instr(t5.point_1, ',') - 1)) + 120 point1_x,
+                           to_number(substr(t5.point_1, instr(t5.point_1, ',') + 1)) + 30 point1_y,
+                           substr(t6.point_1, 0, instr(t6.point_1, ',') - 1) point2_x,
+                           to_number(substr(t6.point_1, instr(t6.point_1, ',') + 1)) + 30 point2_y,
+                           t5.sid source_id,
+                           t6.sid target_id,
+                           t1.auto_flag
+                      from (select t2.lifecycle_id,
+                                   t4.convert_type,
+                                   t4.src_prod_state,
+                                   t4.obj_prod_state,
+                                   t4.auto_flag
+                              from dc_config_lifecycle_conversion t1
+                             inner join coc.cc_lifecycle t2
+                                on t1.lifecycle_name = t2.lifecycle_name
+                             inner join (select t1.convert_type,
+                                               t1.src_prod_state,
+                                               t1.obj_prod_state,
+                                               t1.auto_flag,
+                                               trim(t2.attr_value_name) || '-' ||
+                                               trim(t3.attr_value_name) convert_type_name
+                                          from coc.cc_state_convert_type t1
+                                          left join cpc.attr_value t2
+                                            on t2.attr_id = 800052302
+                                           and t2.status_cd = '1000'
+                                           and t1.src_prod_state = t2.attr_value
+                                          left join cpc.attr_value t3
+                                            on t3.attr_id = 800052302
+                                           and t3.status_cd = '1000'
+                                           and t1.obj_prod_state = t3.attr_value) t4
+                                on t4.convert_type_name = t1.convert_type
+                             where t2.lifecycle_id = lifecycle_cursor.lifecycle_id
+                             group by t2.lifecycle_id,
+                                      t4.convert_type,
+                                      t4.src_prod_state,
+                                      t4.obj_prod_state,
+                                      t4.auto_flag) t1
+                     inner join DC_DIM_LIFECYCLE_PROD_STATE t3
+                        on t1.src_prod_state = t3.state_code
+                     inner join DC_DIM_LIFECYCLE_PROD_STATE t4
+                        on t1.obj_prod_state = t4.state_code
+                     inner join DC_TMP_LIFECYCLE_ELEMENT_INFO t5
+                        on t1.src_prod_state = t5.status_cd
+                       and t1.lifecycle_id = t5.lifecycle_id
+                       and t5.element_type = 1
+                     inner join DC_TMP_LIFECYCLE_ELEMENT_INFO t6
+                        on t1.obj_prod_state = t6.status_cd
+                       and t1.lifecycle_id = t6.lifecycle_id
+                       and t6.element_type = 1) t;
+
+          --使用DC_TMP_LIFECYCLE_ELEMENT_INFO拼接字符串信息
+          dbms_lob.createtemporary(v_temp_clob, true);
+          dbms_lob.append(v_temp_clob,
+                          '{"elementType":"scene","mode":"normal","childs":[');
+          --v_lifecycle_info := '{"elementType":"scene","mode":"normal","childs":[';
+          for v_element_info in (select node_string
+                                   from DC_TMP_LIFECYCLE_ELEMENT_INFO t)loop
+            dbms_lob.append(v_temp_clob, v_element_info.node_string);
+            dbms_lob.append(v_temp_clob, ',');
+          end loop;
+          v_lifecycle_info := to_clob(dbms_lob.substr(v_temp_clob,
+                                                      dbms_lob.getlength(v_temp_clob) - 1,
+                                                      1) || ']}');
+
+          update coc.cc_lifecycle
+             set FLOW_LAYOUT = v_lifecycle_info
+           where lifecycle_id = lifecycle_cursor.lifecycle_id;
+
+          commit;
+        end loop;
+      end dc_update_lifecycle_flowlayout;
+
+create_list:
+  DC_CONFIG_LIFECYCLE_CONVERSION:
+    - LIFECYCLE
+    - V20191216
+    - table
+    - VALUE_LIST:
+        CONVERT_TYPE:
+          TYPE: sql
+          SOURCE: |
+            select trim(t2.attr_value_name) || '-' || trim(t3.attr_value_name)
+              from coc.cc_state_convert_type t1
+              left join cpc.attr_value t2
+                on t2.attr_id = 800052302
+               and t2.status_cd = '1000'
+               and t1.src_prod_state = t2.attr_value
+              left join cpc.attr_value t3
+                on t3.attr_id = 800052302
+               and t3.status_cd = '1000'
+               and t1.obj_prod_state = t3.attr_value
+        TARGET_SUBS:
+          TYPE: sql
+          SOURCE : select target_subs_name from coc.cc_lifecycle_target_subs
+        BLOCK_REASON:
+          TYPE: sql
+          SOURCE: |
+            select trim(t3.attr_value_name) block_reason
+              from coc.cc_lifecycle_target_subs  t1
+             inner join coc.cc_lifecycle_target_input t2
+                on t1.target_subs_id = t2.target_subs_id
+               and t2.data_type = 'S'
+             inner join cpc.attr_value t3
+                on t2.default_value = t3.attr_value
+               and t3.attr_id = 992001414
+               and t3.status_cd = '1000'
+             order by t3.attr_value_name
+        TRIGGER_EVENT:
+          TYPE: sql
+          SOURCE: |
+            select T2.SERVICE_OFFER_NAME
+              from coc.service_offer_status_change t1
+             inner join cpc.service_offer t2
+                on t1.service_offer_id = t2.service_offer_id
+             order by T2.SERVICE_OFFER_NAME
+        CLEAR_BAL_MODE:
+          TYPE: sql
+          SOURCE: select mode_name from coc.cc_clear_bal_mode
+
+  DC_CONFIG_LIFECYCLE_NOFITY:
+    - LIFECYCLE
+    - V20190527
+    - table
+    - VALUE_LIST:
+        CONVERT_TYPE:
+          TYPE: sql
+          SOURCE: |
+            select trim(t2.attr_value_name) || '-' || trim(t3.attr_value_name)
+              from coc.cc_state_convert_type t1
+              left join cpc.attr_value t2
+                on t2.attr_id = 800052302
+               and t2.status_cd = '1000'
+               and t1.src_prod_state = t2.attr_value
+              left join cpc.attr_value t3
+                on t3.attr_id = 800052302
+               and t3.status_cd = '1000'
+               and t1.obj_prod_state = t3.attr_value
+             where t1.auto_flag = 'N'
+        TRIGGER_EVENT:
+          TYPE: sql
+          SOURCE: |
+            select T2.SERVICE_OFFER_NAME
+              from coc.service_offer_status_change t1
+             inner join cpc.service_offer t2
+                on t1.service_offer_id = t2.service_offer_id
+             order by T2.SERVICE_OFFER_NAME
+
+  DC_CONFIG_LIFECYCLE_OFFER_REL:
+    - LIFECYCLE
+    - V20190527
+    - table
+
+  DC_GET_SID:
+    - LIFECYCLE
+    - V20190612
+    - function
+  DC_GET_LOCATION:
+    - LIFECYCLE
+    - V20190612
+    - function
+  DC_UPDATE_LIFECYCLE_FLOWLAYOUT:
+    - LIFECYCLE
+    - V20190624
+    - procedure

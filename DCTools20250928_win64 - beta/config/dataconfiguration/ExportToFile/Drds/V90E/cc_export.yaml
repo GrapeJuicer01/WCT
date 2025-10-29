@@ -1,0 +1,32 @@
+UserList:
+  cc
+
+BoBNeed:
+  35_CC.AGREEMENT_TYPE:
+    "select * from AGREEMENT_TYPE"
+
+  36_CC.CATG:
+    "select * from CATG"
+
+  37_CC.CERT_TYPE:
+    "select * from CERT_TYPE"
+
+  38_CC.DEF_LANG:
+    "select * from DEF_LANG"
+
+  39_CC.PAYMENT_TYPE:
+    "select * from PAYMENT_TYPE"
+
+  40_CC.ORDER_STATE:
+    "select * from ORDER_STATE"
+
+  41_cc.SUBS_EVENT:
+    "select * from SUBS_EVENT"
+
+Guogeng:
+  19.CV_PAGE_PRIV:
+    "select * from CV_PAGE_PRIV"
+  20.CV_ITEM_PRIV:
+    "select * from CV_ITEM_PRIV"
+
+

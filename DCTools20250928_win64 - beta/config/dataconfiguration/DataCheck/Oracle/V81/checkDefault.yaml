@@ -1,0 +1,776 @@
+DefaultUser:
+    cc
+
+delete:
+    DC_price_check_result_selftab:
+        delete from DC_price_check_result_selftab
+
+
+#insert into middle table
+insert_result_tab:
+    insert into DC_PRICE_CHECK_RESULT_SELFTAB (check_file_name,check_group,check_item,check_sql,check_result,check_topic)
+    values (:1,:2,:item,:sql,:result,:check_topic)
+
+export_result:
+    DC_PRICE_CHECK_RESULT_SELFTAB:
+        select check_file_name as file_name,
+        check_group as topic_name,
+        check_item as title_name,
+        check_sql as sql_content,
+        case when check_result = 0 then 'success' else 'fail' end as result,
+        check_result as error_count,
+        to_char(create_date,'yyyy/mm/dd hh24:mi:ss') as check_time
+        from DC_PRICE_CHECK_RESULT_SELFTAB
+        where check_topic = %(check_type)s
+        and check_file_name = %(file_name)s
+        and check_group = %(topic)s
+        and check_item = %(title)s
+        and check_result <> %(only_failed)s
+
+check_title_all_list:
+    A001 AntiBillShock_Group_Is_Not_Single_Choice:
+        des: A001 AntiBillShock_Group_Is_Not_Single_Choice
+        topic: BadData
+        area: A001
+
+    A001 BundleIPP_OfferId_NotIn_Mapping:
+        des: A001 BundleIPP_OfferId_NotIn_Mapping
+        topic: BadData
+        area: A001
+
+    A001 Device_BundleOfferId_NotIn_Mapping:
+        des: A001 Device_BundleOfferId_NotIn_Mapping
+        topic: BadData
+        area: A001
+
+    A001 Device_SingleOfferId_NotIn_Mapping:
+        des: A001 Device_SingleOfferId_NotIn_Mapping
+        topic: BadData
+        area: A001
+
+    A001 LeasedLineIPP_OfferId_NotIn_Mapping:
+        des: A001 LeasedLineIPP_OfferId_NotIn_Mapping
+        topic: BadData
+        area: A001
+
+    A001 LeasingIPP_OfferId_NotIn_Mapping:
+        des: A001 LeasingIPP_OfferId_NotIn_Mapping
+        topic: BadData
+        area: A001
+
+    A001 LeasingIPPGroup_Is_Missing:
+        des: A001 LeasingIPPGroup_Is_Missing
+        topic: BadData
+        area: A001
+
+    A001 NewIPP_OfferId_NotIn_Mapping:
+        des: A001 NewIPP_OfferId_NotIn_Mapping
+        topic: BadData
+        area: A001
+
+    A001 OFFER_CATG_MEM_OFFER_DUPLICAT:
+        des: A001 OFFER_CATG_MEM_OFFER_DUPLICAT
+        topic: BadData
+        area: A001
+
+    A001 OFFER_DUPLICATE_IN_OFFER_GROUP:
+        des: A001 OFFER_DUPLICATE_IN_OFFER_GROUP
+        topic: BadData
+        area: A001
+
+    A001 OFFER_NOIN_OFFER_GROUP:
+        des: A001 OFFER_NOIN_OFFER_GROUP
+        topic: BadData
+        area: A001
+
+    A001 RECURRING_RE_NO_SORT_RULE:
+        des: A001 RECURRING_RE_NO_SORT_RULE
+        topic: BadData
+        area: A001
+
+    A001 RelatedProd_Need_PricePlan:
+        des: A001 RelatedProd_Need_PricePlan
+        topic: BadData
+        area: A001
+
+    A001 Service_OfferId_NotIn_Mapping:
+        des: A001 Service_OfferId_NotIn_Mapping
+        topic: BadData
+        area: A001
+
+    A001 SubsPlan_No_OfferGroup_Additionel:
+        des: A001 SubsPlan_No_OfferGroup_Additionel
+        topic: BadData
+        area: A001
+
+    A001 SubsPlan_No_OfferGroup_Core:
+        des: A001 SubsPlan_No_OfferGroup_Core
+        topic: BadData
+        area: A001
+
+    A002 M-AcctItemTypeBillPriorityNotNull:
+        des: A002 M-AcctItemTypeBillPriorityNotNull
+        topic: BadData
+        area: A002
+
+    A002 M-Check_dependOfferCode:
+        des: A002 M-Check_dependOfferCode
+        topic: BadData
+        area: A002
+
+    A002 M-Check_M2M_ThresholdAdvice__PythonOfferName_And_PythoniResourceId:
+        des: A002 M-Check_M2M_ThresholdAdvice__PythonOfferName_And_PythoniResourceId
+        topic: BadData
+        area: A002
+
+    A002 M-Check_M2M_ThresholdAdvice_PythonThreshold:
+        des: A002 M-Check_M2M_ThresholdAdvice_PythonThreshold
+        topic: BadData
+        area: A002
+
+    A002 M-CheckBusinessBoxHadHybridAttr:
+        des: A002 M-CheckBusinessBoxHadHybridAttr
+        topic: BadData
+        area: A002
+
+    A002 M-CheckCustAttr:
+        des: A002 M-CheckCustAttr
+        topic: BadData
+        area: A002
+
+    A002 M-CheckDuplicatedAcctItemTypeCode:
+        des: A002 M-CheckDuplicatedAcctItemTypeCode
+        topic: BadData
+        area: A002
+
+    A002 M-CheckDuplicatedRatePlanTemplate:
+        des: A002 M-CheckDuplicatedRatePlanTemplate
+        topic: BadData
+        area: A002
+
+    A002 M-CheckDuplicatedPriceTemplate:
+        des: A002 M-CheckDuplicatedPriceTemplate
+        topic: BadData
+        area: A002
+
+    A002 M-CheckEXP_NEED_UPLOADAttr:
+        des: A002 M-CheckEXP_NEED_UPLOADAttr
+        topic: BadData
+        area: A002
+
+    A002 M-CheckMigratedOfferNameCode:
+        des: A002 M-CheckMigratedOfferNameCode
+        topic: BadData
+        area: A002
+
+    A002 M-CheckNumberGradeAttr:
+        des: A002 M-CheckNumberGradeAttr
+        topic: BadData
+        area: A002
+
+    A002 M-CheckNotDeleteOffer:
+        des: A002 M-CheckNotDeleteOffer
+        topic: BadData
+        area: A002
+
+    A002 M-CheckOfferName:
+        des: A002 M-CheckOfferName
+        topic: BadData
+        area: A002
+
+    A002 M-CheckSubsCreditLimitAttr:
+        des: A002 M-CheckSubsCreditLimitAttr
+        topic: BadData
+        area: A002
+
+    A002 M-CheckSystemOfferConnectionEvent:
+        des: A002 M-CheckSystemOfferConnectionEvent
+        topic: BadData
+        area: A002
+
+    A002 M-CheckTaxAcctAttrValue:
+        des: A002 M-CheckTaxAcctAttrValue
+        topic: BadData
+        area: A002
+
+    A002 M-CheckTriggerEvent982:
+        des: A002 M-CheckTriggerEvent982
+        topic: BadData
+        area: A002
+
+    A002 M-DelayTimeIsNullInAdviceType:
+        des: A002 M-DelayTimeIsNullInAdviceType
+        topic: BadData
+        area: A002
+
+    A002 M-DependProductAndPricePlanBoundAttrCheck:
+        des: A002 M-DependProductAndPricePlanBoundAttrCheck
+        topic: BadData
+        area: A002
+
+    A002 M-ExistsIPAddressAttr:
+        des: A002 M-ExistsIPAddressAttr
+        topic: BadData
+        area: A002
+
+    A002 M-InsertEXP_INTERNET_ACCESSIBLEAttrFailed:
+        des: A002 M-InsertEXP_INTERNET_ACCESSIBLEAttrFailed
+        topic: BadData
+        area: A002
+
+    A002 M-InsertEXP_IS_4G_APNAttrFailed:
+        des: A002 M-InsertEXP_IS_4G_APNAttrFailed
+        topic: BadData
+        area: A002
+
+    A002 M-InsertPDPTypeAttrFailed:
+        des: A002 M-InsertPDPTypeAttrFailed
+        topic: BadData
+        area: A002
+
+    A002 M-MigratedOfferOTBModeError:
+        des: A002 M-MigratedOfferOTBModeError
+        topic: BadData
+        area: A002
+
+    A002 M-OfferVpnAttrCheck:
+        des: 002 M-OfferVpnAttrCheck
+        topic: BadData
+        area: A002
+
+    A002 M-OtbOfferNameCodeCheck:
+        des: A002 M-OtbOfferNameCodeCheck
+        topic: BadData
+        area: A002
+
+    A002 M-SmartPhoneNewOfferInsertIntoV81GroupFailed:
+        des: A002 M-SmartPhoneNewOfferInsertIntoV81GroupFailed
+        topic: BadData
+        area: A002
+
+    A002 M-SmartPhoneOldOfferRemoveFailed:
+        des: A002 M-SmartPhoneOldOfferRemoveFailed
+        topic: BadData
+        area: A002
+
+    A002 M-V81NewOfferOTBModeError:
+        des: A002 M-V81NewOfferOTBModeError
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessBoxOfferAttrDiff:
+        des: A002 NewOffer_BusinessBoxOfferAttrDiff
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessBoxOfferGroupMemberCnt1:
+        des: A002 NewOffer_BusinessBoxOfferGroupMemberCnt1
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessBoxOfferGroupMemberCnt2:
+        des: A002 NewOffer_BusinessBoxOfferGroupMemberCnt2
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessBoxOfferGroupMemberValue:
+        des: A002 NewOffer_BusinessBoxOfferGroupMemberValue
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessBoxTwoSubsPlanCheck:
+        des: A002 NewOffer_BusinessBoxTwoSubsPlanCheck
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessEssentialRecurringRatePlanError:
+        des: A002 NewOffer_BusinessEssentialRecurringRatePlanError
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessEssentialSortRecurringError:
+        des: A002 NewOffer_BusinessEssentialSortRecurringError
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessFlexNewSubsPlanCheck:
+        des: A002 NewOffer_BusinessFlexNewSubsPlanCheck
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessFlexOfferGroupMemberValue:
+        des: A002 NewOffer_BusinessFlexOfferGroupMemberValue
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessFlexSubsPlanPriority:
+        des: A002 NewOffer_BusinessFlexSubsPlanPriority
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_BusinessGFUGroupMemberError:
+        des: A002 NewOffer_BusinessGFUGroupMemberError
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_HybridOfferAttrCheck:
+        des: A002 NewOffer_HybridOfferAttrCheck
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_HybridOfferGroupMemberValue:
+        des: A002 NewOffer_HybridOfferGroupMemberValue
+        topic: BadData
+        area: A002
+
+    A002 M-OTCAcctItemCodeIsNull:
+        des: A002 M-OTCAcctItemCodeIsNull
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_M2MUsageAdviceFeeDeductInBenefitBal:
+        des: A002 NewOffer_M2MUsageAdviceFeeDeductInBenefitBal
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_SpecialNumberOfferAttrCntError:
+        des: A002 NewOffer_SpecialNumberOfferAttrCntError
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_SpecialNumberOfferGroupMemberCntError:
+        des: A002 NewOffer_SpecialNumberOfferGroupMemeberCntError
+        topic: BadData
+        area: A002
+
+    A002 NewOffer_SpecialNumberOfferGroupMemberError:
+        des: A002 NewOffer_SpecialNumberOfferGroupMemberError
+        topic: BadData
+        area: A002
+
+    A002 Quotation_RecurringDiscountPriorityLessThanRating:
+        des: A002 Quotation_RecurringDiscountPriorityLessThanRating
+        topic: BadData
+        area: A002
+
+    A002 RatePlan_Priority_Error:
+        des: 目的：1. 所有的计费的放在上面。2. 只是担心非算费的Rate_plan在上面会有什么问题
+        topic: BadData
+        area: A002
+
+    A002 ZoneId_No_Migration:
+        des: A002 ZoneId_No_Migration
+        topic: BadData
+        area: A002
+
+    AcmAcctItem_RefValue_Error:
+        des: AcmAcctItem_RefValue_Error
+        topic: BadData
+        area: comm
+
+    AcmAcctItem_RefValueId_NotExists:
+        des: AcmAcctItem_RefValueId_NotExists
+        topic: ErrorData
+        area: comm
+
+    AcctItem_No_Define:
+        des: AcctItem_No_Define
+        topic: BadData
+        area: comm
+
+    AcctItem_No_Define_ErrorData:
+        des: AcctItem_No_Define_ErrorData
+        topic: ErrorData
+        area: comm
+
+    AcmTemplet_No_Catalog:
+        des: AcmTemplet_No_Catalog
+        topic: BadData
+        area: comm
+
+    AcmValue_RefValue_Error:
+        des: AcmValue_RefValue_Error
+        topic: BadData
+        area: comm
+
+    AcmValue_RefValueId_NotExists:
+        des: AcmValue_RefValueId_NotExists
+        topic: ErrorData
+        area: comm
+
+    ADVICE_TYPE_NOT_EXIST_ACM:
+        des: ADVICE_TYPE_NOT_EXIST_ACM
+        topic: ErrorData
+        area: comm
+
+    ADVICE_TYPE_NOT_EXIST_BAL:
+        des: ADVICE_TYPE_NOT_EXIST_BAL
+        topic: ErrorData
+        area: comm
+
+    ATTRID_NOT_EXIST:
+        des: ATTRID_NOT_EXIST
+        topic: ErrorData
+        area: comm
+
+    ATTRID_NOT_EXIST_SUBS_PLAN:
+        des: ATTRID_NOT_EXIST_SUBS_PLAN
+        topic: ErrorData
+        area: comm
+
+    Benefit_HaveNo_python_configured_PositiveValue:
+        des: 查找event_benefit无python时，benefit value配置成了 正值;add by zrr
+        topic: ErrorData
+        area: comm
+    BenefitTemplet_No_Catalog:
+        des: BenefitTemplet_No_Catalog
+        topic: BadData
+        area: comm
+
+    BenefitValue_RefValueId_NotExists:
+        des: BenefitValue_RefValueId_NotExists
+        topic: ErrorData
+        area: comm
+
+    CycleOffer_re_HaveNo_SortRecurring:
+        des: 租费offer的收租事件没有关联到租费分拣,add by zrr
+        topic: ErrorData
+        area: comm
+
+    DEFAULT_OFFER_GROUP-PRICEP_PLAN_TYPE-ERROR:
+        des: DEFAULT_OFFER_GROUP-PRICEP_PLAN_TYPE-ERROR
+        topic: ErrorData
+        area: comm
+
+    discount_obj_acctitemtype_not_parent_id_and_refvaluestring:
+        des: 账务优惠引用的账目既不在资费上用到也不是父级账目
+        topic: ErrorData
+        area: comm
+        owner: 臧瑞瑞
+
+    EventBenefit_RefValue_Error:
+        des: EventBenefit_RefValue_Error
+        topic: BadData
+        area: comm
+
+    IndepProdSpec_No_Migration:
+        des: IndepProdSpec_No_Migration
+        topic: ErrorData
+        area: comm
+
+    IndepProdSpec_No_Migration_Zone:
+        des: IndepProdSpec_No_Migration_Zone
+        topic: ErrorData
+        area: comm
+
+    Mapping_Tariff_Duplicate2:
+        des: Mapping_Tariff_Duplicate2
+        topic: ErrorData
+        area: comm
+
+    OFFER_CATG_MEM_DUPLICAT:
+        des: OFFER_CATG_MEM_DUPLICAT
+        topic: ErrorData
+        area: comm
+
+    Offer_Exists_Multi_offerGroup_Under_Same_SubsPlan:
+        des: 同一个price_plan或者依赖产品 存在于同一个订户套餐的多个offer_group下,add by zrr
+        topic: BadData
+        area: comm
+    Offer_VariableCycle_HaveNo_VariableCycle_Attr:
+        des: 查找可变租期的offer，是否配置了 租期时长属性,add by zrr
+        topic: ErrorData
+        area: comm
+
+    OneACMPriceTemplet_Mapping_Muti_Re:
+        des: OneACMPriceTemplet_Mapping_Muti_Re
+        topic: ErrorData
+        area: comm
+
+    OneBenefitPriceTemplet_Mapping_Muti_Re:
+        des: OneBenefitPriceTemplet_Mapping_Muti_Re
+        topic: ErrorData
+        area: comm
+
+    OneRatePlan_Mapping_Muti_Re:
+        des: OneRatePlan_Mapping_Muti_Re
+        topic: ErrorData
+        area: comm
+
+    OneScriptTemplet_Mapping_Muti_ReType:
+        des: OneScriptTemplet_Mapping_Muti_ReType
+        topic: ErrorData
+        area: comm
+
+    OTC/Rent_exists_res_not_use_in_usage_price:
+        des: 赠送里面的账本，在资费中是否都已经使用了
+        topic: ErrorData
+        area: comm
+
+    Price_and_RatePlan_Re_NotMatch:
+        des: 检查资费模板和真正的资费的对应的事件是否一致
+        topic: BadData
+        area: comm
+
+    Price_ChargeUnit_Occurrence:
+        des: 使用批价单位是次，但是批价的值是多次，比如每60次计费多少，这个基本确定是配置问题
+        topic: ErrorData
+        area: comm
+
+    PriceAcctItem_RefValue_Error:
+        des: PriceAcctItem_RefValue_Error
+        topic: BadData
+        area: comm
+
+    PriceAcctItem_RefValueId_NotExists:
+        des: PriceAcctItem_RefValueId_NotExists
+        topic: ErrorData
+        area: comm
+
+    PriceIdIsSameInEvent_benefitAndAcm:
+        des: PriceIdIsSameInEvent_benefitAndAcm
+        topic: ErrorData
+        area: comm
+
+    PriceIdIsSameInPriceAndEvent_benefit:
+        des: PriceIdIsSameInPriceAndEvent_benefit
+        topic: ErrorData
+        area: comm
+
+    PriceIdIsSameInPriceAndAcm:
+        des: PriceIdIsSameInPriceAndAcm
+        topic: ErrorData
+        area: comm
+
+    PricePlan_No_Offer:
+        des: PricePlan_No_Offer
+        topic: BadData
+        area: comm
+
+    PricePlan_Offer_No_Price_Plan:
+        des: PricePlan_Offer_No_Price_Plan
+        topic: BadData
+        area: comm
+
+    PricePlan_Re_No_Reserve:
+        des: PricePlan_Re_No_Reserve
+        topic: BadData
+        area: comm
+
+    PriceTemplate_No_Catalog:
+        des: PriceTemplate_No_Catalog
+        topic: BadData
+        area: comm
+
+    PriceTemplate_One_Mapping_Multi_Re:
+        des: 一个模板被多个Rate_plan所引用，但是Re_id不一样
+        topic: BadData
+        area: comm
+
+    PriceValue_RefValue_Error:
+        des: PriceValue_RefValue_Error
+        topic: BadData
+        area: comm
+
+    PriceValue_RefValueId_NotExists:
+        des: PriceValue_RefValueId_NotExists
+        topic: ErrorData
+        area: comm
+
+    ProdSpec_No_Migration:
+        des: ProdSpec_No_Migration
+        topic: ErrorData
+        area: comm
+
+    PriceVer_No_Use:
+        des: PriceVer_No_Use
+        topic: BadData
+        area: comm
+
+    RatePlan_No_PriceVer:
+        des: RatePlan_No_PriceVer
+        topic: BadData
+        area: comm
+
+    RatePlan_OfferVer_Re_Err:
+        des: RatePlan_OfferVer_Re_Err
+        topic: ErrorData
+        area: comm
+
+    RatePlanTemplet_No_Catalog:
+        des: RatePlanTemplet_No_Catalog
+        topic: BadData
+        area: comm
+
+    RefValue_No_OfferVerId:
+        des: RefValue_No_OfferVerId
+        topic: BadData
+        area: comm
+
+    RECURRING_RATING_NO_RECURRING_TYPE:
+        des: RECURRING_RATING_NO_RECURRING_TYPE
+        topic: ErrorData
+        area: comm
+
+    RECURRING_PP_NO_RECURRING_RATE:
+        des: RECURRING_PP_NO_RECURRING_RATE
+        topic: ErrorData
+        area: comm
+
+    RefValue_No_PriceId:
+        des: RefValue_No_PriceId
+        topic: BadData
+        area: comm
+
+    RefValue_No_RatePlanId:
+        des: RefValue_No_RatePlanId
+        topic: BadData
+        area: comm
+
+    RefValueToOfferVer_No_OfferVerId:
+        des: RefValueToOfferVer_No_OfferVerId
+        topic: BadData
+        area: comm
+
+    RefValueToOfferVer_NoUse_RefValue:
+        des: RefValueToOfferVer_NoUse_RefValue
+        topic: BadData
+        area: comm
+
+    RefValueToOfferVer_MissSomeData:
+        des: RefValueToOfferVer_MissSomeData
+        topic: BadData
+        area: comm
+
+    RePricePlan_No_RatePlanMapping:
+        des: RePricePlan_No_RatePlanMapping
+        topic: BadData
+        area: comm
+
+    ReReserve_Policy_No_Limit:
+        des: ReReserve_Policy_No_Limit
+        topic: ErrorData
+        area: comm
+
+    ScriptTemplet_No_Catalog:
+        des: ScriptTemplet_No_Catalog
+        topic: BadData
+        area: comm
+
+    SortRule_Not_Output_Re_Have_Tariff:
+        des: 检查配置了资费，但是没有分拣的
+        topic: BadData
+        area: comm
+
+    SortRule_OutputRe_No_Reserve:
+        des: 分拣分拣出了事件，但是在预留规则中没有配置预留
+        topic: BadData
+        area: comm
+
+    SortRule_OutputRe_No_Tariff:
+        des: SortRule_OutputRe_No_Tariff
+        topic: ErrorData
+        area: comm
+
+    SUBS_PLAN_SHOULD_HAVE_DEFAULT_OFFER_GROUP:
+        des: SUBS_PLAN_SHOULD_HAVE_DEFAULT_OFFER_GROUP
+        topic: ErrorData
+        area: comm
+
+    TempletAcm_No_Use:
+        des: TempletAcm_No_Use
+        topic: BadData
+        area: comm
+
+    TempletAcmAcctItem_RefValue_Error:
+        des: TempletAcmAcctItem_RefValue_Error
+        topic: BadData
+        area: comm
+
+    TempletAcmValue_RefValue_Error:
+        des: TempletAcmValue_RefValue_Error
+        topic: BadData
+        area: comm
+
+    TempletEventBenefit_No_Use:
+        des: TempletEventBenefit_No_Use
+        topic: BadData
+        area: comm
+
+    TempletEventBenefit_RefValue_Error:
+        des: TempletEventBenefit_RefValue_Error
+        topic: BadData
+        area: comm
+
+    TempletPriceAcctItem_RefValue_Error:
+        des: TempletPriceAcctItem_RefValue_Error
+        topic: BadData
+        area: comm
+
+    TemplateRatePlan_No_RatePlanMapping:
+        des: TemplateRatePlan_No_RatePlanMapping
+        topic: ErrorData
+        area: comm
+
+    TemplateRatePlan_No_Use:
+        des: TemplateRatePlan_No_Use
+        topic: BadData
+        area: comm
+
+    TemplateRatePlan_OfferVerId_Error:
+        des: TemplateRatePlan_OfferVerId_Error
+        topic: ErrorData
+        area: comm
+
+    TempletPrice_No_Use:
+        des: TempletPrice_No_Use
+        topic: BadData
+        area: comm
+
+    TempletPriceValue_RefValue_Error:
+        des: TempletPriceValue_RefValue_Error
+        topic: BadData
+        area: comm
+
+    Usage_price_used_res_type_not_exists_in_OTC:
+        des: Usage_price_used_res_type_not_exists_in_OTC
+        topic: BadData
+        area: comm
+
+    V81_DPPGroupOfferTypeError:
+        des: V81_DPPGroupOfferTypeError
+        topic: BadData
+        area: comm
+
+    V81_OfferDefaultGroupTypeCheck:
+        des: V81_OfferDefaultGroupTypeCheck
+        topic: BadData
+        area: comm
+
+    V81_OfferDefaultGroupHadMultiDefaultFlagOffer:
+        des: V81_OfferDefaultGroupHadMultiDefaultFlagOffer
+        topic: BadData
+        area: comm
+
+    WorkFlow_Expression_No_Match_ZoneMap:
+        des: 分拣表达式中所用的zone_map没有定义
+        topic: ErrorData
+        area: comm
+        owner: 臧瑞瑞
+
+    WorkFlow_Result_No_Match_ZoneMap:
+        desc: 分拣结果中所用的zone_map没有定义
+        topic: ErrorData
+        area: comm
+        owner: 臧瑞瑞
+
+
+    Zone_same_zone_id_multiple_value:
+        des: 一个zone map下，同一个zone里存在多条相同的value值
+        topic: BadData
+        area: comm
+
+    Zone_Same zone value exists in different zone:
+        des: Zone_same_zone_id_multiple_value
+        topic: ErrorData
+        area: comm

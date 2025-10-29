@@ -1,0 +1,8 @@
+A003:
+  BalanceAndOTC:
+    dst_table:
+      - cpc.PRICE
+
+    mid_table:
+      - DC_CIC_EVENT_ATTR
+

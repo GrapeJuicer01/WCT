@@ -1,0 +1,117 @@
+create:
+    DC_PYTHON_TEMPLET_DETAIL:
+        "create table dc_python_templet_detail
+        (catalog_name        VARCHAR2(64) not null,
+         script_templet_id   NUMBER(16) not null,
+         script_templet_name VARCHAR2(512),
+         rule_script         BLOB)"
+
+    DC_PYTHON_TEMPLET_MD5:
+        "create table dc_python_templet_md5 AS
+            select cast('' as varchar2(64)) as catalog_name,
+                   cast('' as number(16)) as script_templet_id,
+                   to_blob('') as templet_tail,
+                   to_blob('') as md5_script,
+                   to_blob('') as rule_script,
+                   cast('' as varchar2(512)) as md5
+              FROM dual WHERE 1<>1"
+
+    DC_PYTHON_TEMPLET_MERGE:
+        "create table dc_python_templet_merge AS
+            select cast('' as varchar2(512)) as md5,
+                   cast('' as varchar2(64)) as CATALOG_NAME,
+                   cast('' as NUMBER(16)) as TEMPLET_COUNT,
+                   cast('' as NUMBER(16)) as SCRIPT_TEMPLET_ID,
+                    cast('' as NUMBER(16)) as SCRIPT_ID,
+                   cast('' as varchar2(512)) as REMARK
+              FROM dual WHERE 1<>1"
+
+    DC_PYTHON_TEMPLET_VAR_DETAIL:
+        "create table dc_python_templet_var_detail AS
+        select cast('' as varchar2(64)) as catalog_name,
+            cast('' as number(16)) as script_templet_id,
+           cast('' as varchar2(512)) as var_name,
+           cast('' as varchar2(2048)) as var_value,
+           cast('' as varchar2(16)) as data_type,
+           cast('' as varchar2(512)) as remark
+            from dual where 1<>1"
+
+    DC_PYTHON_SCRIPT_PARAM_DETAIL:
+        "create table dc_python_script_param_detail AS
+        select cast('' as varchar2(64)) as catalog_name,
+            cast('' as number(16)) as script_templet_id,
+            cast('' as number(16)) as script_id,
+            cast(''as VARCHAR2(512)) script_templet_name,
+            to_blob('') as script_content,
+            to_blob('') as script_param,
+            to_blob('') as templet_tail,
+            cast(''as VARCHAR2(512)) content_md5
+            from dual where 1<>1"
+    DC_PYTHON_TEMPLET_DONE:
+        "create table DC_PYTHON_TEMPLET_DONE
+        (
+          catalog_name        VARCHAR2(64),
+          script_templet_id   NUMBER(9) not null,
+          script_templet_name VARCHAR2(60),
+          templet_tail        BLOB,
+          remark              VARCHAR2(1024),
+          flag                NUMBER(2),
+          old_templet_tail    BLOB,
+          new_templet_tail    BLOB
+        )"
+
+    DC_python_templet_func_detail:
+        "create table dc_python_templet_func_detail
+            (catalog_name VARCHAR2(64) not null,
+            script_templet_id NUMBER(16) not null,
+            func_name varchar2(255),
+            remark varchar2(512))"
+
+    DC_python_templet_attr_detail:
+        "create table dc_python_templet_attr_detail
+        (catalog_name VARCHAR2(64) not null,
+        script_templet_id NUMBER(16) not null,
+        attr_id varchar2(255),
+        remark varchar2(512))"
+
+create_list:
+    DC_PYTHON_TEMPLET_DETAIL:
+        - PYTHON
+        - V20190401
+        - table
+
+    DC_PYTHON_TEMPLET_MD5:
+        - PYTHON
+        - V20190401
+        - table
+
+    DC_PYTHON_TEMPLET_MERGE:
+        - PYTHON
+        - V20190401
+        - table
+
+    DC_PYTHON_TEMPLET_VAR_DETAIL:
+        - PYTHON
+        - V20190401
+        - table
+
+    DC_PYTHON_SCRIPT_PARAM_DETAIL:
+        - PYTHON
+        - V20190401
+        - table
+
+    DC_PYTHON_TEMPLET_DONE:
+        - PYTHON
+        - V20190401
+        - table
+
+    DC_python_templet_func_detail:
+        - PYTHON
+        - V20210126
+        - table
+
+    DC_python_templet_attr_detail:
+        - PTYON
+        - V20210126
+        - table
+

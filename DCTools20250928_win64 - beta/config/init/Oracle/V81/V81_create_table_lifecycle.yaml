@@ -1,0 +1,125 @@
+create:
+  DC_CONFIG_LIFECYCLE_DIAGRAM:
+    - |
+      create table DC_CONFIG_LIFECYCLE_DIAGRAM
+      (
+        lifecycle_name      VARCHAR2(64),
+        src_prod_state      CHAR(1),
+        obj_prod_state      CHAR(1),
+        subs_event_name     VARCHAR2(50),
+        timer               VARCHAR2(6),
+        service_name        VARCHAR2(50)
+      )
+    - comment on table DC_CONFIG_LIFECYCLE_DIAGRAM is 'Lifecycle Product Event Diagram'
+    - comment on column DC_CONFIG_LIFECYCLE_DIAGRAM.lifecycle_name is 'Lifecycle Name:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_DIAGRAM.src_prod_state is 'Source State:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_DIAGRAM.obj_prod_state is 'Object State:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_DIAGRAM.subs_event_name is 'Subscription Event:Requried;Data from subs_event'
+    - comment on column DC_CONFIG_LIFECYCLE_DIAGRAM.timer is 'Timer:Day;Number only'
+    - comment on column DC_CONFIG_LIFECYCLE_DIAGRAM.service_name is 'Service:Data from service_bc where rule_type=7'
+
+  DC_CONFIG_LIFECYCLE_PROCESS:
+    - |
+      create table DC_CONFIG_LIFECYCLE_PROCESS
+      (
+        lifecycle_name      VARCHAR2(64),
+        src_prod_state      CHAR(1),
+        obj_prod_state      CHAR(1),
+        subs_event_name     VARCHAR2(50),
+        business_component_name   VARCHAR2(60),
+        priority            VARCHAR2(10),
+        component_param     VARCHAR2(4000)
+      )
+    - comment on table DC_CONFIG_LIFECYCLE_PROCESS is 'Lifecycle Product Event Diagram Process'
+    - comment on column DC_CONFIG_LIFECYCLE_PROCESS.lifecycle_name is 'Lifecycle Name:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_PROCESS.src_prod_state is 'Source State:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_PROCESS.obj_prod_state is 'Object State:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_PROCESS.subs_event_name is 'Subscription Event:Requried;Data from subs_event'
+    - comment on column DC_CONFIG_LIFECYCLE_PROCESS.business_component_name is 'Operation Module:Requried;Data from service_bc where service_rule_type =6'
+    - comment on column DC_CONFIG_LIFECYCLE_PROCESS.priority is 'Prioriy:Number only;'
+    - comment on column DC_CONFIG_LIFECYCLE_PROCESS.component_param is 'Input Param:Format "KEY=VALUE|KEY=VALUE|KEY=VALUE"'
+
+  DC_CONFIG_LIFECYCLE_ADVICE:
+    - |
+      create table DC_CONFIG_LIFECYCLE_ADVICE
+      (
+        lifecycle_name      VARCHAR2(64),
+        src_prod_state      CHAR(1),
+        obj_prod_state      CHAR(1),
+        subs_event_name     VARCHAR2(50),
+        advice_name         VARCHAR2(60)
+      )
+    - comment on table DC_CONFIG_LIFECYCLE_ADVICE is 'Lifecycle Product Event Diagram Notify'
+    - comment on column DC_CONFIG_LIFECYCLE_ADVICE.lifecycle_name is 'Lifecycle Name:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_ADVICE.src_prod_state is 'Source State:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_ADVICE.obj_prod_state is 'Object State:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_ADVICE.subs_event_name is 'Subscription Event:Requried;Data from subs_event'
+    - comment on column DC_CONFIG_LIFECYCLE_ADVICE.advice_name is 'Advice Type:Requried;Data from advice_type where advice_catg = 4'
+
+  DC_CONFIG_LIFECYCLE_OFFER_REL:
+    - |
+      create table DC_CONFIG_LIFECYCLE_OFFER_REL
+      (
+        lifecycle_name      VARCHAR2(64),
+        offer_name          VARCHAR2(250)
+      )
+    - comment on table DC_CONFIG_LIFECYCLE_OFFER_REL is 'Lifecycle And Offer Relation'
+    - comment on column DC_CONFIG_LIFECYCLE_OFFER_REL.lifecycle_name is 'Lifecycle Name:Reuqired'
+    - comment on column DC_CONFIG_LIFECYCLE_OFFER_REL.offer_name is 'Offer Name:Reuqired;Data from cc.offer where offer_type=7'
+
+create_list:
+  DC_CONFIG_LIFECYCLE_DIAGRAM:
+    - LIFECYCLE
+    - V20190805
+    - table
+    - VALUE_LIST:
+        SRC_PROD_STATE:
+          TYPE: list
+          SOURCE: G,H,A,D,E,B
+        OBJ_PROD_STATE:
+          TYPE: list
+          SOURCE : G,H,A,D,E,B
+        SUBS_EVENT_NAME:
+          TYPE: sql
+          SOURCE: select '['||SUBS_EVENT_ID||']'||EVENT_NAME from CC.SUBS_EVENT  order by SUBS_EVENT_ID
+        SERVICE_NAME:
+          TYPE: sql
+          SOURCE: select bc_name from cc.service_bc where service_rule_type=7 order by bc_name
+
+  DC_CONFIG_LIFECYCLE_PROCESS:
+    - LIFECYCLE
+    - V20190805
+    - table
+    - VALUE_LIST:
+        SRC_PROD_STATE:
+          TYPE: list
+          SOURCE: G,H,A,D,E,B
+        OBJ_PROD_STATE:
+          TYPE: list
+          SOURCE: G,H,A,D,E,B
+        SUBS_EVENT_NAME:
+          TYPE: sql
+          SOURCE: select '['||SUBS_EVENT_ID||']'||EVENT_NAME from CC.SUBS_EVENT  order by SUBS_EVENT_ID
+        BUSINESS_COMPONENT_NAME:
+          TYPE: sql
+          SOURCE: select bc_name from cc.service_bc where service_rule_type=6 order by bc_name
+
+  DC_CONFIG_LIFECYCLE_ADVICE:
+    - LIFECYCLE
+    - V20190805
+    - table
+    - VALUE_LIST:
+        SRC_PROD_STATE:
+          TYPE: list
+          SOURCE: G,H,A,D,E,B
+        OBJ_PROD_STATE:
+          TYPE: list
+          SOURCE : G,H,A,D,E,B
+        SUBS_EVENT_NAME:
+          TYPE: sql
+          SOURCE: select '['||SUBS_EVENT_ID||']'||EVENT_NAME from CC.SUBS_EVENT  order by SUBS_EVENT_ID
+
+  DC_CONFIG_LIFECYCLE_OFFER_REL:
+    - LIFECYCLE
+    - V20190805
+    - table

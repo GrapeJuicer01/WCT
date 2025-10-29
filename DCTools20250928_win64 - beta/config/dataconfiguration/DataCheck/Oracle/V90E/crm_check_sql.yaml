@@ -1,0 +1,10 @@
+UserList:
+  crm
+
+BadData:
+  Offer and channel rela ITR and UCC follow CRM:
+    area: A016
+    sql:
+      "SELECT T.OFFER_ID,COUNT(1) FROM OFFER_APPLY_CHANNEL T WHERE T.CONTACT_CHANNEL_ID IN('1','56','57')
+                      AND T.OFFER_ID>100000 GROUP BY T.OFFER_ID HAVING COUNT(1)<3"
+

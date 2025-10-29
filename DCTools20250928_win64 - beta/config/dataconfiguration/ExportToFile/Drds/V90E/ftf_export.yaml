@@ -1,0 +1,93 @@
+UserList:
+  ftf
+
+FTFTopic:
+  01. UserList:
+    "select
+      a.org_code ,
+      b.staff_id,
+      b.staff_name,
+      b.email,
+      b.phone,
+      b.staff_code,
+      c.user_name,
+      c.user_Code
+    from
+      bfm_org a,
+      bfm_staff b,
+      bfm_user c,
+      bfm_staff_org d
+    where
+      a.org_id=d.org_id
+      and b.staff_id=d.staff_id
+      and c.user_id=d.staff_id
+      and a.org_id !=1
+      and c.user_id>3000 "
+  02. orglist:
+    "select
+      org_id,org_code
+    from
+      bfm_org where org_id >1000"
+
+
+Guogeng:
+  001.ORG_STAFF:
+    "select a.org_id, a.org_name, a.org_code, c.staff_name, c.email, c.phone
+     from bfm_org a, bfm_staff_org b, bfm_staff c
+     where a.org_id = b.org_id
+     and b.staff_id = c.staff_id
+     and a.org_id>1000
+     order by org_id"
+
+  002.ORG_JOB:
+    "select a.org_id, a.org_name, a.org_code, c.job_name
+     from bfm_org a, BFM_ORG_JOB b, bfm_job c
+     where a.org_id = b.org_id
+     and b.job_id = c.job_id
+     order by org_id"
+
+  01.BFM_ORG:
+    "select * from BFM_ORG"
+  02.BFM_STAFF:
+    "select * from BFM_STAFF"
+  03.BFM_USER:
+    "select * from BFM_USER"
+  04.BFM_USER_SP:
+    "select * from BFM_USER_SP"
+  05.BFM_ROLE:
+    "select * from BFM_ROLE"
+  06.BFM_JOB:
+    "select * from BFM_JOB"
+  07.BFM_STAFF_JOB:
+    "select * from BFM_STAFF_JOB"
+  08.BFM_STAFF_ORG:
+    "select * from BFM_STAFF_ORG"
+  09.BFM_ORG_JOB:
+    "select * from BFM_ORG_JOB"
+  10.BFM_JOB_ROLE:
+    "select * from BFM_JOB_ROLE"
+  11.BFM_USER_ROLE:
+    "select * from BFM_USER_ROLE"
+  12.BFM_PRIV:
+    "select * from BFM_PRIV"
+  13.BFM_PORTAL_MENU:
+    "select * from BFM_PORTAL_MENU"
+  14.BFM_USER_PORTAL:
+    "select * from BFM_USER_PORTAL"
+  15.BFM_ROLE_DATA_PRIV:
+    "select * from BFM_ROLE_DATA_PRIV"
+  16.BFM_PORTLETS:
+    "select * from BFM_PORTLETS"
+  17.BFM_COMPPNENT_PRIV:
+    "select * from bfm_component_priv"
+  18.BFM_USER_DATA_PRIV:
+    "select * from BFM_USER_DATA_PRIV"
+  21.BFM_ORG_TYPE:
+    "select * from BFM_ORG_TYPE"
+  22.BFM_LAYOUT_DEF:
+    "select * from BFM_LAYOUT_DEF"
+  23.BFM_USER_LAYOUT:
+    "select * from BFM_USER_LAYOUT"
+  24.BFM_ORGTYPE_JOB:
+    "select * from BFM_ORGTYPE_JOB"
+

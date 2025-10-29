@@ -1,0 +1,12 @@
+ZoneMap:
+  dst_table:
+    - cpc.zone
+    - cpc.zone_map
+    - cpc.zone_value
+
+  mid_table:
+    - dc_config_zone_map
+
+  insert_zone_map_zone_value:
+    - |
+      exec:DC_INSERT_ZONE_MAP

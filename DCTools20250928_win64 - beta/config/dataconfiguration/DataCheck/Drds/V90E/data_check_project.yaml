@@ -1,0 +1,80 @@
+A002:
+  Topic001:
+    UserList:
+      ar
+    BadData:
+
+    ErrorData:
+
+
+A003:
+  Topic001:
+    UserList:
+      ab
+    BadData:
+
+A008:
+  Topic001:
+    UserList:
+      cpc
+    ErrorData:
+      UM_Event exists in sort rule but not in price:
+        #分拣输出事件，但是资费里面没有配置这个事件
+        "SELECT
+             a1.SORT_RULE_NAME, c.re_id, c.re_name
+         FROM
+             bwf_step a1,
+             bwf_action a,
+             re_attr b,
+             re c,
+             def_re_attr d,
+             reserve_re_attr e,
+             re_usage f
+         WHERE
+             a1.STEP_ID = a.STEP_ID
+                 AND (a1.EXP_DATE IS NULL
+                 OR a1.EXP_DATE > NOW())
+                 AND a.src_re_attr = b.re_attr
+                 AND a.param1 = c.re_id
+                 AND b.re_attr = d.re_attr
+                 AND d.def_re_attr = e.re_attr
+                 AND e.re_attr = 21
+                 AND c.re_id NOT IN (SELECT
+                     re_id
+                 FROM
+                     re_price_set)
+         		 and (c.re_id=f.re_id or c.re_id = f.parent_re_id)
+                 and f.parent_re_id not in (SELECT
+                     re_id
+                 FROM
+                     re_price_set)"
+
+      UM_Event exists in sort rule not re Code:
+        "SELECT
+                c.re_id, c.re_name,c.re_code
+            FROM
+                bwf_step a1,
+                bwf_action a,
+                re_attr b,
+                re c,
+                def_re_attr d,
+                reserve_re_attr e,
+                re_usage f
+            WHERE
+                a1.STEP_ID = a.STEP_ID
+                    AND (a1.EXP_DATE IS NULL
+                    OR a1.EXP_DATE > NOW())
+                    AND a.src_re_attr = b.re_attr
+                    AND a.param1 = c.re_id
+                    AND b.re_attr = d.re_attr
+                    AND d.def_re_attr = e.re_attr
+                    AND e.re_attr = 21
+                    and c.re_code is null
+                    AND c.re_id NOT IN (SELECT
+                        re_id
+                    FROM
+                        re_price_set)"
+
+
+
+

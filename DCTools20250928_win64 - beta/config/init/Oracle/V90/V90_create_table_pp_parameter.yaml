@@ -1,0 +1,135 @@
+create:
+    DC_CONFIG_PP_TABLE_PARAMETER:
+        - |
+            CREATE TABLE DC_CONFIG_PP_TABLE_PARAMETER
+              (
+                  M_PARAM_NAME VARCHAR2(120) not null,
+                  M_PARAM_CODE VARCHAR2(30) not null,
+                  M_PARAM_TYPE VARCHAR2(4) not null,
+                  M_ZONE_MAP_NAME varchar2(200) not null,
+                  M_COL_NAME VARCHAR2(100) not null
+               )
+        - comment on table DC_CONFIG_PP_TABLE_PARAMETER is  'TABLE PARAMETER'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER.M_PARAM_NAME is 'the name of parameter,can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER.M_PARAM_CODE is 'the parameter code,can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER.M_PARAM_TYPE is 'the parameter type,1:simple parameter,2:table parameter.can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER.M_ZONE_MAP_NAME is  'the zone map name parameter reference,can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER.M_COL_NAME is  'the column of table parameter'
+
+    DC_CONFIG_PP_TABLE_PARAMETER_TARIFF:
+        - |
+            CREATE TABLE DC_CONFIG_PP_TABLE_PARAMETER_TARIFF
+              (
+                  M_PARAM_NAME VARCHAR2(120) not null,
+                  M_ZONE_MAP_NAME varchar2(200) not null,
+                  M_ZONE_NAME VARCHAR2(200) not null,
+                  M_COL_NAME VARCHAR2(200) not null,
+                  M_TARIFF VARCHAR2(20)
+               )
+        - comment on table DC_CONFIG_PP_TABLE_PARAMETER_TARIFF is  'TABLE PARAMETER TARIFF'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER_TARIFF.M_PARAM_NAME is 'the table parameter name,can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER_TARIFF.M_ZONE_MAP_NAME is 'the zone map name ,can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER_TARIFF.M_ZONE_NAME is 'the zone name of the zone map ,can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER_TARIFF.M_COL_NAME is  'the column name,can not be null'
+        - comment on column DC_CONFIG_PP_TABLE_PARAMETER_TARIFF.M_TARIFF is  'the tariff of this zone name,can be null'
+
+    DC_PROC_PARAM_TABLE:
+        - |
+          CREATE OR REPLACE PROCEDURE DC_PROC_PARAM_TABLE IS
+          v_param_name varchar2(120);
+          v_flag number(10);
+          v_param_id number(10);
+          v_param_type varchar2(10);
+          v_param_code varchar2(30);
+          v_zone_map_name varchar2(200);
+          v_zone_map_id number(10);
+          v_col_id number(10);
+          v_col_name varchar2(120);
+          v_seq number(10);
+          v_curr_type_id number(10);
+          v_zone_name varchar2(200);
+          v_tariff varchar2(20);
+          v_zone_id number(10);
+          v_cell_id number(10);
+          state_date date;
+
+          begin
+          state_date :=to_date('1990-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss');
+
+          for  cur_param in ( select distinct m_param_name,m_param_type,m_param_code,m_zone_map_name from DC_CONFIG_PP_TABLE_PARAMETER ) loop
+            select cur_param.m_param_name ,cur_param.m_param_type,cur_param.m_param_code into v_param_name,v_param_type,v_param_code from dual;
+            select count(1) into v_flag from param_define where param_name=v_param_name and state='A';
+            if v_flag=0 then
+              select param_id_seq.nextval into v_param_id from dual;
+              insert into param_define values (v_param_id,v_param_name,v_param_type,v_param_code,null,'A',state_date,'G',null,null);
+            else
+              select param_id into v_param_id from param_define where param_name=v_param_name;
+            end if;
+            select cur_param.m_zone_map_name into v_zone_map_name from dual;
+            select zone_map_id into v_zone_map_id from zone_map where zone_map_name=v_zone_map_name;
+            select count(1) into v_flag from table_param where param_id=v_param_id and state='A';
+            if v_flag=0 then
+              insert into table_param values(v_param_id,'1',v_zone_map_id,state_date,null,'A',state_date);
+            end if;
+            select count(1) into v_flag from table_param_column where param_id=v_param_id and zone_flag='Y' and state='A';
+            if v_flag=0 then
+              select  col_id_seq.nextval into v_col_id from dual;
+              insert into table_param_column values (v_col_id,v_zone_map_name,1,v_param_id,1,null,12,null,'A',state_date,'Y',null,null,null,null);
+            else
+              select col_id into v_col_id from table_param_column where param_id=v_param_id and zone_flag='Y' and state='A';
+            end if;
+            for cur_zone in (select zone_id,zone_name from zone where zone_map_id=v_zone_map_id) loop
+              select cur_zone.zone_id,cur_zone.zone_name into v_zone_id,v_zone_name from dual;
+              select count(1) into v_flag from table_param_cell where col_id=v_col_id and zone_id=v_zone_id and state='A';
+              if v_flag=0 then
+                select  cell_id_seq.nextval into v_cell_id from dual;
+                insert into table_param_cell values (v_cell_id,v_col_id,v_zone_id,v_zone_name,'A',state_date,null);
+              end if;
+            end loop;
+
+            for cur_col in (select distinct m_col_name from DC_CONFIG_PP_TABLE_PARAMETER where m_param_name=v_param_name) loop
+              select cur_col.m_col_name into v_col_name from dual;
+              select count(1) into v_flag from table_param_column where param_id=v_param_id and col_name=v_col_name and zone_flag='N' and state='A';
+              if v_flag=0 then
+                select  col_id_seq.nextval into v_col_id from dual;
+                select COALESCE(max(seq) + 1, 1) into v_seq from table_param_column where param_id=v_param_id and state='A';
+                select CURRENCY_TYPE_ID into v_curr_type_id  from cbec_acct_res where acct_res_id=1;
+                insert into table_param_column values (v_col_id,v_col_name,v_seq,v_param_id,1,v_curr_type_id,1,null,'A',state_date,'N',null,null,null,null);
+              else
+                select col_id into v_col_id from table_param_column where param_id=v_param_id and col_name=v_col_name and zone_flag='N' and state='A';
+              end if;
+              for cur_cell in (select zone_id,zone_name from zone where zone_map_id=v_zone_map_id) loop
+                select cur_cell.zone_id,cur_cell.zone_name into v_zone_id,v_zone_name from dual;
+                select count(1) into v_flag from table_param_cell where col_id=v_col_id and zone_id=v_zone_id and state='A';
+                if v_flag=0 then
+                  select  cell_id_seq.nextval into v_cell_id from dual;
+                  insert into table_param_cell values (v_cell_id,v_col_id,v_zone_id,null,'A',state_date,null);
+                else
+                  select cell_id into v_cell_id from table_param_cell where col_id=v_col_id and zone_id=v_zone_id and state='A';
+                end if;
+                select m_tariff into v_tariff from DC_CONFIG_PP_TABLE_PARAMETER_TARIFF where m_param_name=v_param_name and m_zone_map_name=v_zone_map_name and m_zone_name=v_zone_name and m_col_name=v_col_name;
+                update table_param_cell set cell_value=v_tariff where cell_id=v_cell_id;
+              end loop;
+            end loop;
+          end loop;
+          end;
+
+create_list:
+    DC_CONFIG_PP_TABLE_PARAMETER:
+        - PP_PARAM_TABLE
+        - V20191010
+        - TABLE
+        - VALUE_LIST:
+            M_PARAM_TYPE:
+              TYPE: list
+              SOURCE: 2
+
+    DC_CONFIG_PP_TABLE_PARAMETER_TARIFF:
+        - PP_PARAM_TABLE
+        - V20191010
+        - TABLE
+
+    DC_PROC_PARAM_TABLE:
+        - PP_PARAM_TABLE
+        - V20191010
+        - procedure

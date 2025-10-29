@@ -1,0 +1,233 @@
+UserList:
+  cc
+
+BadData:
+    AcctItem_No_Define:
+      des: AcctItem_No_Define
+      sql:
+          "select * from ref_value a
+                        where a.ref_value_type = '8'
+                          and not exists (select 1
+                                 from acct_item_type b
+                                where a.value_string = b.acct_item_type_id)"
+      area: comm
+
+    V81_DPPGroupOfferTypeError:
+      des: DPP OFFER GROUP TYPE ERROR
+      sql:
+          "SELECT * FROM offer a
+           where exists (select 1 from offer_group_mem b,offer_group c
+                         where a.offer_id=b.offer_id
+                         and b.offer_group_id=c.offer_group_id
+                         and c.offer_group_type=6
+                         and c.group_type='B')
+           and exists (select 1 from subs_price_plan d
+                       where a.offer_id=d.price_plan_id
+                       and d.price_plan_type<>'2')"
+      area: comm
+
+    PricePlan_Offer_No_Price_Plan:
+      des: PricePlan_Offer_No_Price_Plan
+      sql:
+        "select * from offer a where not exists (select 1 from price_plan b where b.price_plan_id = a.offer_id) and a.offer_type = 4"
+      area: comm
+
+    PriceVer_No_Use:
+      des: PriceVer_No_Use
+      sql:
+        "select *
+              from price_ver a
+             where not exists (select * from price b where a.price_ver_id = b.price_ver_id)
+               and not exists (select * from event_benefit b where a.price_ver_id = b.price_ver_id)
+               and not exists (select * from acm b where a.price_ver_id = b.price_ver_id)
+               and (a.exp_date is null or a.exp_date > sysdate)"
+      area: comm
+
+    Zone_same_zone_id_multiple_value:
+      des: Zone_same_zone_id_multiple_value
+      sql:
+        # 一个value 在同一个zone_item中出现，数据冗余，无功能错误:
+        "select a.zone_map_name , b.zone_name, c.value
+                from zone_map a, zone b, zone_value c
+                where a.zone_map_id=b.zone_map_id
+                and b.zone_id=c.zone_id
+                and c.zone_id  in (select zone_id from (select zone_id,value,count(1) from zone_value d group by zone_id,value having count(1)>1))
+                and c.value in (select value from (select zone_id,value,count(1) from zone_value d group by zone_id,value having count(1)>1))
+                order by c.value"
+      area: comm
+
+    V81_OfferDefaultGroupTypeCheck:
+      sql:
+          "SELECT * FROM offer_group b
+           where b.offer_group_type=6
+           and b.group_type<>'B'"
+
+    V81_OfferDefaultGroupHadMultiDefaultFlagOffer:
+      sql:
+          "SELECT a.offer_group_id,count(1)
+           FROM offer_group_mem a
+           where exists (select 1 from offer_group b
+                         where a.offer_group_id=b.offer_group_id
+                         and b.offer_group_type=6
+                         and b.group_type='B')
+           and a.default_flag='Y'
+           group by a.offer_group_id
+           having count(1)>1"
+ErrorData:
+  AcctItem_No_Define:
+    des: AcctItem_No_Define
+    sql:
+      "select *
+             from offer a, offer_ver b,rate_plan c,price_ver d, price e, ref_value f
+             where a.offer_type=4
+             and a.offer_id=b.offer_id
+             and b.offer_ver_id=c.offer_ver_id
+             and c.rate_plan_id=d.rate_plan_id
+             and d.price_ver_id=e.price_ver_id
+             and e.PRICE_ID = f.ref_value_id
+             and f.ref_value_type ='8'
+             and not exists (select 1 from acct_item_type g where f.value_string = g.acct_item_type_id)"
+    area: comm
+
+  OFFER_CATG_MEM_DUPLICAT:
+    des: OFFER_CATG_MEM_DUPLICAT
+    sql:
+      "select a.child_offer_catg_id
+            from offer_catg_mem a
+           where a.child_offer_catg_id is not null
+            group by a.child_offer_catg_id having count(1)>1"
+    area: comm
+
+  ATTRID_NOT_EXIST:
+    des: attr not define
+    sql:
+      "select * from offer_attr a where not exists (select 1 from attr b where a.attr_id = b.attr_id)"
+    area: comm
+
+  ADVICE_TYPE_NOT_EXIST_BAL:
+    des: the advice of bal_advice not exist.
+    sql:
+      "select * from bal_advice a where not exists (select 1 from advice_type b where a.advice_type = b.advice_type)"
+    area: comm
+
+  ADVICE_TYPE_NOT_EXIST_ACM:
+    des: the advice of acm_advice not exist.
+    sql:
+        "select * from acm_advice a where not exists (select 1 from advice_type b where a.advice_type = b.advice_type)"
+    area: comm
+
+  EVENT_BENEFIT_FRONT_PRINT:
+    des: print format is error in event_benefit front
+    sql:
+      "SELECT * FROM EVENT_BENEFIT a where regexp_like(a.RULE_SCRIPT, ' +print ')
+       and exists(select 1 from price_ver b, rate_plan c, re d
+           where a.PRICE_VER_ID = b.PRICE_VER_ID
+             and b.RATE_PLAN_ID = c.RATE_PLAN_ID
+             and c.RE_ID = d.RE_ID and d.RE_TYPE IN ('3','4','5','6','7','8','C'))"
+    area: comm
+
+  OP_PRINT:
+    des: print format is error in op table
+    sql:
+      "SELECT * FROM OP a where regexp_like(RULE_SCRIPT, ' +print ')"
+    area: comm
+
+  ACM_RULE_PRINT:
+    des: print format is error in ACM_RULE table
+    sql:
+      "SELECT * FROM ACM_RULE a where regexp_like(RULE_SCRIPT, ' +print ')"
+    area: comm
+
+  EVENT_BENEFIT_BACK_PRINT:
+    des: print format is error in event_benefit back
+    sql:
+      "SELECT * FROM EVENT_BENEFIT a where regexp_like(RULE_SCRIPT, ' +print *[^(\n]+,[^)\n]+') or regexp_like(RULE_SCRIPT, ' +print *(.*,){2,}') or regexp_like(RULE_SCRIPT, ' +print +\".*\"')
+             and exists(select 1 from price_ver b, rate_plan c, re d
+                 where a.PRICE_VER_ID = b.PRICE_VER_ID
+                   and b.RATE_PLAN_ID = c.RATE_PLAN_ID
+                   and c.RE_ID = d.RE_ID and d.RE_TYPE IN ('B', 'D', '9', '1', '2'))"
+    area: comm
+
+  RP_PRINT:
+    des: print format is error in rp table
+    sql:
+      "SELECT * FROM RP where regexp_like(RULE_SCRIPT, ' +print *[^(\n]+,[^)\n]+') or regexp_like(RULE_SCRIPT, ' +print *(.*,){2,}') or regexp_like(RULE_SCRIPT, ' +print +\".*\"')"
+    area: comm
+
+  UP_RULE_PRINT:
+    des: print format is error in UP_RULE table
+    sql:
+      "SELECT * FROM UP_RULE where regexp_like(RULE_SCRIPT, ' +print *[^(\n]+,[^)\n]+') or regexp_like(RULE_SCRIPT, ' +print *(.*,){2,}') or regexp_like(RULE_SCRIPT, ' +print +\".*\"')"
+    area: comm
+
+  RE_PRICE_PLAN_PRINT:
+    des: print format is error in RE_PRICE_PLAN table
+    sql:
+      "SELECT * FROM RE_PRICE_PLAN where regexp_like(RULE_SCRIPT, ' +print *[^(\n]+,[^)\n]+') or regexp_like(RULE_SCRIPT, ' +print *(.*,){2,}') or regexp_like(RULE_SCRIPT, ' +print +\".*\"')"
+    area: comm
+
+  OSK_916_EVENT_BENEFIT:
+    des: 916 python issue
+    sql: SELECT * FROM EVENT_BENEFIT WHERE REGEXP_LIKE(RULE_SCRIPT, ' *= *r\.event\.GetAttr\(916\)\.AsString\(\)')
+    area: A023
+
+  OSK_915_EVENT_BENEFIT:
+    des: 915 python issue
+    sql:
+      SELECT * FROM EVENT_BENEFIT where regexp_like(RULE_SCRIPT, '915 *, *"EXP_D2B_DATE:"')
+    area: A023
+
+  DIFFDAYS_FRONT:
+    des: diffdays/diffmonths/addday format issue in front
+    sql:
+      SELECT * FROM EVENT_BENEFIT a where regexp_like(RULE_SCRIPT, '= *(diff(day|month)s|AddDay) *\(')
+                                            and exists(select 1 from price_ver b, rate_plan c, re d
+                                                       where a.PRICE_VER_ID = b.PRICE_VER_ID
+                                                         and b.RATE_PLAN_ID = c.RATE_PLAN_ID
+                                                         and c.RE_ID = d.RE_ID and d.RE_TYPE IN ('3','4','5','6','7','8','C'))
+    area: comm
+
+  GetProdAttrByAttrCode:
+    des: GetProdAttrByAttrCode -> GetProdAttrValueByAttrCode
+    sql: SELECT * FROM ACM_RULE where regexp_like(RULE_SCRIPT, 'r\.event\.GetProdAttrByAttrCode\(')
+    area: comm
+
+  UP_RULE_multi-rateplan:
+    des: multi-rateplan in up_rule
+    sql: SELECT * FROM UP_RULE where regexp_like(RULE_SCRIPT, 'GetAttrEx\(45(1|2|3|4)\)')
+    area: comm
+
+  BWF_ACTION_ADVICE:
+    des: the parameter of RecurrSendAdvice not is advcie_type_id
+    sql: SELECT * FROM BWF_ACTION where FUNCTION = 'RecurrSendAdvice' and NOT EXISTS(SELECT 1 FROM ADVICE_TYPE WHERE PARAM1 = ADVICE_TYPE)
+    area: A023
+
+WarningData:
+  ACM_RULE_ACM:
+    des: need using 992 attribute accumumata value.
+    sql: SELECT * FROM ACM_RULE where regexp_like(RULE_SCRIPT, ' +r\.SetResult\(res\)') and regexp_instr(RULE_SCRIPT, 'r\.event\.SetAttrList\(992,res\)') = 0
+    area: comm
+
+  BENEFIT_EXPIRY_ACCT:
+    des: benefit expiry account.
+    sql: SELECT * FROM EVENT_BENEFIT a, SUB_BAL_TYPE b where a.SUB_BAL_TYPE_ID = b.SUB_BAL_TYPE_ID and b.ACCT_RES_ID = 33
+                                                                        and regexp_instr(RULE_SCRIPT, 'r\.event\.SetAttrList *\( *1140') = 0
+    area: A023
+
+  OFFER_ATTR_VALUE_CHECK:
+    des: the value of offer_attr not exists
+    sql: SELECT *
+        FROM OFFER_ATTR A, ATTR B, BASE_ATTR C
+        WHERE A.DEFAULT_VALUE NOT IN (
+            SELECT B.VALUE FROM ATTR_VALUE B WHERE B.BASE_ATTR_ID = A.ATTR_ID
+            ) AND A.DEFAULT_VALUE IS NOT NULL
+                  AND A.ATTR_ID = B.ATTR_ID
+        AND B.ATTR_ID = C.BASE_ATTR_ID
+        AND C.INPUT_TYPE = 1
+    area: comm
+
+  RE_ATTR_CHECK:
+    des: the re_attr value not exsits in reserve_re_attr table
+    sql: SELECT * FROM RE_ATTR a where not exists(select 1 from DEF_RE_ATTR b, RESERVE_RE_ATTR c where a.RE_ATTR = b.RE_ATTR and b.DEF_RE_ATTR = c.RE_ATTR)
+    area: comm
+

@@ -1,0 +1,47 @@
+create:
+  DC_CONFIG_OFFER_GRP_BASIC_INFO:
+    - |
+      create table DC_CONFIG_OFFER_GRP_BASIC_INFO
+      (
+        OFFER_GRP_NAME    VARCHAR2(50),
+        OFFER_GRP_DESC    VARCHAR2(2000),
+        GRP_TYPE          VARCHAR2(250),
+        GRP_REL_TYPE      VARCHAR2(250),
+        APPLY_REGION_NAME VARCHAR2(250),
+        CATALOG_ITEM_NAME VARCHAR2(50)
+      )
+    - comment on table DC_CONFIG_OFFER_GRP_BASIC_INFO is 'Offer Group Basic Infomation'
+    - comment on column DC_CONFIG_OFFER_GRP_BASIC_INFO.offer_grp_name is 'Offer Group Name:Requried'
+    - comment on column DC_CONFIG_OFFER_GRP_BASIC_INFO.grp_type is 'Group Type:Requried;"Customized Offer Group","Direct Associated Catalog"'
+    - comment on column DC_CONFIG_OFFER_GRP_BASIC_INFO.grp_rel_type is 'Inter Group Relationship Type:Requried;CPC.ATTR_VALUE.ATTR_VALUE_NAME WHERE ATTR_ID=800052258'
+    - comment on column DC_CONFIG_OFFER_GRP_BASIC_INFO.apply_region_name is 'Applicable Area:Data from ftf.common_region.region_name'
+    - comment on column DC_CONFIG_OFFER_GRP_BASIC_INFO.catalog_item_name is 'Catalog Node:Required for "Direct Associated Catalog";CPC.CATALOG_ITEM.CATALOG_ITEM_NAME'
+
+  DC_CONFIG_OFFER_GRP_MEMBER:
+    - |
+      create table DC_CONFIG_OFFER_GRP_MEMBER
+      (
+        OFFER_GRP_NAME VARCHAR2(50),
+        OFFER_NAME     VARCHAR2(2000)
+      )
+    - comment on table DC_CONFIG_OFFER_GRP_MEMBER is 'Offer Group Member for "Customized Offer Group"'
+    - comment on column DC_CONFIG_OFFER_GRP_MEMBER.OFFER_GRP_NAME is 'Offer Group Name:Requried'
+    - comment on column DC_CONFIG_OFFER_GRP_MEMBER.OFFER_NAME is 'Offer Name:Requried'
+
+create_list:
+  DC_CONFIG_OFFER_GRP_BASIC_INFO:
+    - CPC
+    - V20190524
+    - table
+    - VALUE_LIST:
+        GRP_TYPE:
+          TYPE: sql
+          SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052259 AND STATUS_CD = '1000'
+        GRP_REL_TYPE:
+          TYPE: sql
+          SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052258 AND STATUS_CD = '1000'
+
+  DC_CONFIG_OFFER_GRP_MEMBER:
+    - CPC
+    - V20190524
+    - table

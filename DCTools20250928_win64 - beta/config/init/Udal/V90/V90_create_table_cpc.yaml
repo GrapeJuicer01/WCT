@@ -1,0 +1,498 @@
+create:
+    DC_CONFIG_ATTRIBUTE_DETAIL:
+        - |
+            create table DC_CONFIG_ATTRIBUTE_DETAIL
+            (
+            	ATTR_NAME VARCHAR(250) comment 'Attribute Name',
+            	ATTR_ID DECIMAL(16) comment 'Attribute Id',
+            	DEFAULT_VALUE VARCHAR(60) comment 'Default Value: Data from attr_value.attr_value_name',
+            	TABLE_NAME VARCHAR(50) comment 'Table Name',
+            	FIELD_NAME VARCHAR(100) comment 'Field Name',
+            	DISPLAY_NAME VARCHAR(100) comment 'Display Name',
+            	VALUE_TYPE VARCHAR(3) comment 'Attribute Value Type',
+            	FORMULAR_TYPE VARCHAR(50) comment 'Rule Type',
+            	EXPRESSIONS_DESC VARCHAR(2000) comment 'Calculation Method: Used for offer',
+            	ORDER_ID DECIMAL(3) comment 'Sequence',
+            	IS_CHECK VARCHAR(1) comment 'Verification Flag',
+            	IS_MAKE_TO_TABLE VARCHAR(1) comment 'Storage Flag',
+            	IS_EDIT VARCHAR(1) comment 'Editable Flag',
+            	IS_MAKE VARCHAR(1) comment 'Display Flag',
+            	CHECK_MESSAGE VARCHAR(160) comment 'Verification Prompt Information',
+            	ATTR_FORMAT VARCHAR(160) comment 'Regular Expression',
+            	COLSPAN DECIMAL(2) comment 'Occupied Display Column',
+            	PAGE_URL VARCHAR(100) comment 'Pop-up Page Address',
+            	PAGE_FIELD_NAME VARCHAR(50) comment 'Optional Associated Page Output Parameter',
+            	PAGE_FIELD VARCHAR(50),
+            	PARAM_FIELD VARCHAR(200) comment 'Parameter Field',
+            	IS_SEND_BILL VARCHAR(1) comment 'Billing Related Flag',
+            	IS_PRINT VARCHAR(3) comment 'Printing Flag',
+            	PRINT_SORT DECIMAL(9) comment 'Printing Sequence',
+            	IS_SENT_SPS VARCHAR(1) comment 'Send SPS Flag',
+            	COMPUTE_EXPRESS VARCHAR(4000) comment 'Calculation Expression',
+            	COMPUTE_TYPE VARCHAR(100) comment 'Calculation Method : Used for product',
+            	REMARK VARCHAR(2000)
+            )comment = 'Attribute detail info'
+        - insert into DC_CONFIG_ATTRIBUTE_DETAIL(attr_name,attr_id,default_value,table_name,field_name,display_name,value_type,is_check,is_make_to_table,is_edit,is_make,is_send_bill,is_print) values ('Whether to Provisioning',60072,'1','prod_inst_func','col10','Whether to Provisioning','98A','F','F','F','F','F','0')
+        - insert into DC_CONFIG_ATTRIBUTE_DETAIL(attr_name,attr_id,default_value,table_name,field_name,display_name,value_type,is_check,is_make_to_table,is_edit,is_make,is_send_bill,is_print) values ('Auto Renewal',60097,'Y','OFFER_INST','col3','Auto Renewal','98A','T','T','T','T','T','T')
+        - insert into DC_CONFIG_ATTRIBUTE_DETAIL(attr_name,attr_id,default_value) values ('Rent Advance Notification Flag',60102,'Y')
+        - insert into DC_CONFIG_ATTRIBUTE_DETAIL(attr_name,attr_id,default_value) values ('Extend Expiry Date Minutes','60094','5')
+
+
+
+    DC_CONFIG_OFFER_ATTRIBUTE:
+        - |
+            create table DC_CONFIG_OFFER_ATTRIBUTE
+            (
+            	OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+            	ATTR_NAME VARCHAR(50) comment 'Attribute Name:Required;Data from cpc.attr_spec',
+            	ATTR_TYPE VARCHAR(50) comment 'Offer Attribute Type:Required;"Optional Attribute" or "Extra Attribute"',
+            	DEFAULT_VALUE VARCHAR(60) comment 'Attribute Default Value:Data from cpc.attr_value.attr_value',
+            	APPLY_REGION_NAME VARCHAR(250) comment 'Attribute Applicable Area;Data from ftf.common_region.region_name'
+            )comment = 'Offer Attribute'
+
+    DC_CONFIG_OFFER_APPLICABLE_CHANNEL:
+        - |
+            create table DC_CONFIG_OFFER_APPLICABLE_CHANNEL
+            (
+              OFFER_NAME        VARCHAR(250) comment 'Offer Name:Required',
+              CHANNEL_TYPE_NAME VARCHAR(250) comment 'CHANNEL_TYPE_NAME:Required;Data from cpc.attr_value where attr_id=230000570'
+            )comment = 'Offer Apply Channel Type'
+
+    DC_CONFIG_OFFER_BASIC_INFO:
+        - |
+            create table DC_CONFIG_OFFER_BASIC_INFO
+            (
+                NEW_OFFER_ID VARCHAR(9) comment 'Offer Id:Required',
+                OLD_OFFER_ID VARCHAR(200) comment 'Offer Id in Previous System',
+            	OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+            	OFFER_NBR VARCHAR(30) comment 'Offer Code:Required for offer needing privisioning',
+                IS_NEED_PRIVISIONING CHAR(1) comment 'Is need privisiong:Whether offer needing privisiong or not',
+            	PRIORITY_VALUE VARCHAR(10) comment 'Priority:DECIMAL from 1 to 9',
+            	OFFER_TYPE VARCHAR(50) comment 'Offer Type:Required;Data from cpc.attr_value.attr_value_name where attr_id=800052220',
+            	BRAND_NAME VARCHAR(250) comment 'brand name:Required for "Main offer"',
+                OFFER_GRADE VARCHAR(16) comment 'Offer grade:Required for downgrading and upgrading',
+            	EFF_DATE VARCHAR(20) comment 'Sale Effect time',
+            	EXP_DATE VARCHAR(20) comment  'Sale Expiry time',
+                OFFER_STATE VARCHAR(50) comment 'Offer State:"Active","In Progress","Offer Offline"',
+            	OFFER_DESC VARCHAR(4000),
+            	CATALOG_ITEM_NAME VARCHAR(50) comment  'Catalog Name:Data from cpc.catalog_item.catalog_name where catalog_id in (871)',
+            	PAYMENT_MODE VARCHAR(100) comment 'Payment mode:Data from cpc.attr_value.attr_value_name where attr_id=800052301',
+                REMARK VARCHAR(2000)
+            )comment = 'Offer Basic Information'
+
+    DC_CONFIG_OFFER_CUSTOMER_TAG:
+        - |
+            create table DC_CONFIG_OFFER_CUSTOMER_TAG
+            (
+              OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+              LABEL_NAME VARCHAR(250) comment 'Sales Area:Required;Data from cpc.label.label_name where label_type=10'
+            )comment = 'Offer Customer Tag Rel'
+
+    DC_CONFIG_OFFER_EFFECT_EXPIRY:
+        - |
+            create table DC_CONFIG_OFFER_EFFECT_EXPIRY
+            (
+            	OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+            	EXIST_TYPE VARCHAR(250) comment 'Existing Type:"New&Existing" or "New" or "Existing"',
+            	EFF_TYPE VARCHAR(50) comment 'Effective Type:Required;Data from cpc.attr_value.attr_value_name where attr_id=800052229',
+            	EFF_BASE_TYPE VARCHAR(50) comment 'Reference Time:"Completion Time" or "Acceptance Time"',
+            	PERIOD_TIME_TYPE VARCHAR(50) comment 'Validity Period Type:"Relative Time" or "Absolute Time" or "Absolute Time"',
+            	EFF_PERIOD VARCHAR(50) comment 'Relative Time required:Example:30Day or 1Month or 1Year',
+                EFF_DATE VARCHAR(20) comment 'Effect Date:Absolute Time required',
+                EXP_DATE VARCHAR(20) comment 'Expiry Date:Absolute Time required',
+            	CHANGE_EFF_TYPE VARCHAR(50) comment 'Effective Type of change:required;Data from cpc.attr_value.attr_value_name where attr_id=800052229',
+            	CHANGE_EFF_DATE VARCHAR(20) comment 'Effective Date of change:"User select effective time" and "Take effect in business specified time" Required',
+            	UNSUBSCRIBE_EFF_TYPE VARCHAR(50) comment 'Effective Type of Unsubscribe:Data from Attribute-ID=800052229',
+            	UNSUBSCRIBE_EFF_DATE VARCHAR(20) comment 'Effective Date of Unsubscribe:Aailable for "User select effective time" and "Take effect in business specified time" Required',
+            	PROCESS_MODE VARCHAR(50) comment 'Processing Mode:"Auto Renew","Agreement Renew","Auto Unsubscribe","Auto De-register"'
+            )comment = 'Offer Effect and Expiry Rule'
+
+    DC_CONFIG_OFFER_GRP_BASIC_INFO:
+        - |
+            create table DC_CONFIG_OFFER_GRP_BASIC_INFO
+            (
+              OFFER_GRP_NAME    VARCHAR(50) comment 'Offer Group Name:Requried',
+              OFFER_GRP_DESC    VARCHAR(2000),
+              GRP_TYPE          VARCHAR(250) comment 'Group Type:Requried;"Customized Offer Group","Direct Associated Catalog"',
+              GRP_REL_TYPE      VARCHAR(250) comment 'Inter Group Relationship Type:Requried;CPC.ATTR_VALUE.ATTR_VALUE_NAME WHERE ATTR_ID=800052258',
+              APPLY_REGION_NAME VARCHAR(250) comment 'Applicable Area:Data from ftf.common_region.region_name',
+              CATALOG_ITEM_NAME VARCHAR(50) comment 'Catalog Node:Required for "Direct Associated Catalog";CPC.CATALOG_ITEM.CATALOG_ITEM_NAME'
+            )comment = 'Offer Group Basic Infomation'
+
+    DC_CONFIG_OFFER_GRP_MEMBER:
+        - |
+            create table DC_CONFIG_OFFER_GRP_MEMBER
+            (
+              OFFER_GRP_NAME VARCHAR(50) comment 'Offer Group Name:Requried',
+              OFFER_NAME     VARCHAR(2000) comment 'Offer Name:Requried'
+            ) comment = 'Offer Group Member for "Customized Offer Group"'
+
+    DC_CONFIG_OFFER_PRICE_PLAN_REL:
+        - |
+            create table DC_CONFIG_OFFER_PRICE_PLAN_REL
+            (
+              OFFER_NAME       VARCHAR(250) comment 'Offer Name:Required',
+              ACCESS_PROD_NAME VARCHAR(250) comment 'Access Product Name in Offer Product Relationship:Required',
+              PRICE_PLAN_NAME  VARCHAR(250) comment 'Price Plan Name:Required'
+            )comment = 'Relationship between Offer and Price Plan'
+
+    DC_CONFIG_OFFER_PROD_REL:
+        - |
+            create table DC_CONFIG_OFFER_PROD_REL
+            (
+            	OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+            	FUNC_PROD_NAME VARCHAR(250) comment 'Function Product Name',
+            	FUNC_CONSTRAINT_TYPE VARCHAR(250) comment 'Constraint Type:Data from cpc.attr_value where attr_id=800052231;Required when Function Product is not null',
+            	ACCESS_PROD_NAME VARCHAR(250) comment 'Member - Access Product Name:Required',
+            	ROLE_NAME VARCHAR(50) comment 'Role Name:Required;Data from cpc.offer_obj_rel_role',
+            	REL_TYPE VARCHAR(20) comment 'Relationship Type:"Composition","Use"',
+            	PROD_EXIST_TYPE VARCHAR(20) comment 'Existing Type:"New&Existing","New","Existing"',
+            	MAX_NUM VARCHAR(9) comment 'Maximum Value',
+            	MIN_NUM VARCHAR(9) comment 'Minimum Value',
+            	DEFAULT_COUNT VARCHAR(9) comment 'Default Value'
+            )comment = 'relationship between offer and product'
+
+    DC_CONFIG_OFFER_PROD_ATTR_REL:
+        - |
+            CREATE TABLE DC_CONFIG_OFFER_PROD_ATTR_REL
+            (
+                OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+                PROD_NAME VARCHAR(250) comment 'Product Name:Required;Product Name linked with in offer product relation',
+                PROD_ATTR_NAME VARCHAR(2000) comment 'Product Attribute Name:Required;linked with product name,data from cpc.attr_spec',
+                PROD_ATTR_VALUE_NAME VARCHAR(250) comment 'Product Attribute value Name:Required;linked with Product Attribute Name,data from cpc.attr_value'
+            )comment = 'relationship between offer and product attribute'
+
+    DC_CONFIG_OFFER_REL:
+        - |
+            create table DC_CONFIG_OFFER_REL
+            (
+            	SOURCE_OFFER_NAME VARCHAR(250) comment 'A Offer Name:Required;Edit Offer in "cpc to do" page',
+            	DES_OFFER_NAME VARCHAR(250) comment 'Z Offer Name:Required;Selected offer in offer relation',
+            	REL_TYPE VARCHAR(50) comment 'Relationship Type:Required;Data from cpc.ATTR_VALUE.attr_value_name where ATTR_ID=800052221',
+            	OFFER_REL_ROLE_NAME VARCHAR(50) comment 'Role Name:Data from cpc.OFFER_REL_ROLE.ROLE_NAME',
+            	REL_MAX_NUM VARCHAR(9) comment 'Maximum Value',
+            	REL_MIN_NUM VARCHAR(9) comment 'Minimum Value',
+            	STATUS VARCHAR(10) comment 'STATUS:"valid","invalid"',
+            	SCOPE VARCHAR(10) comment 'SCOPE:"User Level","Package Level","Account Level","Customer Level"',
+            	REL_RSTR_TYPE VARCHAR(50) comment 'Constraint Type:"Non-mandatory","Mandatory","Default"',
+                OPER_TYPE CHAR(1) comment 'Operation Type:A means add, D means delete'
+            )comment = 'Relationship Between Offers'
+
+    DC_CONFIG_OFFER_SALES_AREA:
+        - |
+            create table DC_CONFIG_OFFER_SALES_AREA
+            (
+              OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+              AREA_TYPE VARCHAR(20) comment 'Area Type:Required; Operator Area or Customer Area',
+              AREA_NAME VARCHAR(250) comment 'Sales Area:Required;Data from ftf.common_region.region_name'
+            )comment = 'Offer Sales Area'
+
+    DC_CONFIG_OFFER_SERVICE:
+        - |
+            create table DC_CONFIG_OFFER_SERVICE
+            (
+            	OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+            	SERVICE_NAME VARCHAR(4000) comment 'Service Offer Name:Required;Data from cpc.service_offer.service_offer_name'
+            )comment = 'Offer Order Action'
+
+    DC_CONFIG_OFFER_TAG:
+        - |
+            create table DC_CONFIG_OFFER_TAG
+            (
+                OFFER_NAME VARCHAR(250) comment 'Offer Name:Required',
+                TAG_NAME VARCHAR(250) comment 'Tag Name:Required;Label where label_type=30'
+            )comment = 'Offer Tag'
+
+    DC_CONFIG_PRICE_PLAN_BASIC_INFO:
+        - |
+            create table DC_CONFIG_PRICE_PLAN_BASIC_INFO
+            (
+              PRICE_PLAN_ID    VARCHAR(9) comment 'Price Plan Name:Required',
+              PRICE_PLAN_NAME  VARCHAR(250) comment 'Price Plan Id:Required',
+              PRICE_PLAN_CODE  VARCHAR(60) comment 'Price Plan Code:Using Price Plan Name as default',
+              PRICE_PLAN_TYPE  VARCHAR(50) comment 'Price Plan Type:"Global Price Plan","Individual Price Plan"',
+              PRICE_PLAN_GENRE VARCHAR(50) comment 'Price Plan Genre:"Common","Overlap","Trigger","Acm","Bill Discount"',
+              APPLY_LEVEL      VARCHAR(50) comment 'Apply Level:"Account Level","Subscription Level"',
+              PRICE_PLAN_EXIT  VARCHAR(50) comment 'Exit Price Plan With Lower Priority',
+              EFF_DATE         VARCHAR(20) comment 'Price Plan Effect Date',
+              EXP_DATE         VARCHAR(20) comment 'Price Plan Expiry Date',
+              PRIORITY         VARCHAR(20) comment 'Price Plan Priority:DECIMAL Only'
+            )comment = 'Price Plan Basic Information'
+
+    DC_CONFIG_PROD_AREA:
+        - |
+            create table DC_CONFIG_PROD_AREA
+            (
+            	PROD_NAME VARCHAR(250) comment 'Offer Name or Product Name:Requird',
+            	AREA VARCHAR(250) comment 'Region Name:Required;Data from ftf.common_region.region_name'
+            )comment = 'Offer or Product Applicable Area'
+
+    DC_CONFIG_PROD_BASIC_INFO:
+        - |
+            create table DC_CONFIG_PROD_BASIC_INFO
+            (
+                OLD_PROD_ID VARCHAR(9) comment 'Old Product Id:Product id in old system',
+                NEW_PROD_ID VARCHAR(9) comment 'Product Id:Required;DECIMAL only',
+                PROD_NAME VARCHAR(250) comment 'Product Name:Required',
+                PROD_NBR VARCHAR(30) comment 'Product Code:Using Prod Id as Default',
+                PROD_COMP_TYPE VARCHAR(250) comment 'Construction Type:Required;Data from cpc.attr_value.attr_value_name where attr_ID=800052187',
+                PROD_FUNC_TYPE VARCHAR(250) comment 'Function Type:Required;Data from cpc.attr_value.attr_value_name where attr_ID=800052188',
+                EFF_DATE VARCHAR(20) comment 'Effective Date',
+                EXP_DATE VARCHAR(20) comment 'Expiry Date',
+                PROD_DESC VARCHAR(250),
+                CATALOG_ITEM_NAME VARCHAR(50) comment 'Catalog:Data from cpc.catalog_item.catalog_name',
+                PROD_CAT_TYPE VARCHAR(250) comment 'Business Category:Data from cpc.attr_value.attr_value_name where attr_ID=1900204241',
+                INTERNAL_NBR VARCHAR(30) comment 'Internal Product Code:Required when product needs provisioning else keep null',
+                IS_CHARGE_FUNC_PROD CHAR(1) comment 'Is Charge Funtion Product:Used for function product;One Time Fee or Recurring Fee is "Y",Others "N"',
+                REMARK VARCHAR(2000)
+            )comment = 'Product Basic Information'
+
+    DC_CONFIG_PROD_REL:
+        - |
+            create table DC_CONFIG_PROD_REL
+            (
+            	SOURCE_PROD_NAME VARCHAR(250) comment 'Edit Product Name In CPC TO DO:Required',
+            	DES_PROD_NAME VARCHAR(250) comment 'Selected Product Name In Product Relation:Required',
+            	REL_TYPE VARCHAR(100) comment 'Relationship Type:Required',
+            	PROD_REL_ROLE_NAME VARCHAR(50) comment 'Role Name:cpc.PROD_REL_ROLE.ROLE_NAME',
+            	EFF_DATE VARCHAR(20) comment 'Effective Time',
+            	EXP_DATE VARCHAR(20) comment 'Expiry Time'
+            )comment = 'Relationship Between Products'
+
+create_list:
+
+    DC_CONFIG_ATTRIBUTE_DETAIL:
+        - CPC
+        - V20190411
+        - table
+
+    DC_CONFIG_OFFER_ATTRIBUTE:
+        - CPC
+        - V20190621
+        - table
+        - VALUE_LIST:
+            ATTR_TYPE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER ATTRIBUTE TYPE'
+            APPLY_REGION_NAME:
+                TYPE: sql
+                SOURCE: SELECT REGION_NAME FROM FTF.COMMON_REGION
+
+    DC_CONFIG_OFFER_SERVICE:
+        - CPC
+        - V20190411
+        - table
+        - VALUE_LIST:
+            SERVICE_NAME:
+                TYPE: sql
+                SOURCE: SELECT SERVICE_OFFER_NAME FROM CPC.SERVICE_OFFER
+
+    DC_CONFIG_OFFER_BASIC_INFO:
+        - CPC
+        - V20200110
+        - table
+        - VALUE_LIST:
+            PRIORITY_VALUE:
+                TYPE: list
+                SOURCE: 1,2,3,4,5,6,7,8,9
+            OFFER_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052220 AND STATUS_CD = '1000'
+            PAYMENT_MODE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=990000002 AND STATUS_CD = '1000'
+            IS_NEED_PRIVISIONING:
+                TYPE: list
+                SOURCE: Y,N
+            OFFER_STATE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER STATE'
+
+    DC_CONFIG_OFFER_APPLICABLE_CHANNEL:
+        - CPC
+        - V20190618
+        - table
+        - VALUE_LIST:
+            CHANNEL_TYPE_NAME:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=230000570 AND STATUS_CD = '1000'
+
+    DC_CONFIG_OFFER_CUSTOMER_TAG:
+        - CPC
+        - V20190618
+        - table
+        - VALUE_LIST:
+            LABEL_NAME:
+                TYPE: sql
+                SOURCE: select label_name from cpc.label where label_type='10'
+
+    DC_CONFIG_OFFER_EFFECT_EXPIRY:
+        - CPC
+        - V20190506
+        - table
+        - VALUE_LIST:
+            EXIST_TYPE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER EXIST TYPE'
+            EFF_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052229 AND STATUS_CD = '1000'
+            EFF_BASE_TYPE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER EFFECT BASE TYPE'
+            PERIOD_TIME_TYPE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER PERIOD TIME TYPE'
+            CHANGE_EFF_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052229 AND STATUS_CD = '1000'
+            UNSUBSCRIBE_EFF_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052229 AND STATUS_CD = '1000'
+            PROCESS_MODE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER EXPIRE PROCESS MODE'
+
+    DC_CONFIG_OFFER_GRP_BASIC_INFO:
+        - CPC
+        - V20190524
+        - table
+        - VALUE_LIST:
+            GRP_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052259 AND STATUS_CD = '1000'
+            GRP_REL_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052258 AND STATUS_CD = '1000'
+
+    DC_CONFIG_OFFER_GRP_MEMBER:
+        - CPC
+        - V20190524
+        - table
+
+    DC_CONFIG_OFFER_PRICE_PLAN_REL:
+        - CPC
+        - V20190508
+        - table
+
+    DC_CONFIG_OFFER_PROD_REL:
+        - CPC
+        - V20190621
+        - table
+        - VALUE_LIST:
+            FUNC_CONSTRAINT_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052231 AND STATUS_CD = '1000'
+            ROLE_NAME:
+                TYPE: sql
+                SOURCE: SELECT ROLE_NAME FROM CPC.OFFER_OBJ_REL_ROLE
+            REL_TYPE :
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER PROD REL TYPE'
+            PROD_EXIST_TYPE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER PROD EXIST TYPE'
+
+    DC_CONFIG_OFFER_PROD_ATTR_REL:
+        - CPC
+        - V20190926
+        - table
+
+    DC_CONFIG_OFFER_REL:
+        - CPC
+        - V20190621
+        - table
+        - VALUE_LIST:
+            REL_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052221 AND STATUS_CD = '1000'
+            OFFER_REL_ROLE_NAME:
+                TYPE: sql
+                SOURCE: SELECT ROLE_NAME FROM CPC.OFFER_REL_ROLE
+            STATUS:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER REL STATUS'
+            SCOPE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER REL SCOPE'
+            REL_RSTR_TYPE:
+                TYPE: sql
+                SOURCE: SELECT KEY_NAME FROM DC_DIM_CPC_DICT WHERE DICT_NAME = 'OFFER REL CONSTRAINT TYPE'
+            OPER_TYPE:
+                TYPE: list
+                SOURCE: A,D
+
+    DC_CONFIG_OFFER_SALES_AREA:
+        - CPC
+        - V20190621
+        - table
+        - VALUE_LIST:
+              AREA_NAME:
+                  TYPE: sql
+                  SOURCE: SELECT REGION_NAME FROM FTF.COMMON_REGION
+
+    DC_CONFIG_OFFER_TAG:
+        - CPC
+        - V20190430
+        - table
+        - VALUE_LIST:
+            TAG_NAME:
+                TYPE: sql
+                SOURCE: SELECT LABEL_NAME FROM CPC.LABEL WHERE LABEL_TYPE = '30' AND LABEL_ID IN (SELECT OBJ_ID FROM CPC.OBJ_CAT_ITEM_REL WHERE CATALOG_ITEM_ID=10000422)
+
+    DC_CONFIG_PRICE_PLAN_BASIC_INFO:
+        - CPC
+        - V20190508
+        - table
+        - VALUE_LIST:
+            PRICE_PLAN_TYPE:
+                TYPE: sql
+                SOURCE: SELECT PRICE_PLAN_TYPE_NAME FROM CPC.PRICE_PLAN_TYPE
+            PRICE_PLAN_GENRE:
+                TYPE: sql
+                SOURCE: SELECT GENRE_NAME FROM CPC.PRICE_PLAN_GENRE
+            APPLY_LEVEL:
+                TYPE: sql
+                SOURCE: SELECT APPLY_LEVEL_NAME FROM CPC.APPLY_LEVEL
+            PRICE_PLAN_EXIT:
+                TYPE: list
+                SOURCE: Y,N
+
+    DC_CONFIG_PROD_AREA:
+        - CPC
+        - V20190521
+        - table
+        - VALUE_LIST:
+            AREA:
+                TYPE: sql
+                SOURCE: SELECT REGION_NAME FROM FTF.COMMON_REGION
+
+    DC_CONFIG_PROD_BASIC_INFO:
+        - CPC
+        - V20190808
+        - table
+        - VALUE_LIST:
+            PROD_COMP_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052187 AND STATUS_CD = '1000'
+            PROD_FUNC_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052188 AND STATUS_CD = '1000'
+            PROD_CAT_TYPE:
+                TYPE: list
+                SOURCE: PCRF,Value-Added Service,Common Used,Service,CUG
+            IS_CHARGE_FUNC_PROD:
+                TYPE: list
+                SOURCE: Y,N
+
+    DC_CONFIG_PROD_REL:
+        - CPC
+        - V20190401
+        - table
+        - VALUE_LIST:
+            REL_TYPE:
+                TYPE: sql
+                SOURCE: SELECT ATTR_VALUE_NAME FROM CPC.ATTR_VALUE WHERE ATTR_ID=800052191 AND STATUS_CD = '1000'
+            PROD_REL_ROLE_NAME:
+                TYPE: sql
+                SOURCE: SELECT ROLE_NAME FROM CPC.PROD_REL_ROLE

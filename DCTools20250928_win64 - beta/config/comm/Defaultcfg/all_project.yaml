@@ -1,0 +1,307 @@
+# 本文件是对项目进行编码使用的，最好只能进行新增，以及修改项目的名字，编号一定不要动
+# 当前连接系统的数据库类型,目前支持"Oracle", "Mysql", "Udal", "Drds"
+# 这个文件不需要用户在里面做任何的配置，是可以无脑升级的，而且必须升级
+Z001:
+  name: z通用V80 Oracle项目
+  cvBSVersion: V80
+  database: Oracle
+  code: Z001
+  status: A
+
+Z002:
+  name: z通用V81 Oracle项目
+  cvBSVersion: V81
+  database: Oracle
+  code: Z002
+  status: A
+
+Z003:
+  name: z通用V90 Oracle项目
+  cvBSVersion: V90
+  database: Oracle
+  code: Z003
+  status: A
+
+Z004:
+  name: z通用V90E Oracle项目
+  cvBSVersion: V90E
+  database: Oracle
+  code: Z004
+  status: A
+
+A001:
+  name: 法电喀麦隆
+  cvBSVersion: V81
+  database: Oracle
+  code: A001
+  status: X
+
+A002:
+  name: 法电刚果金
+  cvBSVersion: V81
+  database: Oracle
+  code: A002
+  status: X
+
+A003:
+  name: 格鲁吉亚
+  cvBSVersion: V90
+  database: Oracle
+  code: A003
+  status: X
+
+A004:
+  name: 尼泊尔8848项目
+  cvBSVersion: V81
+  database: Oracle
+  code: A004
+  status: X
+
+A005:
+  name: 斯里兰卡和记项目
+  cvBSVersion: V81
+  database: Oracle
+  code: A005
+  status: X
+
+A006:
+  name: 白俄项目
+  cvBSVersion: V90E
+  database: Oracle
+  code: A006
+  status: X
+
+A007:
+  name: 智利神鹰项目
+  cvBSVersion: V81
+  database: Oracle
+  code: A007
+  status: X
+
+A008:
+  name: 马来UM项目 Drds
+  cvBSVersion: V90E
+  database: Drds
+  code: A008
+  status: X
+
+A009:
+  name: 菲律宾PTO项目
+  cvBSVersion: V90
+  database: Udal
+  code: A009
+  status: A
+
+A010:
+  name: 印度恒河水项目
+  cvBSVersion: V9B
+  database: Oracle
+  code: A010
+  status: A
+
+A011:
+  name: 印尼金光V9项目
+  cvBSVersion: V90E
+  database: Oracle
+  code: A011
+  status: A
+
+A012:
+  name: 卢旺达MTNV9项目
+  cvBSVersion: V90E
+  database: Mysql
+  code: A012
+  status: X
+
+A013:
+  name: 哥伦比亚PTC项目
+  cvBSVersion: V81
+  database: Oracle
+  code: A013
+  status: X
+
+A014:
+  name: 缅甸翡冷翠
+  cvBSVersion: V81
+  database: Oracle
+  code: A014
+  status: X
+
+A015:
+  name: 塞内加尔V81
+  cvBSVersion: V81
+  database: Oracle
+  code: A015
+  status: X
+
+A016:
+  name: 马来UM项目 Oracle
+  cvBSVersion: V90E
+  database: Oracle
+  code: A016
+  status: X
+
+A017:
+  name: 塞内加尔V8升V9L项目
+  cvBSVersion: V90L
+  database: Oracle
+  code: A017
+  status: A
+
+A018:
+  name: 巴基斯坦信德水项目
+  cvBSVersion: V90L
+  database: Oracle
+  code: A018
+  status: A
+
+A019:
+  name: 印度恒河水项目_WEST
+  cvBSVersion: V9B
+  database: Oracle
+  code: A019
+  status: A
+  DBInstanceName: [CCW, CC, PERFCCW]
+
+A020:
+  name: 印度恒河水项目_SOUTH
+  cvBSVersion: V9B
+  database: Oracle
+  code: A020
+  status: A
+  DBInstanceName: [CCS, CC, PERFCCS]
+
+A021:
+  name: 印度恒河水项目_EAST
+  cvBSVersion: V9B
+  database: Oracle
+  code: A021
+  status: A
+  DBInstanceName: [CCE, CC, PERFCCE]
+
+A022:
+  name: 印度恒河水项目_NORTH
+  cvBSVersion: V9B
+  database: Oracle
+  code: A022
+  status: A
+  DBInstanceName: [CCN, CC, PERFCCN]
+
+A023:
+  name: 斯洛伐克OSKV8
+  cvBSVersion: V81
+  database: Oracle
+  code: A023
+  status: A
+
+A024:
+  name: 阿富汗的V9升级项目
+  cvBSVersion: V9K
+  database: Oracle
+  code: A024
+  status: A
+
+A025:
+  name: 印尼金光V9项目V73
+  cvBSVersion: V73
+  database: Oracle
+  code: A025
+  status: X
+
+A026:
+  name: 缅甸MPT升级9K项目
+  cvBSVersion: V9K
+  database: Oracle
+  code: A026
+  status: A
+
+A027:
+  name: 黑山V7升级V81项目
+  cvBSVersion: V81
+  database: Oracle
+  code: A027
+  status: A
+
+A028:
+  name: 马来TM项目V9
+  cvBSVersion: V90E
+  database: Oracle
+  code: A028
+  status: A
+
+A029:
+  name: 蒙古Skytel
+  cvBSVersion: V81
+  database: Oracle
+  code: A029
+  status: A
+
+A030:
+  name: 利比亚的V9E项目
+  cvBSVersion: V90E
+  database: Oracle
+  code: A030
+  status: A
+
+A031:
+  name: 蒙古G-mobile项目
+  cvBSVersion: V81E
+  database: Oracle
+  code: A031
+  status: A
+
+A032:
+  name: VOO V90E项目
+  cvBSVersion: V90E
+  database: Mysql
+  code: A032
+  status: A
+
+A033:
+  name: 利比里亚Orange项目
+  cvBSVersion: V90L
+  database: Oracle
+  code: A033
+  status: A
+
+A034:
+  name: 阿富汗Aftel项目
+  cvBSVersion: V9K
+  database: Oracle
+  code: A034
+  status: A
+
+A035:
+  name: 印尼金光V9项目CRM二期
+  cvBSVersion: V90E
+  database: Oracle
+  code: A035
+  status: A
+
+A036:
+  name: 新电Fusion项目
+  cvBSVersion: V90E
+  database: Mysql
+  code: A036
+  status: A
+
+A037:
+  name: 刚果金V9项目2025
+  cvBSVersion: V90E
+  database: Oracle
+  code: A037
+  status: A
+
+A038:
+  name: 津巴V9E项目2025
+  cvBSVersion: V90E
+  database: Oracle
+  code: A038
+  status: A
+
+A039:
+  name: 马来西亚亚航V9项目
+  cvBSVersion: V90E
+  database: Mysql
+  code: A039
+  status: A

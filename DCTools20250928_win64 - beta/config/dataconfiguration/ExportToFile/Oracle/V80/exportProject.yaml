@@ -1,0 +1,180 @@
+A005:
+  01.Offer_Usage:
+    "SELECT a.price_id,
+       a.offer_name,
+       a.re_name,
+       SUBSTR(a.mapping_detail,0,instr(a.mapping_detail,',',1,1)-1)                                                                   AS zone_value1,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,1)  +1,instr(a.mapping_detail,',',1,2)-instr(a.mapping_detail,',',1,1)-1) AS zone_map1,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,2)  +1, (
+       CASE instr(a.mapping_detail,',',1,3)
+         WHEN 0
+         THEN LENGTH(a.mapping_detail)+1
+         ELSE instr(a.mapping_detail,',',1,3)
+       END)                                                   -instr(a.mapping_detail,',',1,2)-1)                                   AS zone_code1,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,3)+1,instr(a.mapping_detail,',',1,4)-instr(a.mapping_detail,',',1,3)-1) AS zone_value2,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,4)+1,instr(a.mapping_detail,',',1,5)-instr(a.mapping_detail,',',1,4)-1) AS zone_map2,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,5)+1,(
+       CASE instr(a.mapping_detail,',',1,6)
+         WHEN 0
+         THEN LENGTH(a.mapping_detail)+1
+         ELSE instr(a.mapping_detail,',',1,6)
+       END)-(
+       CASE instr(a.mapping_detail,',',1,5)
+         WHEN 0
+         THEN LENGTH(a.mapping_detail)+1
+         ELSE instr(a.mapping_detail,',',1,5)
+       END)                                                   -1)                                                                   AS zone_code2,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,6)+1,instr(a.mapping_detail,',',1,7)-instr(a.mapping_detail,',',1,6)-1) AS zone_value3,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,7)+1,instr(a.mapping_detail,',',1,8)-instr(a.mapping_detail,',',1,7)-1) AS zone_map3,
+       SUBSTR(a.mapping_detail,instr(a.mapping_detail,',',1,8)+1,(
+       CASE instr(a.mapping_detail,',',1,9)
+         WHEN 0
+         THEN LENGTH(a.mapping_detail)+1
+         ELSE instr(a.mapping_detail,',',1,9)
+       END)-(
+       CASE instr(a.mapping_detail,',',1,8)
+         WHEN 0
+         THEN LENGTH(a.mapping_detail)+1
+         ELSE instr(a.mapping_detail,',',1,8)
+       END)-1) AS zone_code3,
+       a.charge,
+       a.step,
+       a.re_attr_name AS unit,
+       a.priority,
+       a.acct_res_name,
+       a.acct_item_type_name,
+       ts.time_span_name,
+       b.time_span_priority,
+       b.time_span_step,
+       case when a.is_currency='Y' then
+         to_number(NVL(rv_ts.value_string,0))*power(10,rv_ts.rate_precision-3)
+       else to_number(NVL(rv_ts.value_string,0))
+       end AS time_span_charge,
+       b.offset                                                              AS rank_off_set,
+       b.duration                                                            AS rank_duration,
+       b.rank_step                                                           AS rank_step,
+       case when a.is_currency='Y' then
+       to_number(NVL(rv_r.value_string,0))*power(10,rv_r.rate_precision-3)
+       else to_number(NVL(rv_r.value_string,0))
+       end AS rank_charge,
+       c.resource_name,
+       c.acm_step,
+       c.acm_unit
+     FROM
+       (SELECT p.price_id,
+         CASE
+           WHEN p.parent_price_id IS NULL
+           THEN 'AIR'
+           ELSE 'TX'
+         END   AS charge_type,
+         o.offer_name,
+         re.re_name,
+         agg_mapping.mapping_detail,
+         ar.is_currency,
+         CASE
+           WHEN ar.is_currency='Y'
+           THEN to_number(NVL(rv_charge.value_string,0))*power(10,rv_charge.rate_precision-3)
+           ELSE to_number(NVL(rv_charge.value_string,0))
+         END   AS charge,
+         p.rum AS step,
+         ra.re_attr_name,
+         p.priority,
+         ar.acct_res_name,
+         ait.acct_item_type_name
+       FROM cc.price p,
+         cc.price_ver pv,
+         cc.acct_item_type ait,
+         cc.ref_value rv_charge,
+         cc.acct_res ar,
+         cc.rate_plan rp,
+         cc.re re,
+         cc.offer_ver ov,
+         cc.offer o,
+         cc.re_attr ra,
+         (SELECT DISTINCT m.mapping_id,
+           listagg(m.re_attr_name
+           ||','
+           ||m.zone_map_name
+           ||','
+           ||m.zone_name,',') within GROUP (
+         ORDER BY
+           CASE m.re_attr_name
+             WHEN 'Origin Area'
+             THEN 1
+             WHEN 'Destination Area'
+             THEN 2
+             ELSE 3
+           END) over(partition BY m.mapping_id) mapping_detail
+         FROM
+           (SELECT mu.mapping_id,
+             ra.re_attr_name,
+             zm.zone_map_name,
+             z.zone_name
+           FROM cc.MAPPING_UNIT mu,
+             cc.rate_plan_zone rpz,
+             cc.zone_map zm,
+             cc.zone z,
+             cc.re_attr ra
+           WHERE mu.rate_plan_zone_id=rpz.rate_plan_zone_id
+           --AND mu.mapping_value      =z.zone_id
+           and mu.zone_id = z.zone_id
+           --AND rpz.mapping_des_value =zm.zone_map_id
+           --AND rpz.mapping_src_value =ra.re_attr
+           AND RPZ.ZONE_MAP_ID = ZM.ZONE_MAP_ID
+           AND RPZ.RE_ATTR = RA.RE_ATTR
+           ) m
+         ) agg_mapping
+       WHERE p.price_ver_id         =pv.price_ver_id
+       --AND p.acct_item_type_id_param=rv_ait.ref_value_id
+       --AND rv_ait.value_string      =ait.acct_item_type_id
+       and p.acct_item_type_id = ait.acct_item_type_id
+       AND ar.acct_res_id           =ait.acct_res_id
+       AND rp.rate_plan_id          =pv.rate_plan_id
+       AND rp.re_id                 =re.re_id
+       AND (pv.exp_date             >sysdate
+       OR pv.exp_date              IS NULL)
+       AND rp.offer_ver_id          =ov.offer_ver_id
+       AND (ov.exp_date             >sysdate
+       OR ov.exp_date              IS NULL)
+       AND (o.exp_date>sysdate or o.exp_date is null)
+       AND ov.offer_id              =o.offer_id
+       AND o.offer_id NOT          IN(465,466)
+       AND o.state                  ='A'
+       AND re.re_type               =1
+       AND rv_charge.ref_value_id   =p.value
+       AND p.re_attr                =ra.re_attr
+       AND pv.mapping_id            =agg_mapping.mapping_id(+)
+       ) a,
+       (select decode(tsu.up_id,null,ru.up_id,tsu.up_id) as price_id,
+         tsu.time_span_id,
+         tsu.priority AS time_span_priority,
+         tsu.rum      AS time_span_step,
+         tsu.rate     AS time_span_ref_value_id,
+         ru.rank_up_id,
+         ru.offset ,
+         ru.duration ,
+         ru.rate AS rank_ref_value_id,
+         ru.rum  AS rank_step
+         from
+          cc.time_span_up tsu full join cc.rank_up ru on tsu.time_span_up_id=ru.time_span_up_id) b,
+       (SELECT ac.up_id AS price_id,
+         rr.resource_name,
+         ac.rum          AS acm_step,
+         ra.re_attr_name AS acm_unit
+       FROM cc.acm_calc ac,
+         cc.re_attr ra,
+         cc.ratable_resource rr,
+         cc.ref_value rv
+       WHERE ac.ref_value_id=rv.ref_value_id
+       AND rv.value_string  =rr.resource_id
+       AND ac.re_attr       =ra.re_attr
+       ) c,
+       cc.time_span ts,
+       cc.ref_value rv_ts,
+       cc.ref_value rv_r
+     WHERE a.price_id            =b.price_id(+)
+     AND a.price_id              =c.price_id(+)
+     AND b.time_span_id          =ts.time_span_id(+)
+     AND b.time_span_ref_value_id=rv_ts.ref_value_id(+)
+     AND b.rank_ref_value_id     =rv_r.ref_value_id(+)
+     order by offer_name,re_name,zone_map1,zone_code1,zone_map2,zone_code2"

@@ -1,0 +1,376 @@
+UserList:
+  cic
+
+param_list:
+  WarningData:
+    cic_user_name:
+      cic
+  BadData:
+    cic_user_name:
+      cic
+  ErrorData:
+    cic_user_name:
+      cic
+
+WarningData:
+  # Event处于未发布状态,需要确认是否还需要使用
+  Event is not released:
+    des: Event处于未发布状态,需要确认是否还需要使用
+    area: comm
+    sql: "SELECT
+	event_code
+FROM
+	cic_event
+WHERE
+	state = 'D'"
+
+  # Action处于未发布状态,需要确认是否还需要使用
+  Action is not released:
+    des: Action处于未发布状态,需要确认是否还需要使用
+    area: comm
+    sql: " select action_code,action_name
+    from cic_action
+    where state = 'D'"
+
+  # Action处于未发布状态,需要确认是否还需要使用
+  Enrich Service is not released:
+    des: Action处于未发布状态,需要确认是否还需要使用
+    area: comm
+    sql: "
+    select enrich_service_code,enrich_service_name
+    from cic_enrich_service
+    where state = 'D'"
+
+  # 验证码和密码需要脱敏
+  Captcha and Password should be sensitive:
+    des: 验证码和密码需要脱敏
+    area: comm
+    sql: "
+    SELECT t2.event_code, t1.attr_code
+    FROM cic_inter_event_attr t1
+    INNER JOIN cic_event t2
+    ON t1.inter_event_id = t2.event_id
+    WHERE (attr_code LIKE '%%captcha%%' OR attr_code LIKE '%%password%%' OR attr_code LIKE '%%pwd%%' OR attr_name LIKE '%%captcha%%' OR attr_name LIKE '%%password%%' OR attr_name LIKE '%%pwd%%')
+    AND t1.is_sensitive='N'"
+
+ErrorData:
+  # 标题包含回车换行符
+  subject including newline char:
+    des: 标题包含回车换行符
+    area: comm
+    sql: "
+    select template_id
+    from cic_template_content
+    where `subject` like CONCAT('%%',CHAR(10),'%%')"
+
+  # 通知发送内容中包含非英文字符
+  txt contents including special char:
+    des: 通知发送内容中包含非英文字符
+    area: comm
+    sql: "
+    select t1.template_id
+    from cic_template_content t1
+    INNER JOIN cic_action_process t2
+    ON t1.template_id = t2.template_id
+    INNER JOIN cic_process t3
+    ON t3.process_id = t2.process_id
+    INNER JOIN cic_flow_version t4
+    ON t4.flow_version_id = t3.flow_version_id
+    AND (t4.state='D' OR (T4.state='P' AND (T4.EXP_DATE IS NULL OR T4.EXP_DATE>NOW())))
+    INNER JOIN cic_event_flow t5
+    ON t5.event_flow_id = t4.event_flow_id
+    AND t5.state = 'A'
+    INNER JOIN cic_event t6
+    ON t6.event_id = t5.inter_event_id
+    AND t6.state = 'P'
+    where length(msg_template) <> char_length(msg_template)"
+
+  # 通知发送内容中包含非英文字符
+  Subject including special char:
+    des: 通知发送内容Subject包含非英文字符
+    area: comm
+    sql: "
+    select t1.template_id
+    from cic_template_content t1
+    INNER JOIN cic_action_process t2
+    ON t1.template_id = t2.template_id
+    INNER JOIN cic_process t3
+    ON t3.process_id = t2.process_id
+    INNER JOIN cic_flow_version t4
+    ON t4.flow_version_id = t3.flow_version_id
+    AND (t4.state='D' OR (T4.state='P' AND (T4.EXP_DATE IS NULL OR T4.EXP_DATE>NOW())))
+    INNER JOIN cic_event_flow t5
+    ON t5.event_flow_id = t4.event_flow_id
+    AND t5.state = 'A'
+    INNER JOIN cic_event t6
+    ON t6.event_id = t5.inter_event_id
+    AND t6.state = 'P'
+    where LENGTH(`subject`) <> CHAR_LENGTH(`subject`)"
+
+  # 通知发送内容中包含非英文字符
+  html contents including special char:
+    des: 通知发送内容邮件通知包含非英文字符
+    area: comm
+    sql: "
+    select t1.template_id
+    from cic_template_content t1
+    INNER JOIN cic_action_process t2
+    ON t1.template_id = t2.template_id
+    INNER JOIN cic_process t3
+    ON t3.process_id = t2.process_id
+    INNER JOIN cic_flow_version t4
+    ON t4.flow_version_id = t3.flow_version_id
+    AND (t4.state='D' OR (T4.state='P' AND (T4.EXP_DATE IS NULL OR T4.EXP_DATE>NOW())))
+    INNER JOIN cic_event_flow t5
+    ON t5.event_flow_id = t4.event_flow_id
+    AND t5.state = 'A'
+    INNER JOIN cic_event t6
+    ON t6.event_id = t5.inter_event_id
+    AND t6.state = 'P'
+    where LENGTH(`html_template`) <> CHAR_LENGTH(`html_template`)"
+
+  # msg和html均为空，但是layout有数据
+  layout is not null but msg and html is empty:
+    des: msg和html均为空，但是layout有数据
+    area: comm
+    sql: "
+    select t1.template_id
+    from cic_template_content t1
+    INNER JOIN cic_action_process t2
+    ON t1.template_id = t2.template_id
+    INNER JOIN cic_process t3
+    ON t3.process_id = t2.process_id
+    INNER JOIN cic_flow_version t4
+    ON t4.flow_version_id = t3.flow_version_id
+    AND (t4.state='D' OR (T4.state='P' AND (T4.EXP_DATE IS NULL OR T4.EXP_DATE>NOW())))
+    INNER JOIN cic_event_flow t5
+    ON t5.event_flow_id = t4.event_flow_id
+    AND t5.state = 'A'
+    INNER JOIN cic_event t6
+    ON t6.event_id = t5.inter_event_id
+    AND t6.state = 'P'
+    where (LENGTH(msg_template) =0 OR msg_template IS NULL) 
+    AND (LENGTH(html_template)=0 OR html_template IS NULL) AND msg_layout IS NOT NULL"
+
+  # 未发布的版本中连接线条件丢失
+  connect node missing condition:
+    des: 未发布的版本中连接线条件丢失
+    area: comm
+    sql: "
+    SELECT t5.event_name,t4.flow_name,t1.process_name,t4.flow_name,t3.ver_no
+    FROM cic_process t1
+    INNER JOIN cic_process_connect t2
+    ON t1.process_id = t2.from_process_id
+    INNER JOIN cic_flow_version t3
+    ON t1.flow_version_id = t3.flow_version_id
+    INNER JOIN cic_event_flow t4
+    ON t3.event_flow_id = t4.event_flow_id
+    INNER JOIN cic_event t5
+    ON t4.inter_event_id = t5.event_id
+    WHERE t1.process_type =2
+    AND input_value IS NULL
+    AND ((eff_date<NOW() AND (exp_date>NOW() OR exp_date IS NULL) AND T3.state='P' ) OR T3.STATE='D')
+    AND (t4.state = 'A' OR t4.state = 'I')
+    AND t5.state = 'P'"
+
+  # 旧版版失效，新版本未生效(已上线项目使用)
+  flow version invalid:
+    des: 旧版版失效，新版本未生效(已上线项目使用)
+    area: comm
+    sql: "
+    SELECT T4.EVENT_NAME,T3.FLOW_NAME,T1.VER_NO
+    FROM cic_flow_version t1
+    LEFT JOIN cic_flow_version t2
+    ON t1.event_flow_id = t2.event_flow_id
+    AND t2.eff_date<NOW() AND (t2.exp_date IS NULL OR t2.exp_date>NOW())
+    AND t2.state = 'P'
+    INNER JOIN CIC_EVENT_FLOW T3
+    ON T1.EVENT_FLOW_ID = T3.EVENT_FLOW_ID
+    AND T3.STATE= 'A'
+    INNER JOIN CIC_EVENT T4
+    ON T3.INTER_EVENT_ID = T4.EVENT_ID
+    AND t4.state = 'P'
+    WHERE t1.state = 'P'
+    AND t1.eff_date<NOW() AND t1.exp_date <NOW()
+    AND t2.flow_version_id IS NULL"
+
+  # 发送的附件的参数需要设置，需要设置邮件附件的默认属性
+  email attach param missing default attribute:
+    des: 发送的附件的参数需要设置，需要设置邮件附件的默认属性
+    area: comm
+    sql: "
+    SELECT T8.event_code,t7.flow_name,t6.ver_no
+    FROM `cic_action_param_value` t1
+    LEFT JOIN cic_inter_event_attr t2
+    ON t1.event_attr_id = t2.event_attr_id
+    LEFT JOIN cic_default_attr t3
+    ON t2.default_attr = t3.default_attr
+    AND t3.attr_name LIKE '%%Email attach%%'
+    INNER JOIN cic_action_process t4
+    ON t1.process_id = t4.process_id
+    INNER JOIN cic_process t5
+    ON t4.process_id = t5.process_id
+    INNER JOIN cic_flow_version t6
+    ON t6.flow_version_id = t5.flow_version_id
+    AND ((T6.eff_date<NOW() AND t6.exp_date>NOW() AND t6.state='P') OR T6.STATE = 'D')
+    INNER JOIN cic_event_flow t7
+    ON t7.event_flow_id = t6.event_flow_id
+    AND t7.state IN ('A','I')
+    INNER JOIN cic_event t8
+    ON t8.event_id = t7.inter_event_id
+    AND t8.state IN ('P')
+    WHERE t1.action_param_id = -11 AND t1.input_value_type ='EV'
+    AND t1.event_attr_id IS NOT NULL
+    AND t3.default_attr IS NULL"
+
+  # 发送的源与通知的action不匹配
+  Contact channel and send action is not matched:
+    des: 检查发送源与发送的操作是否匹配
+    area: comm
+    sql: "
+    SELECT t6.event_code,t5.flow_name,t1.template_name FROM cic_msg_template t1
+    INNER JOIN cic_action_process t2
+    ON t1.template_id = t2.template_id
+    INNER JOIN cic_process t3
+    ON t3.process_id = t2.process_id
+    INNER JOIN cic_flow_version t4
+    ON t4.flow_version_id = t3.flow_version_id
+    AND (t4.state='D' OR (T4.state='P' AND T4.EXP_DATE IS NULL OR T4.EXP_DATE>NOW()))
+    INNER JOIN cic_event_flow t5
+    ON t5.event_flow_id = t4.event_flow_id
+    AND (t5.state = 'A' OR T5.STATE = 'I')
+    INNER JOIN cic_event t6
+    ON t6.event_id = t5.inter_event_id
+    AND t6.state = 'P'
+    LEFT JOIN cic_source_nbr t7
+    ON t1.src_nbr_id = t7.src_nbr_id
+    WHERE (t2.action_id = -1 AND t7.contact_channel<>4)
+    or (t2.action_id = -3 AND t7.contact_channel<>6)
+    or (t2.action_id = -2 AND t7.contact_channel<>5)
+    or (t2.action_id = -6 AND t7.contact_channel<>3)"
+
+  # 发送的号码Send Source Number属性
+  Contact Source Number attribute is Empty:
+    des: 发送的号码Send Source Number属性
+    topic: comm
+    sql: "
+    SELECT
+    F.EVENT_CODE,
+    F.EVENT_NAME,
+    E.FLOW_NAME ,
+    D.VER_NO,
+    C.PROCESS_NAME,
+    A.TEMPLATE_NAME
+    FROM CIC_MSG_TEMPLATE A
+    INNER JOIN CIC_ACTION_PROCESS B ON A.TEMPLATE_ID = B.TEMPLATE_ID
+    INNER JOIN CIC_PROCESS C ON C.PROCESS_ID = B.PROCESS_ID
+    INNER JOIN CIC_FLOW_VERSION D ON D.FLOW_VERSION_ID = C.FLOW_VERSION_ID AND (d.state='D' OR (d.state='P' AND d.EXP_DATE IS NULL OR D.EXP_DATE>NOW()))
+    INNER JOIN CIC_EVENT_FLOW E ON E.EVENT_FLOW_ID = D.EVENT_FLOW_ID AND (E.state = 'A' OR E.STATE = 'I')
+    INNER JOIN CIC_EVENT F ON F.EVENT_ID = E.INTER_EVENT_ID AND F.state = 'P'
+    WHERE A.SRC_NBR_ID = -4"
+
+  Web Message send to Error:
+    des: 站内信中发送对象参数错误
+    sql: "
+    select
+    F.EVENT_CODE,
+    F.EVENT_NAME,
+    E.FLOW_NAME ,
+    D.VER_NO,
+    C.PROCESS_NAME
+    from cic_action_param_value a
+    inner join CIC_ACTION_PROCESS b
+    on a.process_id = b.process_id
+    INNER JOIN CIC_PROCESS C ON C.PROCESS_ID = B.PROCESS_ID
+    INNER JOIN CIC_FLOW_VERSION D ON D.FLOW_VERSION_ID = C.FLOW_VERSION_ID AND (d.state='D' OR (d.state='P' AND d.EXP_DATE IS NULL OR D.EXP_DATE>NOW()))
+    INNER JOIN CIC_EVENT_FLOW E ON E.EVENT_FLOW_ID = D.EVENT_FLOW_ID AND (E.state = 'A' OR E.STATE = 'I')
+    INNER JOIN CIC_EVENT F ON F.EVENT_ID = E.INTER_EVENT_ID AND F.state = 'P'
+    left join cic_inter_event_attr G
+    ON A.EVENT_ATTR_ID = G.EVENT_ATTR_ID
+    WHERE (a.action_param_id = -33 and rtn_field_id<>1043)
+    OR (a.action_param_id = -69 and input_value_type='ES' and rtn_field_id<>1)
+    OR (a.action_param_id = -69 and input_value_type='EV' and g.default_attr!=2)"
+
+  # 通知发送内容中包含非英文字符
+  Condition Rule missing factor:
+    des: Condition Rule中没有配置条件因子
+    area: comm
+    sql: "
+    SELECT t4.ver_no,t5.flow_name
+    FROM cic_condition_rule t1
+    INNER JOIN cic_process t3
+    ON t3.process_id = t1.process_id
+    INNER JOIN cic_flow_version t4
+    ON t4.flow_version_id = t3.flow_version_id
+    AND (t4.state='D' OR (T4.state='P' AND (T4.EXP_DATE IS NULL OR T4.EXP_DATE>NOW())))
+    INNER JOIN cic_event_flow t5
+    ON t5.event_flow_id = t4.event_flow_id
+    AND t5.state = 'A'
+    INNER JOIN cic_event t6
+    ON t6.event_id = t5.inter_event_id
+    AND t6.state = 'P'
+    WHERE t1.judge_field_type IS NULL"
+
+  # 通知发送内容中包含非英文字符
+  Condition Rule missing factor:
+    des: Condition Rule中没有配置条件
+    area: comm
+    sql: "
+    SELECT t5.event_code,t3.flow_name,t2.ver_no
+    FROM `cic_process_connect` t1
+    INNER JOIN cic_process t4
+    ON t4.process_id = t1.from_process_id
+    INNER JOIN cic_flow_version t2
+    ON t4.flow_version_id = t2.flow_version_id
+    AND ((t2.state ='P' AND (eff_date<NOW() AND (exp_date>NOW() OR exp_date IS NULL))) OR t2.state ='D')
+    INNER JOIN cic_event_flow t3
+    ON t2.event_flow_id = t3.event_flow_id
+    AND t3.state ='P'
+    INNER JOIN cic_event t5
+    ON t5.event_id = t3.inter_event_id
+    WHERE t4.process_type=9
+    AND t1.fix_output IS NULL"
+
+  # 同时包含两个有效版本
+  flow contains more than 1 effect version:
+    des: flow下包含1个以上有效版本
+    area: comm
+    sql: "
+    SELECT t4.ver_no,t5.flow_name
+    FROM cic_condition_rule t1
+    INNER JOIN cic_process t3
+    ON t3.process_id = t1.process_id
+    INNER JOIN cic_flow_version t4
+    ON t4.flow_version_id = t3.flow_version_id
+    AND (t4.state='D' OR (T4.state='P' AND (T4.EXP_DATE IS NULL OR T4.EXP_DATE>NOW())))
+    INNER JOIN cic_event_flow t5
+    ON t5.event_flow_id = t4.event_flow_id
+    AND t5.state = 'A'
+    INNER JOIN cic_event t6
+    ON t6.event_id = t5.inter_event_id
+    AND t6.state = 'P'
+    WHERE t1.judge_field_type IS NULL"
+
+  #
+  Email Sender Check for PTO:
+    des: 邮件发送对象检查(PTO专用)
+    area: comm
+    sql: "
+    SELECT CONCAT('update cic_msg_template set src_nbr_id= 38 where TEMPLATE_ID = ',a.TEMPLATE_ID,';') AS excute_SQL,a.src_nbr_id,g.src_nbr, a.TEMPLATE_ID
+    FROM cic_msg_template   a,
+    cic_action_process b,
+    cic_process        c,
+    cic_flow_version   d,
+    cic_event_flow     e,
+    cic_event          f,
+    cic_source_nbr     g
+    WHERE a.template_id = b.template_id
+    AND b.process_id = c.process_id
+    AND c.flow_version_id = d.flow_version_id
+    AND d.event_flow_id = e.event_flow_id
+    AND e.inter_event_id = f.event_id
+    AND g.src_nbr_id = a.src_nbr_id
+	AND e.STATE = 'A'
+	AND (d.EXP_DATE IS NULL OR d.EXP_DATE > NOW())
+	AND d.STATE IN ('P','D')
+    AND a.src_nbr_id IN ('5','9','10');"

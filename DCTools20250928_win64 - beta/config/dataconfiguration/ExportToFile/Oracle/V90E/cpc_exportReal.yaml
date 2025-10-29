@@ -1,0 +1,1059 @@
+UserList:
+  cpc
+
+CPC Topic:
+  7. OTC:
+    "select o.offer_id,o.offer_name,o.offer_type,o.offer_code,'benfit' as a_type,'' as acct_item_type_id,'' as acct_item_type, b.ACCT_RES_ID, c.acct_res_name, to_char(b.VALUE)
+          from crm.offer o,CPC_OTC_PRICE a, CPC_OTC_PRICE_BENEFIT b, cbec_acct_res c
+          where a.price_id = b.PRICE_ID
+          and b.acct_res_id = c.acct_res_id
+          and a.offer_id = o.offer_id
+          union all
+          select o.offer_id,o.offer_name,o.offer_type,o.offer_code, 'Rate' as a_type, to_char(b.acct_item_type_id) as acct_item_type_id,c.acct_item_type_name as acct_item_type,c.acct_res_id, d.acct_res_name,to_char(b.VALUE)
+          from crm.offer o,cpc_otc_price a, CPC_OTC_PRICE_RATE b, cbec_acct_item_type c, cbec_acct_res d
+          where a.PRICE_ID = b.price_id
+          and b.ACCT_ITEM_TYPE_ID = c.ACCT_ITEM_TYPE_ID
+          and c.acct_res_id = d.acct_res_id
+          and a.offer_id = o.offer_id"
+
+  19. Offer And Tarriff Plan:
+    "select * from offer_price"
+
+  20. Tarriff Plan:
+    "SELECT
+         a.TARIFF_PLAN_ID,a.tariff_plan_name,a.Active_date,
+         d.param_id,d.label_name,d.PARAM_VALUE,c.price_plan_id,c.price_plan_name
+     FROM
+         TARIFF_PLAN a,
+         TARIFF_PLAN_RELA b,
+         price_plan c,
+         TARIFF_PLAN_PARAM d
+     WHERE
+         a.tariff_plan_id >= 10000
+             AND a.TARIFF_PLAN_ID = b.TARIFF_PLAN_ID
+             AND b.price_plan_id = c.price_plan_id
+             AND a.TARIFF_PLAN_ID = d.TARIFF_PLAN_ID
+             AND c.price_plan_id = d.price_plan_id
+     ORDER BY a.tariff_plan_name , c.price_plan_name , d.LABEL_NAME"
+
+  30. Globel Price Plan:
+    "select a.price_plan_id, a.price_plan_name,a. priority,a.Active_date, e.re_id,e.re_name, f.rate_plan_id,f.rate_plan_name, g.mapping_id, g.mapping_name,i.price_id, i.price_name, j.con_res_id,j.con_res_name
+     from price_plan a, price_plan_ver b, price_plan_member c , re_price_set d, re e, rate_plan f, mapping g, price_ver h, price i , con_res j, ref_value k
+     where a.price_plan_id >10000
+     and a.state ='B'
+     and a.price_plan_type = 1
+     and a.price_plan_id = b.PRICE_PLAN_ID
+     and b.price_plan_ver_id = c.price_plan_ver_id
+     and c.price_set_id = d.price_set_id
+     and d.re_id = e.re_id
+     and d.re_price_set_id = f.re_price_set_id
+     and f.rate_plan_type = 1
+     and f.rate_plan_id = g.rate_plan_id
+     and g.mapping_id = h.mapping_id
+     and h.price_ver_id = i.price_ver_id
+     and i.price_id = k.price_id
+     and k.ref_value_type = 9
+     and k.value_string = j.con_res_id
+     order by a.priority"
+
+  31. Indivual Price Plan:
+    "select pp.PRICE_PLAN_ID,
+      pp.price_plan_name,
+      pp.priority,
+      ppv.PRICE_PLAN_VER_ID,
+      ppm.PRICE_SET_ID,
+      r.re_id,
+      r.RE_NAME,
+      rps.RE_PRICE_SET_ID,
+      rp.RATE_PLAN_ID,
+      rp.RATE_PLAN_NAME,
+      m.MAPPING_ID,
+      pv.PRICE_VER_ID,
+      p.PRICE_ID,
+      p.PRICE_NAME,
+      eb.PRICE_ID event_benefit_price_id,
+      eb.PRICE_NAME event_benefit_name,
+      ber.RULE_NAME,
+      cr.con_res_id,
+      cr.con_res_name
+      from price_plan pp,
+      price_plan_ver ppv,
+      price_plan_member ppm,
+      re_price_set rps,
+      re r,
+      rate_plan rp,
+      mapping m,
+      con_res cr,
+      price_ver pv
+      left join price p on pv.PRICE_VER_ID = p.PRICE_VER_ID
+      left join ref_value rv  on p.price_id= rv.price_id and rv.ref_value_type = 9
+      left join bal_event_rule ber on pv.PRICE_VER_ID = ber.PRICE_VER_ID
+      left join event_benefit eb on eb.PRICE_VER_ID = pv.PRICE_VER_ID
+      where  pp.price_plan_id >=10000
+      and pp.state = 'B'
+      and pp.PRICE_PLAN_ID = ppv.PRICE_PLAN_ID
+      and ppv.PRICE_PLAN_VER_ID = ppm.PRICE_PLAN_VER_ID
+      and ppm.PRICE_SET_ID = rps.PRICE_SET_ID
+      and rps.RE_ID = r.re_id
+      and rps.RE_PRICE_SET_ID = rp.RE_PRICE_SET_ID
+      and rp.RATE_PLAN_ID = m.RATE_PLAN_ID
+      and m.MAPPING_ID = pv.MAPPING_ID
+      and rv.value_string = cr.con_res_id
+      order by r.re_id,rp.RATE_PLAN_ID"
+
+  33. Usage Event:
+    "select a.re_id, a.re_name, a.re_code, b.parent_re_id,a.comments
+     from re a, re_usage b
+     where a.re_id=b.re_id
+     and a.re_type=1"
+
+  37.Account Balance Type:
+    "SELECT acct_res_id, acct_res_name, std_code,
+     CASE bal_type
+     WHEN 1 THEN 'Basic Balance'
+     WHEN 2 THEN 'Limited Balance'
+     WHEN 3 THEN 'Given Balance'
+     WHEN 4 THEN 'Non Currency Balance'
+     WHEN 5 THEN 'Bonus Balance'
+     WHEN 6 THEN 'Credit Balance'
+     ELSE 'other' END Balance_catalog, priority
+     FROM CBEC_ACCT_RES "
+
+  38.Accumlate Type:
+    "select * from  ratable_resource"
+
+  39. Account Item Type:
+    "select a.acct_item_type_id, a.acct_item_type_name, a.acct_item_type_code, b.acct_res_id, b.acct_res_name
+     from CBEC_ACCT_ITEM_TYPE a, cbec_acct_res b
+     where a.acct_res_id = b.ACCT_RES_ID
+     and acct_item_type_id >10000"
+
+  41. Consume Type:
+    "select con_res_id Consume_Type_ID , con_res_name Consume_Type_Name,
+      case bal_source_type
+        when 4 then 'Non Currency'
+        when 1  then 'Currency'
+        end bal_type
+      from CON_RES where con_res_id>=10000"
+
+  43. Consume& Account Item Type:
+    "select a.con_res_id, a.con_res_name Consume_Type_Name, c.ACCT_ITEM_TYPE_NAME , d.acct_res_name, b.con_res_id, b.ACCT_ITEM_TYPE_ID,b.ACCT_RES_ID,b.PRIORITY
+      from CON_RES a, CON_RES_DETAIL b, CBEC_ACCT_ITEM_TYPE c, cbec_acct_res d
+      where a.CON_RES_ID = b.CON_RES_ID
+      and b.acct_item_type_id = c.ACCT_ITEM_TYPE_ID
+      and b.ACCT_RES_ID = d.ACCT_RES_ID
+      and b.CON_RES_DETAIL_ID>10000"
+
+  45. Reservation Rule:
+    "select a.re_id,b.re_name,d.re_attr_name,a.value
+     from reserve_policy a , re b, def_re_attr c, reserve_re_attr d
+     where a.re_id = b.re_id
+     and a.re_id >= 10000
+     and a.re_attr=c.re_attr
+     and c.def_re_attr = d.re_attr"
+
+  93. Balance Event Rule:
+    "select a.price_plan_id,a.price_plan_name, e.re_id,e.re_name, f.rate_plan_id,f.rate_plan_name, g.mapping_id, g.mapping_name, i.rule_name, i.rule
+      from price_plan a, price_plan_ver b, price_plan_member c, re_price_set d, re e,rate_plan f, mapping g, price_ver h,bal_event_rule i
+      where a.price_plan_id = b.price_plan_id
+      and b.price_plan_ver_id = c.price_plan_ver_id
+      and c.price_set_id = d.price_set_id
+      and d.re_id = e.re_id
+      and d.re_price_set_id = f.re_price_set_id
+      and f.rate_plan_id = g.rate_plan_id
+      and g.mapping_id = h.mapping_id
+      and h.price_ver_id = i.price_ver_id"
+
+  101. acct_item Tax:
+    "select b.tax_code_map_rule_name,a.tax_std_code,a.tax_rate, c.tax_fact_val_grp_name,c.reverse_flag, d.tax_factor_name, f.acct_item_type_id, f.acct_item_type_name, g.tax_factor_name, b.tax_fact1_val
+    from cbec_tax_code a, cbec_tax_code_map_rule b, cbec_tax_fact_val_grp c,cbec_tax_factor d, cbec_tax_fact_val_grp_map e, cbec_acct_item_type f, (select * from cbec_tax_factor where project_code=4141 ) g
+    where b.tax_code=a.tax_code
+    and b.tax_fact2_val_grp_id = c.tax_fact_val_grp_id
+    and c.tax_factor_id = d.tax_factor_id
+    and c.tax_fact_val_grp_id=e.tax_fact_val_grp_id
+    and e.tax_fact_value = f.acct_item_type_id
+    and b.rule_priority = g.factor_priority
+    order by b.tax_code_map_rule_id, c.tax_fact_val_grp_name"
+
+  124. GL and AccoutItemType:
+    "SELECT DISTINCT g.GL_ID, g.GL_CODE, g.GL_NAME, gt.GL_TYPE_NAME, ait.ACCT_ITEM_TYPE_ID, ait.ACCT_ITEM_TYPE_CODE, ait.ACCT_ITEM_TYPE_NAME
+                FROM cbec_gl g, cbec_gl_acct_item_type gait, cbec_acct_item_type ait, cbec_gl_type gt
+               WHERE g.GL_ID = gait.GL_ID
+                 AND gait.ACCT_ITEM_TYPE_ID = ait.ACCT_ITEM_TYPE_ID
+                 AND g.GL_TYPE_ID = gt.GL_TYPE_ID"
+
+  150. Offer and  Balance Real:
+    # Offer和赠送账本的关系，包含了租费和一次性费用
+    "SELECT crmo.offer_id,crmo.offer_name,crmo.offer_code,0 as tariff_plan_id,'OTC' tariff_plan_name,cpccopp.price_plan_id,cpccopp.PRICE_PLAN_NAME,'OTC' re_name, cpccop.price_id,
+     'OTC' price_name,cpccopb.ACCT_RES_ID,cpccar.STD_CODE,cpccar.ACCT_RES_NAME
+     FROM cpc.CPC_OTC_OFFER_PRICE cpccoop,cpc.CPC_OTC_PRICE_PLAN cpccopp,cpc.CPC_OTC_PRICE_PLAN_VER cpccoppv,cpc.CPC_OTC_PRICE cpccop,cpc.CPC_OTC_PRICE_BENEFIT cpccopb,
+     cpc.CBEC_ACCT_RES cpccar,crm.offer crmo
+     WHERE
+     cpccoop.PRICE_PLAN_ID=cpccopp.PRICE_PLAN_ID
+     AND cpccopp.PRICE_PLAN_ID=cpccoppv.PRICE_PLAN_ID
+     AND cpccoppv.PRICE_PLAN_VER_ID=cpccop.PRICE_PLAN_VER_ID
+     AND cpccop.PRICE_CLASS='BENEFIT'
+     AND cpccop.PRICE_ID=cpccopb.PRICE_ID
+     AND cpccopb.ACCT_RES_ID=cpccar.ACCT_RES_ID
+     AND crmo.offer_id =cpccoop.offer_id
+     union
+     select crmo.offer_id,crmo.offer_name,crmo.offer_code,cpctp.tariff_plan_id , cpctp.tariff_plan_name ,cpcpp.price_plan_id,cpcpp.price_Plan_name, cpcr.re_name,cpceb.price_id,
+     cpceb.price_name, cpccar.acct_res_id , cpccar.std_code, cpccar.acct_res_name
+     from
+     crm.offer crmo, cpc.offer_price cpcop, cpc.tariff_plan_rela cpctpr, cpc.tariff_plan cpctp,cpc.price_plan cpcpp, cpc.PRICE_PLAN_VER cpcppv, cpc.PRICE_PLAN_MEMBER cpcppm,
+     cpc.RE_PRICE_SET cpcrps, cpc.re cpcr, cpc.RATE_PLAN cpcrp, cpc.mapping cpcm, cpc.PRICE_VER cpcpv, cpc.event_benefit cpceb, cpc.sub_bal_type cpcsbt, cpc.cbec_acct_res cpccar
+     where crmo.offer_type=4
+     and crmo.offer_id = cpcop.offer_id
+     and cpcop.tariff_plan_id = cpctpr.tariff_plan_id
+     and cpcop.tariff_plan_id = cpctp.tariff_plan_id
+     and cpctpr.price_plan_id = cpcpp.price_plan_id
+     and cpcpp.price_plan_id  = cpcppv.price_plan_id
+     and cpcppv.price_plan_ver_id = cpcppm.price_plan_ver_id
+     and cpcppm.price_set_id = cpcrps.price_set_id
+     and cpcr.re_type <> 1
+     and cpcrps.re_id = cpcr.re_id
+     and cpcrps.re_price_set_id = cpcrp.re_price_set_id
+     and cpcrp.rate_plan_id = cpcm.rate_plan_id
+     and cpcm.mapping_id = cpcpv.mapping_id
+     and cpcpv.price_ver_id = cpceb.price_ver_id
+     and cpceb.sub_bal_type_id = cpcsbt.sub_bal_type_id
+     and cpcsbt.acct_res_id = cpccar.acct_res_id"
+
+  151.Offer_TO_RE&ACCT_ITEM&RES:
+    "select o.offer_id,o.offer_type,o.offer_name,o.offer_code,tp.tariff_plan_id,tp.tariff_plan_name,
+     pp.PRICE_PLAN_ID,
+                      pp.price_plan_name,
+                      ppv.PRICE_PLAN_VER_ID,
+                      ppm.PRICE_SET_ID,
+                      r.re_id,
+                      r.RE_NAME,
+                      rps.RE_PRICE_SET_ID,
+                      rp.RATE_PLAN_ID,
+                      rp.RATE_PLAN_NAME,
+                      rpz.MAPPING_DES_VALUE,
+                      m.MAPPING_ID,
+                      z.ZONE_NAME,
+                      pv.PRICE_VER_ID,
+                      p.PRICE_ID,
+                      p.PRICE_NAME,
+                      rv.ref_value_id CONS_ID,
+                      cr.con_res_name,
+                      cait.acct_item_type_id,
+                      cait.acct_item_type_name,
+                      car.acct_res_id,
+                      car.acct_res_name
+                 from crm.offer o, offer_price op, tariff_plan_rela tpr, tariff_plan tp,
+                 price_plan pp,
+                    price_plan_ver ppv,
+                    price_plan_member ppm,
+                    re_price_set rps,
+                    re r,
+                    rate_plan rp,
+                    mapping m
+                       left join MAPPING_UNIT mu on m.MAPPING_ID = mu.MAPPING_ID
+                       left join zone z on mu.MAPPING_VALUE = z.ZONE_ID
+                       left join rate_plan_zone rpz on m.RATE_PLAN_ID = rpz.RATE_PLAN_ID,
+                    price_ver pv
+                        left join price p on pv.PRICE_VER_ID = p.PRICE_VER_ID,
+                    PRICE_WORK_NODE pwn,
+                    WORK_ACTION pa,
+                    ACTION_PRICE ap,
+                    REF_VALUE rv,
+                    con_res_detail crd,
+                    con_res cr,
+                    CBEC_ACCT_ITEM_TYPE cait,
+                    cbec_acct_res car
+             where o.state='A'
+             and o.offer_id = op.offer_id
+             and op.tariff_plan_id = tpr.tariff_plan_id
+             and op.tariff_plan_id = tp.tariff_plan_id
+             and tpr.price_plan_id = pp.price_plan_id
+             and pp.PRICE_PLAN_ID = ppv.PRICE_PLAN_ID
+                         and pp.state = 'B'
+                         and ppv.PRICE_PLAN_VER_ID = ppm.PRICE_PLAN_VER_ID
+                         and ppm.PRICE_SET_ID = rps.PRICE_SET_ID
+                         and rps.RE_ID = r.re_id
+                         and rps.RE_PRICE_SET_ID = rp.RE_PRICE_SET_ID
+                         and rp.RATE_PLAN_ID = m.RATE_PLAN_ID
+                         and m.MAPPING_ID = pv.MAPPING_ID
+                         and pwn.PRICE_ID = p.PRICE_ID
+                         and pwn.work_node_id = pa.work_node_id
+                         and pa.work_action_id = ap.work_action_id
+                         and ap.con_res_id = rv.ref_value_id
+                         and rv.value_string = crd.con_res_id
+                         and crd.con_res_id = cr.CON_RES_ID
+                         and crd.acct_item_type_id = cait.acct_item_type_id
+                         and crd.acct_res_id = car.acct_res_id
+             order by o.offer_id, o.offer_name"
+
+
+
+  152.Offer_TO_RE&ACCT_ITEM&RES:
+    # 查找出offer和tarriff_plan的参数和参数值，对price_plan的关系
+    "SELECT
+         o.offer_id,
+         o.offer_type,
+         o.offer_name,
+         o.offer_code,
+         opp.param_value,
+         tp.tariff_plan_id,
+         tp.tariff_plan_name,
+         tpp.tariff_plan_param_id,
+         tpp.label_name,
+         tpp.param_value,
+         pp.price_plan_id,
+         pp.price_plan_name,
+         pp.priority,
+         ppv.price_plan_ver_id,
+         ppm.price_set_id,
+         r.re_id,
+         r.re_name,
+         rps.re_price_set_id,
+         rp.rate_plan_id,
+         rp.rate_plan_name,
+         rpz.mapping_des_value,
+         m.mapping_id,
+         z.zone_id,
+         z.zone_name,
+         pv.price_ver_id,
+         p.price_id,
+         p.price_name,
+         rv.ref_value_id cons_id,
+         cr.con_res_name,
+         ppp.param_id,
+         ppp.label_name,
+         p.rum,
+         ra.re_attr_name
+     FROM
+         crm.offer           o,
+         offer_price         op,
+         offer_pricing_param opp,
+         tariff_plan_rela    tpr,
+         tariff_plan         tp,
+         tariff_plan_param   tpp,
+         price_plan          pp,
+         price_plan_ver      ppv,
+         price_plan_member   ppm,
+         re_price_set        rps,
+         re                  r,
+         rate_plan           rp, mapping             m
+         LEFT JOIN mapping_unit        mu ON m.mapping_id = mu.mapping_id
+         LEFT JOIN zone                z ON mu.mapping_value = z.zone_id
+         LEFT JOIN rate_plan_zone      rpz ON m.rate_plan_id = rpz.rate_plan_id, price_ver           pv
+         LEFT JOIN price               p ON pv.price_ver_id = p.price_ver_id,
+         re_attr             ra,
+         price_work_node     pwn,
+         work_action         pa,
+         action_price        ap,
+         ref_value           rv,
+         con_res_detail      crd,
+         con_res             cr,
+         ref_value           rv2,
+         price_plan_param    ppp
+     WHERE
+             o.state = 'A'
+         AND o.offer_id = op.offer_id
+         AND op.tariff_plan_id = tpr.tariff_plan_id
+         AND op.tariff_plan_id = tp.tariff_plan_id
+         AND op.offer_price_id = opp.offer_price_id
+         AND opp.tariff_plan_param_id = tpp.tariff_plan_param_id
+         AND tpr.price_plan_id = pp.price_plan_id
+         AND pp.price_plan_id = ppv.price_plan_id
+         AND pp.state = 'B'
+         AND ppv.price_plan_ver_id = ppm.price_plan_ver_id
+         AND ppm.price_set_id = rps.price_set_id
+         AND rps.re_id = r.re_id
+         AND rps.re_price_set_id = rp.re_price_set_id
+         AND rp.rate_plan_id = m.rate_plan_id
+         AND m.mapping_id = pv.mapping_id
+         AND pwn.price_id = p.price_id
+         AND pwn.work_node_id = pa.work_node_id
+         AND pa.work_action_id = ap.work_action_id
+         AND ap.con_res_id = rv.ref_value_id
+         AND rv.value_string = crd.con_res_id
+         AND crd.con_res_id = cr.con_res_id
+         AND p.re_attr = ra.re_attr
+         AND p.ref_value_id = rv2.ref_value_id
+         AND rv2.value_string = ppp.param_id
+         AND ppp.price_plan_id = pp.price_plan_id
+         AND tp.tariff_plan_id = tpp.tariff_plan_id
+         AND pp.price_plan_id = tpp.price_plan_id
+         AND rv2.value_string = to_char(tpp.param_id)
+     ORDER BY
+         o.offer_id,
+         o.offer_name"
+
+  153.Global price Detail:
+    # 全局资费计划的配置导出
+    "SELECT
+             pp.price_plan_id,
+             pp.price_plan_name,
+             pp.priority,
+             ppv.price_plan_ver_id,
+             ppm.price_set_id,
+             r.re_id,
+             r.re_name,
+             rps.re_price_set_id,
+             rp.rate_plan_id,
+             rp.rate_plan_name,
+             rpz.mapping_des_value,
+             m.mapping_id,
+             m.mapping_name,
+             z.zone_id,
+             z.zone_name,
+             pv.price_ver_id,
+             p.price_id,
+             p.price_name,
+             rv.ref_value_id cons_id,
+             cr.con_res_name,
+             rv2.value_string,
+             p.rum,
+             ra.re_attr_name,
+             cait.acct_item_type_id,
+             cait.acct_item_type_name,
+             car.acct_res_id,
+             car.acct_res_name
+         FROM
+             price_plan          pp,
+             price_plan_ver      ppv,
+             price_plan_member   ppm,
+             re_price_set        rps,
+             re                  r,
+             rate_plan           rp, mapping             m
+             LEFT JOIN mapping_unit        mu ON m.mapping_id = mu.mapping_id
+             LEFT JOIN zone                z ON mu.mapping_value = z.zone_id
+             LEFT JOIN rate_plan_zone      rpz ON m.rate_plan_id = rpz.rate_plan_id, price_ver           pv
+             LEFT JOIN price               p ON pv.price_ver_id = p.price_ver_id,
+             re_attr             ra,
+             price_work_node     pwn,
+             work_action         pa,
+             action_price        ap,
+             ref_value           rv,
+             con_res_detail      crd,
+             con_res             cr,
+             ref_value           rv2,
+             cbec_acct_item_type cait,
+             cbec_acct_res       car
+         WHERE
+                 pp.price_plan_type = 1
+             AND pp.price_plan_id = ppv.price_plan_id
+             AND pp.state = 'B'
+             AND ppv.price_plan_ver_id = ppm.price_plan_ver_id
+             AND ppm.price_set_id = rps.price_set_id
+             AND rps.re_id = r.re_id
+             AND rps.re_price_set_id = rp.re_price_set_id
+             AND rp.rate_plan_id = m.rate_plan_id
+             AND m.mapping_id = pv.mapping_id
+             AND pwn.price_id = p.price_id
+             AND pwn.work_node_id = pa.work_node_id
+             AND pa.work_action_id = ap.work_action_id
+             AND ap.con_res_id = rv.ref_value_id
+             AND rv.value_string = crd.con_res_id
+             AND crd.con_res_id = cr.con_res_id
+             AND crd.acct_item_type_id = cait.acct_item_type_id
+             AND crd.acct_res_id = car.acct_res_id
+             AND p.re_attr = ra.re_attr
+             AND p.ref_value_id = rv2.ref_value_id
+             AND price_plan_name IN ( 'Special Number Price Plan','Global Local Data', 'Global Local FreeRes Benefit','Global Local FreeRes CMS')
+         ORDER BY
+             rp.rate_plan_name,
+             m.mapping_name"
+
+JournalExport:
+  02. Account Item Type:
+    "select a.acct_item_type_id, a.acct_item_type_name, a.acct_item_type_code, b.acct_res_id, b.acct_res_name
+          from CBEC_ACCT_ITEM_TYPE a, cbec_acct_res b
+          where a.acct_res_id = b.ACCT_RES_ID
+          and acct_item_type_id >10000"
+
+BoBNeed:
+  06_CPC.CBEC_ACCT_ITEM_TYPE:
+    "select * from cbec_ACCT_ITEM_TYPE"
+
+  07_CPC.CBEC_BILLING_CYCLE:
+    "select * from CBEC_BILLING_CYCLE"
+
+  08_CPC.CBEC_BILLING_CYCLE_TYPE:
+    "select * from CBEC_BILLING_CYCLE_TYPE"
+
+  09_CPC.CBEC_ACCT_RES:
+    "select * from CBEC_ACCT_RES"
+
+  10_CPC.CBEC_CONTACT_CHANNEL:
+    "select * from CBEC_CONTACT_CHANNEL"
+
+  11_CPC.CBEC_DEPOSIT_TYPE:
+    "select * from CBEC_DEPOSIT_TYPE"
+
+  12_CPC.CBEC_PAYMENT_METHOD:
+    "select * from CBEC_PAYMENT_METHOD"
+
+  13_CPC.RE:
+    "select * from RE"
+
+  14_CPC.RE_TYPE:
+    "select * from RE_TYPE"
+
+  15_CPC.COUNTRY_OPERATOR:
+    "SELECT * FROM ZONE z, ZONE_VALUE zv where ZONE_MAP_ID = 40 and z.ZONE_ID = zv.ZONE_ID"
+
+ATTR:
+  1分拣条件:
+    "SELECT FUNCTION, PARAM1, PARAM2
+      FROM bwf_cond
+      WHERE (FUNCTION) IN ('GetMainOfferAttrValue', 'GetOfferAttrValue',
+      'GetIndepProdAttrValue', 'GetAcctAttrValue',
+      'GetOfferAttrValueSum', 'SetCBECModifyAttrList',
+      'GetVirtualSubsAttr', 'GetPricePlanAttrValue')"
+
+  2分拣动作:
+    "SELECT FUNCTION, PARAM1, PARAM2
+    FROM bwf_ACTION
+    WHERE (FUNCTION) IN ('GetMainOfferAttrValue', 'GetOfferAttrValue',
+    'GetIndepProdAttrValue', 'GetAcctAttrValue',
+    'GetOfferAttrValueSum', 'SetCBECModifyAttrList',
+    'GetVirtualSubsAttr', 'GetPricePlanAttrValue')"
+
+
+  3条件资费中判断条件左值:
+    "select  b.function ,a.l_param1,a.l_param2 from MAPPING_CONDITION_GROUp a , sort_function b where a.L_function_id=b.function_id and
+    (b.FUNCTION) IN ('GetMainOfferAttrValue', 'GetOfferAttrValue',
+    'GetIndepProdAttrValue', 'GetAcctAttrValue',
+    'GetOfferAttrValueSum', 'SetCBECModifyAttrList',
+    'GetVirtualSubsAttr', 'GetPricePlanAttrValue')"
+
+
+  4条件资费中判断条件右值:
+    "select  b.function ,a.R_param1,a.R_param2 from MAPPING_CONDITION_GROUp a , sort_function b where a.R_function_id=b.function_id and
+    (b.FUNCTION) IN ('GetMainOfferAttrValue', 'GetOfferAttrValue',
+    'GetIndepProdAttrValue', 'GetAcctAttrValue',
+    'GetOfferAttrValueSum', 'SetCBECModifyAttrList',
+    'GetVirtualSubsAttr', 'GetPricePlanAttrValue')"
+
+  5条件资费执行动作:
+    "SELECT FUNCTION, PARAM1, PARAM2
+    FROM MAPPING_CONDITION_ACTION
+    WHERE (FUNCTION) IN ('GetMainOfferAttrValue', 'GetOfferAttrValue',
+    'GetIndepProdAttrValue', 'GetAcctAttrValue',
+    'GetOfferAttrValueSum', 'SetCBECModifyAttrList',
+    'GetVirtualSubsAttr', 'GetPricePlanAttrValue')"
+
+
+
+  6映射动态属性:
+    "select b.attr_id,b.attr_code from dyn_re_attr a , BILL_ATTR b where a.dyn_attr_id=b.attr_id"
+
+  7balc需要的属性:
+
+    "select * from bal_event_rule t where
+    t.rule like '%%functionName:GetAcctAttr%%' or
+    t.rule like '%%functionName:GetSubsAttr%%' or
+    t.rule like '%%functionName:GetIndepProdSpecAttr%%' or
+    t.rule like '%%functionName:GetOfferSpecAttr%%' or
+    t.rule like '%%functionName:GetCustAttr%%'"
+
+  8balc需要的属性2:
+    "select * from abc.jl_rule t
+    where
+    t.jl_rule_script like '%%functionName:GetAcctAttr%%' or
+    t.jl_rule_script like '%%functionName:GetSubsAttr%%' or
+    t.jl_rule_script like '%%functionName:GetIndepProdSpecAttr%%' or
+    t.jl_rule_script like '%%functionName:GetOfferSpecAttr%%' or
+    t.jl_rule_script like '%%functionName:GetCustAttr%%'"
+
+
+  9账单配置inv库:
+    "SELECT DISTINCT(FILTER_VALUE) FROM INV.BILL_ITEM_ATTR WHERE SRC_ATTR_ID IN(4002,6002,8003)"
+
+
+  10账务优惠的cpc库:
+    "SELECT DISTINCT(R.VALUE_STRING) FROM cpc.TAB_DP_COND_GRP_DT T,cpc.REF_VALUE R WHERE T.L_DP_REF_COND_ID IN (1014,1015,1016) AND T.L_PARAM=R.REF_VALUE_ID"
+
+  11欠费的催缴:
+    "select a.element_value as attr_code
+        from abc.coll_gpr_element a, abc.COLL_GPR_AE b
+       where a.gpr_element_id = b.param1
+         and b.FUNCTION_ID in (30, 31, 32)"
+
+
+
+HuweiSF:
+  01_recur_benefit:
+  #租费赠送查询SQL
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,PP.PRICE_PLAN_TYPE,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    PPM.PRICE_SET_ID,
+    PS.PRICE_SET_PRIORITY_ID,
+    RPS.RE_PRICE_SET_ID,RPS.RE_ID,RPS.WORKFLOW_ID,RPS.POST_WORKFLOW_ID,
+    R.RE_NAME,R.RE_DISPLAY_NAME,R.RE_TYPE,
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.RATE_PLAN_TYPE,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,M.PRIORITY,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    EB.PRICE_ID,EB.PRICE_NAME,EB.REF_VALUE_ID,EB.SUB_BAL_TYPE_ID
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,re_price_set rps,re r,rate_plan rt,
+    mapping m,price_ver pv,event_benefit eb
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and rps.price_set_id=ps.price_set_id
+    and rps.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and eb.price_ver_id=pv.price_ver_id"
+
+
+  02_TopUpRule:
+  #充值涉及的规则
+    "select pp.PRICE_PLAN_ID,pp.PRICE_PLAN_NAME,ppv.price_plan_ver_id,ppv.eff_date,ppv.exp_date,
+    r.re_id,r.re_name,rp.rate_plan_id,rp.rate_plan_name,p.* from price_plan pp left join PRICE_PLAN_VER ppv on pp.PRICE_PLAN_ID = ppv.PRICE_PLAN_ID
+    inner join PRICE_PLAN_MEMBER ppm on ppm.PRICE_PLAN_VER_ID = ppv.PRICE_PLAN_VER_ID
+    inner join PRICE_SET ps on ps.PRICE_SET_ID = ppm.PRICE_SET_ID
+    inner join RE_PRICE_SET rps on rps.PRICE_SET_ID = ps.PRICE_SET_ID
+    inner join RATE_PLAN rp on rp.RE_PRICE_SET_ID = rps.RE_PRICE_SET_ID
+    inner join re r on r.RE_ID = rps.RE_ID
+    inner join MAPPING m on m.RATE_PLAN_ID = rp.RATE_PLAN_ID
+    inner join PRICE_VER pv on pv.MAPPING_ID = m.MAPPING_ID
+    left join BAL_EVENT_RULE p on p.PRICE_VER_ID = pv.PRICE_VER_ID where r.RE_ID = 952"
+
+  03_otc:
+    "select cpp.PRICE_PLAN_ID,cpp.PRICE_PLAN_NAME,cop.SERVICE_OFFER_ID,se.event_name,cps.* from CPC_OTC_PRICE_PLAN cpp inner join CPC_OTC_PRICE_PLAN_VER cppv on cpp.PRICE_PLAN_ID = cppv.PRICE_PLAN_ID
+    inner join CPC_OTC_PRICE cop on cppv.PRICE_PLAN_VER_ID = cop.PRICE_PLAN_VER_ID
+    inner join CPC_OTC_PRICE_SCRIPT cps on cop.PRICE_ID = cps.PRICE_ID
+    inner join cc.subs_event se on se.subs_event_id = cop.SERVICE_OFFER_ID"
+
+
+  04_billformatxml:
+    "select a.BILL_FORMAT_ID,a.BILL_FORMAT_NAME,b.BILL_TEMPLATE,b.XSL_TEMPLATE,c.BILL_TEMPLATE,c.file_type
+    from BILL_FORMAT a,BILL_FORMAT_VER b,BILL_FORMAT_TEMPLATE_RELA c
+    where a.BILL_FORMAT_ID=b.BILL_FORMAT_ID
+    and b.BILL_FORMAT_VER_ID=c.BILL_FORMAT_VER_ID(+)
+    and a.BILL_FORMAT_ID in (1,2,4,10,11)
+    and a.STATE='A'
+    and b.STATE='A'"
+
+  05_billformattxt:
+    "select bf.bill_format_id,bf.bill_format_name,bfv.bill_format_ver_id,
+    bfi.bill_item_id,bir.orignal_item_id,bir.lev,bir.sub_item_id,bi.item_name,bia.bill_item_attr_id,bia.src_attr_id,brsa.attr_name
+    from  bill_format bf,bill_format_ver bfv,bill_format_item bfi,
+    (select connect_by_root a.bill_item_id bill_item_id,a.bill_item_id orignal_item_id, a.sub_item_id,level lev
+    from bill_item_rela a
+    connect by  a.bill_item_id = prior a.sub_item_id
+    order by a.bill_item_id, level) bir,bill_item bi,bill_item_attr bia,BILL_RES_SRC_ATTR brsa
+    where   bf.bill_format_id=bfv.bill_format_id
+    and bfi.bill_format_ver_id=bfv.bill_format_ver_id
+    and bfi.bill_item_id=bir.bill_item_id
+    and bir.sub_item_id=bi.bill_item_id
+    and bi.bill_item_id=bia.bill_item_id
+    and bia.src_attr_id=brsa.attr_id
+    order by bf.bill_format_id,bir.lev"
+
+
+  06_recurring:
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,PP.PRICE_PLAN_TYPE,pp.priority,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    rep.re_id,r.re_name,rep.recurring_re_type,RPS.WORKFLOW_ID,(select t.workflow_name from bwf_workflow t where t.workflow_id= RPS.WORKFLOW_ID),RPS.POST_WORKFLOW_ID,
+    (select t.workflow_name from bwf_workflow t where t.workflow_id= RPS.POST_WORKFLOW_ID),
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.RATE_PLAN_TYPE,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    p.price_id,p.price_name,rvc.value_string con_res_id,cr.con_res_name,rvp.value_string price_value
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,re_price_set rps,re_pp_recurring rep,re r,rate_plan rt,
+    mapping m,price_ver pv,price p,ref_value rvc,ref_value rvp,con_res cr
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and rps.price_set_id=ps.price_set_id
+    and rps.re_id=rep.re_id
+    and rep.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and p.price_ver_id=pv.price_ver_id
+    and p.con_res_id=rvc.ref_value_id
+    and rvc.value_string=cr.con_res_id
+    and p.ref_value_id=rvp.ref_value_id"
+
+
+  07_bilingdiscount:
+  #账务优惠查询，百分比
+    "select pp.price_plan_id,pp.price_plan_name,
+    ppv.price_plan_ver_id,PPV.EFF_DATE,PPV.EXP_DATE,
+    ppm.price_set_id,
+    dp.dp_id,dp.dp_name,
+    (select listagg(t.acct_item_type_id,',') within GROUP (order by t.acct_item_type_id) from disct_obj_aitid t where t.disct_obj_id=td.ref_disct_obj_id group by t.disct_obj_id) Reference_Object,
+    rv.value_string percent,
+    decode(tdd.disct_calc_method,1,'Percent', 2,'Fixed Amount',4,'Ceil and Floor' ),rva.value_string calc_val,tdd.f_val,tdd.c_val,rvs.value_string s_val,rve.value_string e_val
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm, price_set ps,dp dp,tab_dp td,tab_dp_dt tdd,ref_value rv,
+    ref_value rva,ref_value rvs,ref_value rve
+    where pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ppm.price_set_id=ps.price_set_id
+    and ps.price_set_id=dp.price_set_id
+    and dp.dp_id=td.dp_id
+    and td.dp_id=tdd.dp_id
+    and tdd.calc_val=rv.ref_value_id
+    and tdd.disct_calc_method=1
+    and tdd.calc_val=rva.ref_value_id
+    and tdd.s_val=rvs.ref_value_id
+    and tdd.e_val=rve.ref_value_id"
+
+  08_billing_MMB:
+  #-------账务优惠查询，MMB
+    "select pp.price_plan_id,pp.price_plan_name,
+    ppv.price_plan_ver_id,PPV.EFF_DATE,PPV.EXP_DATE,
+    ppm.price_set_id,
+    dp.dp_id,dp.dp_name,
+    (select listagg(t.acct_item_type_id,',') within GROUP (order by t.acct_item_type_id) from disct_obj_aitid t where t.disct_obj_id=td.ref_disct_obj_id group by t.disct_obj_id) Reference_Object
+    ,
+    rvf.value_string MMB_value,
+    decode(tdd.disct_calc_method,1,'Percent', 2,'Fixed Amount',4,'Ceil and Floor' ),tdd.calc_val,rvf.value_string f_val,rvc.value_string c_val,rvs.value_string s_val,rve.value_string e_val
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm, price_set ps,dp dp,tab_dp td,tab_dp_dt tdd,ref_value rvf,
+    ref_value rvc,ref_value rvs,ref_value rve
+    where pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ppm.price_set_id=ps.price_set_id
+    and ps.price_set_id=dp.price_set_id
+    and dp.dp_id=td.dp_id
+    and td.dp_id=tdd.dp_id
+    and tdd.f_val=rvf.ref_value_id
+    and tdd.disct_calc_method='4'
+    and tdd.c_val=rvc.ref_value_id
+    and tdd.s_val=rvs.ref_value_id
+    and tdd.e_val=rve.ref_value_id"
+  
+  09_billingdiscount_fixed:
+  #-------账务优惠查询，Fixed
+    "select pp.price_plan_id,pp.price_plan_name,
+    ppv.price_plan_ver_id,PPV.EFF_DATE,PPV.EXP_DATE,
+    ppm.price_set_id,
+    dp.dp_id,dp.dp_name,
+    (select listagg(t.acct_item_type_id,',') within GROUP (order by t.acct_item_type_id) from disct_obj_aitid t where t.disct_obj_id=td.ref_disct_obj_id group by t.disct_obj_id) Reference_Object
+    ,
+    rvc.value_string Fixed_value,
+    decode(tdd.disct_calc_method,1,'Percent', 2,'Fixed Amount',4,'Ceil and Floor' ),rvc.value_string calc_val,tdd.f_val,tdd.c_val,rvs.value_string s_val,rve.value_string e_val
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm, price_set ps,dp dp,tab_dp td,tab_dp_dt tdd
+    ,ref_value rvc,ref_value rvs,ref_value rve
+    where pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ppm.price_set_id=ps.price_set_id
+    and ps.price_set_id=dp.price_set_id
+    and dp.dp_id=td.dp_id
+    and td.dp_id=tdd.dp_id
+    and tdd.disct_calc_method='2'
+    and tdd.calc_val=rvc.ref_value_id
+    and tdd.s_val=rvs.ref_value_id
+    and tdd.e_val=rve.ref_value_id"
+  
+  10_deposit_type:
+  #--deposit_type
+    "select t.deposit_type_id,t.name,t.charge,t.deposit_type_code,t.currency_type_id,t.state,t.refundable,t.trans_credit,t.apply_obj from cbec_deposit_type t"
+
+  11_acct_res:
+  #--acct_res
+    "select t.acct_res_id,t.bal_type,t.acct_res_name,t.is_currency,t.pack_inner,t.refillable,t.std_code,t.unit_id,(select a.unit_name from cbec_unit a where a.unit_id=t.unit_id),t.overdraft_flag,t.state from cbec_acct_res t"
+
+
+  12_zone:
+  #--zonemap,zone,zonevalue
+    "select t1.zone_map_id,t1.zone_map_name,t.zone_id,t.zone_name,t2.zone_value_id,t2.value from zone t,zone_map t1,zone_value t2
+    where t.zone_map_id=t1.zone_map_id
+    and t2.zone_id=t.zone_id
+    order by t1.zone_map_id,t.zone_id"
+
+  13_price_plan_prio:
+  #--PricePlan_priority
+    "select tp.tariff_plan_id,tp.tariff_plan_name,t.price_plan_id,t.price_plan_code,t.price_plan_name,
+    t.priority,t.state,t.price_plan_type,t.price_plan_genre,t.apply_level,t.policy_plan_flag
+    from price_plan t,tariff_plan tp,tariff_plan_rela tpr
+    where tp.tariff_plan_id=tpr.tariff_plan_id
+    and tpr.price_plan_id=t.price_plan_id and  t.policy_plan_flag='N'"
+
+  14_con_res_detail:
+  #--con_res_detail
+    "select t.con_res_id,t.con_res_name,t1.acct_res_id,(select a.acct_res_name from cbec_acct_res a where a.acct_res_id=t1.acct_res_id),t1.acct_item_type_id,
+    (select a1.acct_item_type_name from cbec_acct_item_type a1 where a1.acct_item_type_id=t1.acct_item_type_id),t1.priority
+    from con_res t, con_res_detail t1
+    where t.con_res_id=t1.con_res_id
+    order by t1.con_res_id,t1.priority"
+
+  15_cbec_billing_cycle:
+  #--CBEC_BILLING_CYCLE
+    "select * from CBEC_BILLING_CYCLE"
+
+  #--KB-Bytes
+  #select * from dc_acct_res_data;
+  
+  16_KB_Byte:
+  #kb->Byte
+  #-- 1. 租费，使用费赠送 ref_value表中value*1000， config_unit_id=4
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    RPS.RE_ID,RPS.WORKFLOW_ID,RPS.POST_WORKFLOW_ID,
+    R.RE_NAME,R.RE_TYPE,
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    EB.PRICE_ID,EB.PRICE_NAME,sbt.acct_res_id,
+    rv.value_string/1000 before_value,rv.value_string after_value
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,re_price_set rps,re r,rate_plan rt,
+    mapping m,price_ver pv,event_benefit eb,sub_bal_type sbt,ref_value rv
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and rps.price_set_id=ps.price_set_id
+    and rps.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and eb.price_ver_id=pv.price_ver_id
+    and eb.sub_bal_type_id=sbt.sub_bal_type_id
+    and eb.ref_value_id=rv.ref_value_id
+    and rv.ref_value_id in (
+    select p.ref_value_id from event_benefit p,sub_bal_type sbt,dc_acct_res_data dar
+    where  p.sub_bal_type_id=sbt.sub_bal_type_id and sbt.acct_res_id=dar.acct_res_id
+    and dar.unit='KB' and dar.is_currency='N')
+    and rv.ref_value_type='1'
+    and (rv.sp_id <>'26' or rv.sp_id is null)"
+  
+
+  17_bal_trigger:
+  #-- 4. 余额触发器,ref_value表中value*1000， config_unit_id=4
+    "select pp.price_plan_id,pp.price_plan_name,ppv.price_plan_ver_id,ps.price_set_id,bt.trigger_id,
+    bt.acct_res_id,bth.bal_threshold_id,rv.value_string/1000 v7_threshold,rv.value_string v9_threshold,bse.subs_event_id,cie.event_code,cie.event_name
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,bal_trigger bt,bal_threshold bth,dc_acct_res_data dar,bal_subs_event bse,cbec_inter_event cie,ref_value rv
+    where pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ppm.price_set_id=ps.price_set_id
+    and ps.price_set_id=bt.price_set_id
+    and bt.trigger_id=bth.trigger_id
+    and bth.bal_threshold_id=bse.bal_threshold_id
+    and bse.subs_event_id=cie.event_id
+    and bth.ref_value_id=rv.ref_value_id
+    and bt.trigger_id=bth.trigger_id and bt.acct_res_id=dar.acct_res_id
+    and dar.unit='KB' and dar.is_currency='N'
+    and rv.ref_value_type='1'
+    and (rv.sp_id <>'26' or rv.sp_id is null)"
+
+
+  18_acm_trigger:
+  #--   累积触发器，触发赠送
+    "select pp.price_plan_id,pp.price_plan_name,
+    ppv.price_plan_ver_id,ps.price_set_id,
+    at.trigger_id,at.trigger_name,at.trigger_type,
+    ath.acm_threshold_id,rv2.value_string threshold_value,rr.resource_id,
+    sbt.acct_res_id,sbt.acct_item_type_id,
+    rv1.value_string/1000 v7_AcmBenefit_value,rv1.value_string v9_AcmBenefit_value
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps
+    ,cpc.acm_trigger at,acm_threshold ath,cpc.acm_benefit ab,
+    cpc.sub_bal_type sbt,
+    ref_value rv,ratable_resource rr,
+    ref_value rv1,ref_value rv2
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and ps.price_set_id=at.price_set_id
+    and at.trigger_id=ath.trigger_id
+    and at.ref_resource_id=rv.ref_value_id
+    and rv.value_string=rr.resource_id
+    and ath.acm_threshold_id=ab.acm_threshold_id
+    and ath.ref_value_id=rv2.ref_value_id
+    and ab.sub_bal_type_id=sbt.sub_bal_type_id
+    and ab.ref_value_id=rv1.ref_value_id
+    and sbt.acct_res_id in (select dar.acct_res_id from dc_acct_res_data dar where dar.unit='KB' and dar.is_currency='N')
+    and rv1.ref_value_type='1'
+    and (rv1.sp_id is null or rv1.sp_id <>'26')"
+
+  19_charge_byte_simple:
+  #-- 5. 扣费批价,ref_value表中value*1024， config_unit_id=4
+  #--简单批价
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,PP.PRICE_PLAN_TYPE,pp.priority,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    r.re_id,r.re_name,RPS.WORKFLOW_ID,(select t.workflow_name from bwf_workflow t where t.workflow_id= RPS.WORKFLOW_ID) pre_WORKFLOW_name,RPS.POST_WORKFLOW_ID,
+    (select t.workflow_name from bwf_workflow t where t.workflow_id= RPS.POST_WORKFLOW_ID) POST_WORKFLOW_name,
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.RATE_PLAN_TYPE,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    p.price_id,p.price_name,rvc.value_string con_res_id,cr.con_res_name,rvp.value_string/1024  V7_price_value,rvp.value_string V9_price_value
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,re_price_set rps,re r,rate_plan rt,
+    mapping m,price_ver pv,price p,ref_value rvc,ref_value rvp,con_res cr
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and rps.price_set_id=ps.price_set_id
+    and rps.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and p.price_ver_id=pv.price_ver_id
+    and p.con_res_id=rvc.ref_value_id
+    and rvc.value_string=cr.con_res_id
+    and p.ref_value_id=rvp.ref_value_id
+    and rvp.ref_value_id in (
+    select p1.ref_value_id from price p1,ref_value rv1,con_res cr
+    where p1.con_res_id=rv1.ref_value_id
+    and rv1.ref_value_type=9
+    and rv1.value_string=cr.con_res_id
+    and exists(select 1 from con_res_detail crd,dc_acct_res_data dar
+    where crd.con_res_id=cr.con_res_id and crd.acct_res_id=dar.acct_res_id
+    and dar.unit='KB'  and dar.is_currency='N'))
+    and rvp.ref_value_type=1
+    and rvp.value_string not like'99999999%'"
+
+  20_charge_byte_comp:
+  #--复杂资费批价
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,PP.PRICE_PLAN_TYPE,pp.priority,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    r.re_id,r.re_name,RPS.WORKFLOW_ID,(select t.workflow_name from bwf_workflow t where t.workflow_id= RPS.WORKFLOW_ID) pre_WORKFLOW_name,RPS.POST_WORKFLOW_ID,
+    (select t.workflow_name from bwf_workflow t where t.workflow_id= RPS.POST_WORKFLOW_ID) POST_WORKFLOW_name,
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.RATE_PLAN_TYPE,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    p.price_id,p.price_name,rvc.value_string con_res_id,cr.con_res_name,rvp.value_string/1024  V7_price_value,rvp.value_string V9_price_value
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,re_price_set rps,re r,rate_plan rt,
+    mapping m,price_ver pv,price p,PRICE_WORK_NODE pwn,WORK_NODE wn,work_action wa,action_price ap,ref_value rvc,ref_value rvp,con_res cr
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and rps.price_set_id=ps.price_set_id
+    and rps.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and p.price_ver_id=pv.price_ver_id
+    and ap.con_res_id=rvc.ref_value_id
+    and rvc.value_string=cr.con_res_id
+    and p.price_id=pwn.price_id
+    and pwn.work_node_id=wn.first_work_node_id
+    and (wa.work_node_id=wn.work_next_node_id
+    or wa.work_node_id=wn.work_node_id)
+    and wa.work_action_id=ap.work_action_id
+    and ap.comments='AdvancePrice'
+    and exists(select 1 from con_res_detail crd,dc_acct_res_data dar
+    where crd.con_res_id=rvc.value_string and crd.acct_res_id=dar.acct_res_id
+    and dar.unit='KB' and dar.is_currency='N')
+    and ap.ref_value_id=rvp.ref_value_id
+    and rvp.ref_value_type='1'
+    and rvp.value_string not like'99999999%'"
+
+
+
+  21_time_span_byte:
+  #--time_span
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,PP.PRICE_PLAN_TYPE,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    PPM.PRICE_SET_ID,
+    RPS.RE_PRICE_SET_ID,RPS.RE_ID,RPS.WORKFLOW_ID,RPS.POST_WORKFLOW_ID,
+    R.RE_NAME,R.RE_DISPLAY_NAME,R.RE_TYPE,
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.RATE_PLAN_TYPE,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,M.PRIORITY,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    p.PRICE_ID,p.PRICE_NAME,p.configure_type,
+    wc.work_condition_id,wc.work_condition_name,cts.time_span_id,ts.time_span_name,
+    wat.work_node_id,wat.work_action_id,ap.action_price_id,ap.con_res_id,rvc.value_string con_res_id_value,ap.ref_value_id,rvp.value_string price_value
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,re_price_set rps,re r,
+    rate_plan rt,
+    mapping m,price_ver pv,price p,PRICE_WORK_NODE pwn,WORK_NODE wn,work_condition wc,cond_time_span cts,time_span ts,time_span_detail tsd,
+    work_action wat,action_price ap,ref_value rvc,ref_value rvp
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ppm.price_set_id=rps.price_set_id
+    and rps.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and p.price_ver_id=pv.price_ver_id
+    and p.price_id=pwn.price_id
+    and pwn.work_node_id=wn.first_work_node_id
+    and wc.work_node_id=wn.work_next_node_id
+    and wc.work_condition_id=cts.work_condition_id
+    and wc.work_out_node_id=wat.work_node_id
+    and wat.work_action_id=ap.work_action_id
+    and ap.con_res_id=rvc.ref_value_id
+    and ap.ref_value_id=rvp.ref_value_id
+    and ts.time_span_id=cts.time_span_id
+    and tsd.time_span_id=ts.time_span_id
+    and pp.price_plan_name like 'SMART U+ 170K CORP SMG Benefit & Penalty%'"
+
+
+  22_rank_price:
+  #--rank price
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,PP.PRICE_PLAN_TYPE,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    PPM.PRICE_SET_ID,
+    PS.PRICE_SET_PRIORITY_ID,
+    RPS.RE_PRICE_SET_ID,RPS.RE_ID,RPS.WORKFLOW_ID,RPS.POST_WORKFLOW_ID,
+    R.RE_NAME,R.RE_DISPLAY_NAME,R.RE_TYPE,
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.RATE_PLAN_TYPE,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,M.PRIORITY,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    p.PRICE_ID,p.PRICE_NAME,
+    wc.work_condition_id,wc.work_condition_name,cr.duration,cr.intervals,
+    wat.work_node_id,wat.work_action_id,ap.action_price_id,
+    ap.con_res_id,rvc.value_string con_res_id_value,ap.ref_value_id,rvp.value_string price_value,ap.rum
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,re_price_set rps,re r,rate_plan rt,
+    mapping m,price_ver pv,price p,PRICE_WORK_NODE pwn,WORK_NODE wn,work_condition wc,cond_rank cr,
+    work_action wat,action_price ap,ref_value rvc,ref_value rvp
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and rps.price_set_id=ps.price_set_id
+    and rps.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and p.price_ver_id=pv.price_ver_id
+    and p.price_id=pwn.price_id
+    and pwn.work_node_id=wn.first_work_node_id
+    and wc.work_node_id=wn.work_next_node_id
+    and wc.work_condition_id=cr.work_condition_id
+    and wc.work_out_node_id=wat.work_node_id
+    and wat.work_action_id=ap.work_action_id
+    and ap.con_res_id=rvc.ref_value_id
+    and ap.ref_value_id=rvp.ref_value_id"
+
+  23_acm_price:
+  #--ACM price
+    "select PP.PRICE_PLAN_ID,PP.PRICE_PLAN_NAME,PP.PRICE_PLAN_TYPE,
+    PPV.PRICE_PLAN_VER_ID,PPV.EFF_DATE,PPV.EXP_DATE,
+    PPM.PRICE_SET_ID,
+    PS.PRICE_SET_PRIORITY_ID,
+    RPS.RE_PRICE_SET_ID,RPS.RE_ID,RPS.WORKFLOW_ID,RPS.POST_WORKFLOW_ID,
+    R.RE_NAME,R.RE_DISPLAY_NAME,R.RE_TYPE,
+    RT.RATE_PLAN_ID,RT.RATE_PLAN_NAME,RT.RATE_PLAN_TYPE,RT.MAPPING_TYPE,
+    M.MAPPING_ID,M.MAPPING_NAME,M.PRIORITY,
+    PV.PRICE_VER_ID,PV.EFF_DATE,PV.EXP_DATE,
+    p.PRICE_ID,p.PRICE_NAME,
+    wc.work_condition_id,wc.work_condition_name,ca.ref_resource_id,ca.eff_value,ca.exp_value,
+    wat.work_node_id,wat.work_action_id,ap.action_price_id,
+    ap.con_res_id,rvc.value_string con_res_id_value,ap.ref_value_id,rvp.value_string price_value,ap.rum
+    from price_plan pp,price_plan_ver ppv,price_plan_member ppm,price_set ps,re_price_set rps,re r,rate_plan rt,
+    mapping m,price_ver pv,price p,PRICE_WORK_NODE pwn,WORK_NODE wn,work_condition wc,cond_acm ca,
+    work_action wat,action_price ap,ref_value rvc,ref_value rvp
+    where  pp.price_plan_id=ppv.price_plan_id
+    and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+    and ps.price_set_id=ppm.price_set_id
+    and rps.price_set_id=ps.price_set_id
+    and rps.re_id=r.re_id
+    and rt.re_price_set_id=rps.re_price_set_id
+    and m.rate_plan_id=rt.rate_plan_id
+    and m.mapping_id=pv.mapping_id
+    and p.price_ver_id=pv.price_ver_id
+    and p.price_id=pwn.price_id
+    and pwn.work_node_id=wn.first_work_node_id
+    and wc.work_node_id=wn.work_next_node_id
+    and wc.work_condition_id=ca.work_condition_id
+    and wc.work_out_node_id=wat.work_node_id
+    and wat.work_action_id=ap.work_action_id
+    and ap.con_res_id=rvc.ref_value_id
+    and ap.ref_value_id=rvp.ref_value_id"
+
+
+
+  24_cons_acct_res:
+    "select t.con_res_name,t1.con_res_id,t1.acct_item_type_id,t1.acct_res_id,t2.acct_res_name from con_res t,con_res_detail t1,cbec_acct_res t2
+    where t.con_res_name='SF CLM Bonus Internet (N)(Bytes)-107,106,277,278,52'
+    and t1.con_res_id=t.con_res_id
+    and t1.acct_res_id=t2.acct_res_id"
+
+

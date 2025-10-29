@@ -1,0 +1,453 @@
+create:
+    DC_AFTER_CONFIG_DATA_CHECK_OTC:
+        "create table DC_AFTER_CONFIG_DATA_CHECK_OTC as
+         select a.offer_id,a.offer_name,e.service_offer_name,f.acct_item_type_name,j.con_name condition,
+         c.value*0.00000001 price,g.acct_res_id,g.acct_res_name benefit_acct_res_name,g.std_code,g.refillable,d.value benefit_value,
+         h.unit_name benefit_unit_type,d.rel_exp_offset EXP_DATE,decode(d.rel_exp_unit,'D','Day','C','Billing Cycle') EXP_TYPE
+         from cpc.offer a,cpc.CPC_OTC_PRICE b,cpc.CPC_OTC_PRICE_RATE c,cpc.CPC_OTC_PRICE_BENEFIT d,
+         cpc.service_offer e,cpc.cbec_acct_item_type f,cpc.cbec_acct_res g,cpc.cbec_unit h,cpc.CPC_OTC_CON_GROUP i,cpc.CPC_OTC_CON j
+         where a.offer_id=b.offer_id
+         and b.price_id=c.price_id(+)
+         and b.price_id=d.price_id(+)
+         and b.service_offer_id=e.service_offer_id
+         and c.acct_item_type_id=f.acct_item_type_id(+)
+         and d.acct_res_id=g.acct_res_id(+)
+         and g.unit_id=h.unit_id(+)
+         and b.con_group_id=i.con_group_id(+)
+         and i.con_group_id=j.con_group_id(+)
+         order by a.offer_name,e.service_offer_name,j.con_name"
+
+    DC_AFTER_CONFIG_DATA_CHECK_REC:
+        "create table DC_AFTER_CONFIG_DATA_CHECK_REC as
+           select pp.price_plan_id,pp.price_plan_name,re.re_id,re.re_name,
+           rp.rate_plan_id,rp.rate_plan_name,p.price_id,p.price_name,p.rum,ra.re_attr_name,rv.value_string,crs.acct_res_id,crs.acct_res_name,
+           pd.rel_eff_offset,pd.rel_exp_offset,pd.rel_exp_unit
+           from
+                    cpc.price_plan pp,
+                    cpc.price_plan_ver ppv,
+                    cpc.price_plan_member ppm,
+                    cpc.re_price_set      rps,
+                    cpc.rate_plan         rp,
+                    cpc.mapping           m,
+                    cpc.price_ver         pv,
+                    cpc.event_benefit     p,
+                    cpc.re_pp_recurring   rpr,
+                    cpc.ref_value         rv,
+                    cpc.re                re,
+                    cpc.re_attr           ra,
+                    cpc.sub_bal_type      st,
+                    cpc.cbec_acct_res     crs,
+                    cpc.period            pd
+           where 1=1
+           and pp.price_plan_id=ppv.price_plan_id
+           and ppv.price_plan_ver_id=ppm.price_plan_ver_id
+           and ppm.price_set_id=rps.price_set_id
+           and rpr.price_plan_ver_id=ppv.price_plan_ver_id
+           and rpr.price_plan_id=pp.price_plan_id
+           and rpr.re_id=rps.re_id
+           and rp.re_price_set_id=rps.re_price_set_id
+           and rp.rate_plan_id=m.rate_plan_id
+           and m.mapping_id=pv.mapping_id
+           and pv.price_ver_id=p.price_ver_id
+           and p.ref_value_id=rv.ref_value_id
+           and rv.ref_value_type='1'
+           and re.re_id=rps.re_id
+           and ra.re_attr=p.re_attr
+           and p.sub_bal_type_id=st.sub_bal_type_id
+           and crs.acct_res_id=st.acct_res_id
+           and pd.period_id=st.period_id"
+
+    DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL:
+        "create table DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL as
+            select pp.price_plan_id,
+            ppv.price_plan_ver_id,
+            ppv.eff_date,
+            ppv.exp_date,
+            pp.price_plan_name,
+            re.re_id,
+            re.re_name,
+            rp.re_price_set_id,
+            rpz.rate_plan_zone_id,
+            rp.rate_plan_id,
+            rp.rate_plan_name,
+            ra.re_attr,
+            ra.re_attr_name,
+            zm.zone_map_id,
+            zm.zone_map_name,
+            z.zone_id,
+            z.zone_name,
+            m.mapping_id,
+            m.mapping_name,
+            p.price_id,
+            p.price_ver_id,
+            p.price_name,
+            waap.work_node_id,
+            waap.work_condition_id,
+            waap.work_condition_name,
+            waap.rank_up_id,
+            waap.offset,
+            waap.duration,
+            waap.intervals,
+            waap.looptime,
+            waap.setup_fee_flag,
+            waap.time_span_id,
+            waap.time_span_name,
+            waap.work_action_id,
+            waap.work_action_name,
+            ap.ACTION_PRICE_ID,
+            rf.ref_value_id,
+            rf.value_string,
+            ap.rum,
+            ap.min_rum,
+            rr.re_attr_name mapping_re_attr_name,
+            ap.re_attr mapping_re_attr,
+            rv.ref_value_id con_ref_value_id,
+            cr.con_res_id,
+            cr.con_res_name,
+            pd.param_name,
+            rt.re_attr_name param_re_attr_name,
+            tpc.col_name
+            from cpc.price_plan        pp,
+            cpc.price_plan_ver    ppv,
+            cpc.price_plan_member ppm,
+            cpc.re_price_set      rps,
+            cpc.rate_plan         rp,
+            cpc.rate_plan_zone    rpz,
+            cpc.mapping           m,
+            cpc.price_ver         pv,
+            cpc.price             p,
+            cpc.re                re,
+            cpc.ACTION_PRICE ap,
+            cpc.ref_value rf,
+            cpc.MAPPING_UNIT mu,
+            cpc.ref_value rv,
+            cpc.PARAM_DEFINE pd,
+            cpc.TABLE_PARAM_COLUMN tpc,
+            cpc.re_attr ra,
+            cpc.zone_map zm,
+            cpc.zone z,
+            cpc.re_attr rr,
+            cpc.con_res cr,
+            cpc.re_attr rt,
+            (select pwn.price_id,
+            wn.work_node_id,
+            wc.work_condition_id,
+            wc.work_condition_name,
+            ck.rank_up_id,
+            ck.offset,
+            ck.duration,
+            ck.intervals,
+            ck.looptime,
+            ck.setup_fee_flag,
+            null time_span_id,
+            null time_span_name,
+            wa.work_action_id,
+            wa.work_action_name,
+            ap.action_price_id
+            from cpc.PRICE_WORK_NODE pwn,
+            cpc.WORK_NODE       wn,
+            cpc.work_condition  wc,
+            cpc.COND_RANK       ck,
+            cpc.work_node       wd,
+            cpc.WORK_ACTION     wa,
+            cpc.ACTION_PRICE    ap
+            where pwn.work_node_id = wn.work_node_id
+            and wn.is_first_node = 'Y'
+            and wn.work_node_id = wc.work_node_id
+            and wc.work_condition_id = ck.work_condition_id
+            and wc.work_out_node_id = wd.work_node_id
+            and wn.work_node_id = wd.first_work_node_id
+            and wd.work_node_id = wa.work_node_id
+            and wa.work_action_id = ap.work_action_id
+            union all
+            select pwn.price_id,
+            wn.work_node_id,
+            null work_condition_id,
+            null work_condition_name,
+            null rank_up_id,
+            null offset,
+            null duration,
+            null intervals,
+            null looptime,
+            null setup_fee_flag,
+            null time_span_id,
+            null time_span_name,
+            wa.work_action_id,
+            wa.work_action_name,
+            ap.action_price_id
+            from cpc.PRICE_WORK_NODE pwn,
+            cpc.work_node       wn,
+            cpc.work_action     wa,
+            cpc.ACTION_PRICE    ap
+            where pwn.work_node_id = wn.work_node_id
+            and wn.is_first_node = 'Y'
+            and wn.work_node_id = wa.work_node_id
+            and wa.work_action_id = ap.work_action_id
+            union all
+            select pwn.price_id,
+            wn.work_node_id,
+            wc.work_condition_id,
+            wc.work_condition_name,
+            null rank_up_id,
+            null offset,
+            null duration,
+            null intervals,
+            null looptime,
+            null setup_fee_flag,
+            ts.time_span_id,
+            ts.time_span_name,
+            wa.work_action_id,
+            wa.work_action_name,
+            ap.action_price_id
+            from cpc.PRICE_WORK_NODE pwn,
+            cpc.WORK_NODE       wn,
+            cpc.work_condition  wc,
+            cpc.cond_time_span  ck,
+            cpc.work_node       wd,
+            cpc.WORK_ACTION     wa,
+            cpc.ACTION_PRICE    ap,
+            cpc.time_span       ts
+            where pwn.work_node_id = wn.work_node_id
+            and wn.is_first_node = 'Y'
+            and wn.work_node_id = wc.work_node_id
+            and wc.work_condition_id = ck.work_condition_id
+            and ck.time_span_id=ts.time_span_id
+            and wc.work_out_node_id = wd.work_node_id
+            and wn.work_node_id = wd.first_work_node_id
+            and wd.work_node_id = wa.work_node_id
+            and wa.work_action_id = ap.work_action_id) waap
+            where pp.price_plan_id = ppv.price_plan_id
+            and pp.state<>'C'
+            and ppv.price_plan_ver_id = ppm.price_plan_ver_id
+            and ppm.price_set_id = rps.price_set_id
+            and rps.re_id = re.re_id
+            and rp.re_price_set_id = rps.re_price_set_id
+            and m.rate_plan_id = rp.rate_plan_id
+            and pv.mapping_id = m.mapping_id
+            and p.price_ver_id = pv.price_ver_id
+            and p.price_id = waap.price_id
+            and waap.action_price_id = ap.action_price_id
+            and ap.ref_value_id = rf.ref_value_id
+            and ap.re_attr = rr.re_attr
+            and rf.ref_value_type in ('1', '2')
+            and rp.rate_plan_id = rpz.rate_plan_id(+)
+            and m.mapping_id = mu.mapping_id(+)
+            and rv.ref_value_type = '9'
+            and rpz.mapping_src_value = ra.re_attr(+)
+            and rpz.mapping_des_value = zm.zone_map_id(+)
+            and mu.mapping_value = z.zone_id(+)
+            and ap.con_res_id = rv.ref_value_id
+            and rv.value_string = cr.con_res_id
+            and rf.value_string = pd.param_id(+)
+            and rf.re_attr = rt.re_attr(+)
+            and rf.col_id = tpc.col_id(+)
+            order by pp.price_plan_name,re.re_name,rp.rate_plan_name,waap.work_condition_id"
+
+    DC_AFTER_CONFIG_DATA_CHECK_SETUP_FEE:
+        "create table DC_AFTER_CONFIG_DATA_CHECK_SETUP_FEE as
+          select pp.price_plan_id,
+          ppv.price_plan_ver_id,
+          pp.price_plan_name,
+          re.re_id,
+          re.re_name,
+          rp.re_price_set_id,
+          rpz.rate_plan_zone_id,
+          rp.rate_plan_id,
+          rp.rate_plan_name,
+          rp.priority,
+          ra.re_attr,
+          ra.re_attr_name,
+          zm.zone_map_id,
+          zm.zone_map_name,
+          z.zone_id,
+          z.zone_name,
+          m.mapping_id,
+          m.mapping_name,
+          p.price_id,
+          p.price_ver_id,
+          p.price_name,
+          waap.work_node_id,
+          waap.work_condition_id,
+          waap.work_condition_name,
+          waap.rank_up_id,
+          waap.offset,
+          waap.duration,
+          waap.intervals,
+          waap.looptime,
+          waap.setup_fee_flag,
+          waap.time_span_id,
+          waap.time_span_name,
+          waap.work_action_id,
+          waap.work_action_name,
+          ap.ACTION_PRICE_ID,
+          rf.ref_value_id,
+          rf.value_string,
+          ap.rum,
+          ap.min_rum,
+          rr.re_attr_name mapping_re_attr_name,
+          ap.re_attr mapping_re_attr,
+          rv.ref_value_id con_ref_value_id,
+          cr.con_res_id,
+          cr.con_res_name,
+          pd.param_name,
+          rt.re_attr_name param_re_attr_name,
+          tpc.col_name
+          from cpc.price_plan        pp,
+          cpc.price_plan_ver    ppv,
+          cpc.price_plan_member ppm,
+          cpc.re_price_set      rps,
+          cpc.rate_plan         rp,
+          cpc.rate_plan_zone    rpz,
+          cpc.mapping           m,
+          cpc.price_ver         pv,
+          cpc.price             p,
+          cpc.re                re,
+          cpc.ACTION_PRICE ap,
+          cpc.ref_value rf,
+          cpc.MAPPING_UNIT mu,
+          cpc.ref_value rv,
+          cpc.PARAM_DEFINE pd,
+          cpc.TABLE_PARAM_COLUMN tpc,
+          cpc.re_attr ra,
+          cpc.zone_map zm,
+          cpc.zone z,
+          cpc.re_attr rr,
+          cpc.con_res cr,
+          cpc.re_attr rt,
+          (select pwn.price_id,
+          wn.work_node_id,
+          wc.work_condition_id,
+          wc.work_condition_name,
+          ck.rank_up_id,
+          ck.offset,
+          ck.duration,
+          ck.intervals,
+          ck.looptime,
+          ck.setup_fee_flag,
+          null time_span_id,
+          null time_span_name,
+          wa.work_action_id,
+          wa.work_action_name,
+          ap.action_price_id
+          from cpc.PRICE_WORK_NODE pwn,
+          cpc.WORK_NODE       wn,
+          cpc.work_condition  wc,
+          cpc.COND_RANK       ck,
+          cpc.work_node       wd,
+          cpc.WORK_ACTION     wa,
+          cpc.ACTION_PRICE    ap
+          where pwn.work_node_id = wn.work_node_id
+          and wn.is_first_node = 'Y'
+          and wn.work_node_id = wc.work_node_id
+          and wc.work_condition_id = ck.work_condition_id
+          and wc.work_out_node_id = wd.work_node_id
+          and wn.work_node_id = wd.first_work_node_id
+          and wd.work_node_id = wa.work_node_id
+          and wa.work_action_id = ap.work_action_id
+          union all
+          select pwn.price_id,
+          wn.work_node_id,
+          null work_condition_id,
+          null work_condition_name,
+          null rank_up_id,
+          null offset,
+          null duration,
+          null intervals,
+          null looptime,
+          null setup_fee_flag,
+          null time_span_id,
+          null time_span_name,
+          wa.work_action_id,
+          wa.work_action_name,
+          ap.action_price_id
+          from cpc.PRICE_WORK_NODE pwn,
+          cpc.work_node       wn,
+          cpc.work_action     wa,
+          cpc.ACTION_PRICE    ap
+          where pwn.work_node_id = wn.work_node_id
+          and wn.is_first_node = 'Y'
+          and wn.work_node_id = wa.work_node_id
+          and wa.work_action_id = ap.work_action_id
+          union all
+          select pwn.price_id,
+          wn.work_node_id,
+          wc.work_condition_id,
+          wc.work_condition_name,
+          null rank_up_id,
+          null offset,
+          null duration,
+          null intervals,
+          null looptime,
+          null setup_fee_flag,
+          ts.time_span_id,
+          ts.time_span_name,
+          wa.work_action_id,
+          wa.work_action_name,
+          ap.action_price_id
+          from cpc.PRICE_WORK_NODE pwn,
+          cpc.WORK_NODE       wn,
+          cpc.work_condition  wc,
+          cpc.cond_time_span  ck,
+          cpc.work_node       wd,
+          cpc.WORK_ACTION     wa,
+          cpc.ACTION_PRICE    ap,
+          cpc.time_span       ts
+          where pwn.work_node_id = wn.work_node_id
+          and wn.is_first_node = 'Y'
+          and wn.work_node_id = wc.work_node_id
+          and wc.work_condition_id = ck.work_condition_id
+          and ck.time_span_id=ts.time_span_id
+          and wc.work_out_node_id = wd.work_node_id
+          and wn.work_node_id = wd.first_work_node_id
+          and wd.work_node_id = wa.work_node_id
+          and wa.work_action_id = ap.work_action_id) waap
+          where pp.price_plan_id = ppv.price_plan_id
+          and pp.state<>'C'
+          and ppv.price_plan_ver_id = ppm.price_plan_ver_id
+          and ppm.price_set_id = rps.price_set_id
+          and rps.re_id = re.re_id
+          and rp.re_price_set_id = rps.re_price_set_id
+          and m.rate_plan_id = rp.rate_plan_id
+          and pv.mapping_id = m.mapping_id
+          and p.price_ver_id = pv.price_ver_id
+          and p.price_id = waap.price_id
+          and waap.action_price_id = ap.action_price_id
+          and ap.ref_value_id = rf.ref_value_id
+          and ap.re_attr = rr.re_attr
+          and rf.ref_value_type in ('1', '2')
+          and rp.rate_plan_id = rpz.rate_plan_id(+)
+          and m.mapping_id = mu.mapping_id(+)
+          and rv.ref_value_type = '9'
+          and rpz.mapping_src_value = ra.re_attr(+)
+          and rpz.mapping_des_value = zm.zone_map_id(+)
+          and mu.mapping_value = z.zone_id(+)
+          and ap.con_res_id = rv.ref_value_id
+          and rv.value_string = cr.con_res_id
+          and rf.value_string = pd.param_id(+)
+          and rf.re_attr = rt.re_attr(+)
+          and rf.col_id = tpc.col_id(+)
+          and rp.rate_plan_name like '%%connect'
+          order by pp.price_plan_name,re.re_name,rp.rate_plan_name,waap.work_condition_id"
+
+create_list:
+    DC_AFTER_CONFIG_DATA_CHECK_OTC:
+        - AFTER_CHECK_MID
+        - V20190422
+        - table
+
+    DC_AFTER_CONFIG_DATA_CHECK_REC:
+        - AFTER_CHECK_MID
+        - V20190422
+        - table
+
+    DC_AFTER_CONFIG_DATA_CHECK_SETUP_FEE:
+        - AFTER_CHECK_MID
+        - V20190422
+        - table
+
+    DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL:
+        - AFTER_CHECK_MID
+        - V20190422
+        - table
+
+

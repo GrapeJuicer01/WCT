@@ -1,0 +1,122 @@
+create:
+  DC_CONFIG_LIFECYCLE_CONVERSION:
+    - |
+      create table DC_CONFIG_LIFECYCLE_CONVERSION
+      (
+        conversion_id       INT(11) AUTO_INCREMENT COMMENT 'Sequence unique',
+        lifecycle_name      VARCHAR(64) comment 'Lifecycle Name:Mandatoy',
+        convert_type        VARCHAR(500) comment 'State Conversion:Mandatoy',
+        target_subs         VARCHAR(255) comment 'Target Subscribers:Mandatoy if Block reson is null Expect "Initial-Active"',
+        block_reason        VARCHAR(250) comment 'Block reson:Mandatoy if Target Subscribers is null Expect "Initial-Active"',
+        elapsed_time        VARCHAR(30) comment 'Elapsed Time:Mandatoy Expect "Initial-Active";e.g.30Day or 1Month or 1CalenderMonth',
+        trigger_event       VARCHAR(50) comment 'Trigger Event:Mandatoy Expect "Initial-Active"',
+        clear_bal_mode      VARCHAR(60) comment 'Balance Process Mode:Expect "Initial-Active"',
+        primary key (`conversion_id`)
+      )comment = 'Lifecycle And State Convert Detail'
+    - sharding @@table name='DC_CONFIG_LIFECYCLE_CONVERSION' set type='single' and dn='coc_0001'
+
+  DC_CONFIG_LIFECYCLE_NOFITY:
+    - |
+      create table DC_CONFIG_LIFECYCLE_NOFITY
+      (
+        conversion_id       INT(11) AUTO_INCREMENT COMMENT 'Sequence unique',
+        lifecycle_name     VARCHAR(64) comment 'Lifecycle Name:Mandatoy',
+        convert_type       VARCHAR(500) comment 'State Conversion:Mandatoy',
+        trigger_event      VARCHAR(50) comment 'Trigger Event:Mandatoy',
+        reminder_flow_id   VARCHAR(9) comment 'Reminder Flow from CIC:Mandatoy',
+        reminder_flow      VARCHAR(150) comment 'Lifecycle Reminder Flow Name from CIC',
+        prior_day          VARCHAR(3) comment 'Advance Days Notification Send Before State Conversion:Mandatoy',
+        elapsed_time       VARCHAR(30) comment 'Elapsed Time:Mandatoy Expect "Initial-Active";e.g.30Day or 1Month or 1CalenderMonth',
+        primary key (`conversion_id`)
+      )comment = 'Lifecycle Notify Detail'
+    - sharding @@table name='DC_CONFIG_LIFECYCLE_NOFITY' set type='single' and dn='coc_0001'
+
+  DC_CONFIG_LIFECYCLE_OFFER_REL:
+    - |
+      create table DC_CONFIG_LIFECYCLE_OFFER_REL
+      (
+        lifecycle_name VARCHAR(64) comment 'Lifecycle Name:Mandatoy',
+        offer_name     VARCHAR(250) comment 'Offer Name:Mandatoy',
+        primary key (`offer_name`)
+      )comment = 'Lifecycle And Offer Relation'
+    - sharding @@table name='DC_CONFIG_LIFECYCLE_OFFER_REL' set type='single' and dn='coc_0001'
+
+create_list:
+  DC_CONFIG_LIFECYCLE_CONVERSION:
+    - LIFECYCLE
+    - V20191216
+    - table
+    - VALUE_LIST:
+        CONVERT_TYPE:
+          TYPE: sql
+          SOURCE: |
+            select CONCAT(trim(t2.attr_value_name) , '-' , trim(t3.attr_value_name))
+              from coc.cc_state_convert_type t1
+              left join cpc.attr_value t2
+                on t2.attr_id = 800052302
+               and t2.status_cd = '1000'
+               and t1.src_prod_state = t2.attr_value
+              left join cpc.attr_value t3
+                on t3.attr_id = 800052302
+               and t3.status_cd = '1000'
+               and t1.obj_prod_state = t3.attr_value
+        TARGET_SUBS:
+          TYPE: sql
+          SOURCE : select target_subs_name from coc.cc_lifecycle_target_subs
+        BLOCK_REASON:
+          TYPE: sql
+          SOURCE: |
+            select trim(t3.attr_value_name) block_reason
+              from coc.cc_lifecycle_target_subs  t1
+             inner join coc.cc_lifecycle_target_input t2
+                on t1.target_subs_id = t2.target_subs_id
+               and t2.data_type = 'S'
+             inner join cpc.attr_value t3
+                on t2.default_value = t3.attr_value
+               and t3.attr_id = 992001414
+               and t3.status_cd = '1000'
+             order by t3.attr_value_name
+        TRIGGER_EVENT:
+          TYPE: sql
+          SOURCE: |
+            select T2.SERVICE_OFFER_NAME
+              from coc.service_offer_status_change t1
+             inner join cpc.service_offer t2
+                on t1.service_offer_id = t2.service_offer_id
+             order by T2.SERVICE_OFFER_NAME
+        CLEAR_BAL_MODE:
+          TYPE: sql
+          SOURCE: select mode_name from coc.cc_clear_bal_mode
+
+  DC_CONFIG_LIFECYCLE_NOFITY:
+    - LIFECYCLE
+    - V20190527
+    - table
+    - VALUE_LIST:
+        CONVERT_TYPE:
+          TYPE: sql
+          SOURCE: |
+            select CONCAT(trim(t2.attr_value_name) , '-' , trim(t3.attr_value_name))
+              from coc.cc_state_convert_type t1
+              left join cpc.attr_value t2
+                on t2.attr_id = 800052302
+               and t2.status_cd = '1000'
+               and t1.src_prod_state = t2.attr_value
+              left join cpc.attr_value t3
+                on t3.attr_id = 800052302
+               and t3.status_cd = '1000'
+               and t1.obj_prod_state = t3.attr_value
+             where t1.auto_flag = 'N'
+        TRIGGER_EVENT:
+          TYPE: sql
+          SOURCE: |
+            select T2.SERVICE_OFFER_NAME
+              from coc.service_offer_status_change t1
+             inner join cpc.service_offer t2
+                on t1.service_offer_id = t2.service_offer_id
+             order by T2.SERVICE_OFFER_NAME
+
+  DC_CONFIG_LIFECYCLE_OFFER_REL:
+    - LIFECYCLE
+    - V20190527
+    - table

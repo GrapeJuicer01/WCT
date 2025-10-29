@@ -1,0 +1,381 @@
+UserList:
+    cc
+
+offer_templet:
+    Main Product:
+        "SELECT DISTINCT o.OFFER_NAME `Name`, o.offer_code `Code`, st.SERV_TYPE `Service Type`, st.SERV_TYPE_NAME `Service Type Name`,NULL `Comments`
+           FROM offer o, indep_prod_spec ips, all_serv_type st
+          WHERE o.offer_type = 2
+            AND o.OFFER_ID = ips.INDEP_PROD_SPEC_ID
+            AND ips.SERV_TYPE = st.SERV_TYPE
+            AND ips.INDEP_PROD_SPEC_ID >= 200000"
+
+    Main Offer:
+        "SELECT DISTINCT m.OFFER_NAME `Name`, m.offer_code `Code`, o.OFFER_NAME `Main Product Name`, o.offer_code `Main Product Code`, st.SERV_TYPE_NAME `Service Type Name`,
+                 CASE sp.paid_flag WHEN 'N' THEN 'Prepaid' WHEN 'Y' THEN 'Postpaid' END `Payment Flag`, CONCAT(IFNULL(m.auto_continue_flag, 'N'), 'o') `Renewal Flag`, IFNULL(m.cycle_quantity, 'N/A') `Agreement Period`,
+                 IFNULL(ROUND(otc.`value`/11800), 'N/A') `OTC excl VAT`, IFNULL(rc.`value`, 'N/A') `Rental excl VAT`,
+                 IFNULL(otc.`value`/10000, 'N/A') `OTC incl VAT`,
+                 IFNULL(ROUND(rc.`value`)+ROUND(rc.`value`*0.18), 'N/A') `Rental incl VAT`,
+                 CASE WHEN adv.`value` IS NULL THEN 'N/A' ELSE ROUND(rc.`value`)+ROUND(rc.`value`*0.18) END `Upfront incl VAT`,
+                 dep.`value`/10000 `Deposit`, oa.DEFAULT_VALUE `Service Class`,
+                 IFNULL(c.catg_name, 'Both') `Customer Type`, GROUP_CONCAT(cc.CONTACT_CHANNEL_NAME) `Sales Condition Desc`,
+                 (SELECT GROUP_CONCAT(DISTINCT ocg.OFFER_CATG_NAME) FROM offer_catg_mem ocm, offer_catg ocg WHERE m.OFFER_ID = ocm.OFFER_ID AND ocm.OFFER_CATG_ID = ocg.OFFER_CATG_ID AND ocg.OFFER_CATG_CLASS = 'B') `Belong in Sales Category`,
+                 IFNULL(sc.serv_class_code, IFNULL(pw.package_code, ppg.package_code)) `Legacy Pack Code/ID`,
+                 IFNULL(sc.serv_class_desc, IFNULL(pw.package_name, ppg.package_name)) `Legacy Pack Name`,
+                 NULL `Comments`
+            FROM offer o, indep_prod_spec ips, all_serv_type st, subs_plan sp,
+                 offer m LEFT JOIN OFFER_APPLY_CATG oac ON m.OFFER_ID = oac.OFFER_ID LEFT JOIN CATG c ON oac.CATG_ID = c.CATG_ID
+                 LEFT JOIN OFFER_APPLY_CHANNEL oc ON m.OFFER_ID = oc.OFFER_ID LEFT JOIN contact_channel cc ON oc.CONTACT_CHANNEL_ID = cc.CONTACT_CHANNEL_ID
+                 LEFT JOIN dc_packages_post_gsm ppg ON m.offer_name = ppg.PACKAGE_NAME
+                 LEFT JOIN dc_packages_wmx pw ON m.offer_name = pw.PACKAGE_NAME
+                 LEFT JOIN dc_serv_class sc ON m.offer_name = sc.serv_class_desc,
+                 offer_ver ov, subs_plan_offer_select spos, offer_group_mem ogm,
+                 subs_price_plan spp
+                 LEFT JOIN offer_attr oa ON oa.offer_id = spp.price_plan_id AND oa.ATTR_ID = 400008
+                 LEFT JOIN dc_offer_price otc ON otc.fee_type = 'OTC' AND otc.offer_id = spp.price_plan_id
+                 LEFT JOIN dc_offer_price rc ON rc.fee_type = 'RC' AND rc.offer_id = spp.price_plan_id
+                 LEFT JOIN dc_offer_price adv ON adv.fee_type = 'ADVANCE' AND adv.offer_id = spp.price_plan_id
+                 LEFT JOIN dc_offer_price dep ON dep.fee_type = 'DEPOSIT' AND dep.offer_id = spp.price_plan_id
+           WHERE o.offer_type = 2
+             AND o.OFFER_ID = ips.INDEP_PROD_SPEC_ID
+             AND ips.SERV_TYPE = st.SERV_TYPE
+             AND o.OFFER_ID = sp.INDEP_PROD_SPEC_ID
+             AND sp.SUBS_PLAN_ID = m.OFFER_ID
+             AND m.offer_id = ov.offer_id
+             AND ov.offer_ver_id = spos.offer_ver_id
+             AND spos.offer_group_id = ogm.offer_group_id
+             AND ogm.offer_id = spp.price_plan_id
+             AND spp.price_plan_type = 2
+             AND m.offer_id >= 200000
+             GROUP BY m.offer_code"
+
+    Main Offer Features:
+        "SELECT o.OFFER_NAME `Main Offer Name`, o.offer_code `Main Offer Code`, a.ATTR_NAME `Feature Name`, a.ATTR_CODE `Feature Code`,
+                 it.INPUT_TYPE_NAME `Feature Type`, spoa.DEFAULT_VALUE `Default Value`, GROUP_CONCAT(av.VALUE_MARK) `Optional Value`, a.CSR_VISIBLE `Visible`,
+                 a.EDITABLE `Editable`, ba.NULLABLE `Nullable`, ba.COMMENTS `Comments`
+            FROM subs_plan_offer_attr spoa, offer o, offer_ver ov, attr a, subs_plan_offer_attr_value oav, attr_value av,
+                 base_attr ba, input_type it
+           WHERE spoa.ATTR_ID = a.ATTR_ID
+             AND spoa.OFFER_VER_ID = ov.OFFER_VER_ID
+             AND ov.OFFER_ID = o.OFFER_ID
+             AND spoa.SUBS_PLAN_OFFER_ATTR_ID = oav.SUBS_PLAN_OFFER_ATTR_ID
+             AND a.ATTR_ID = av.BASE_ATTR_ID
+             AND oav.ATTR_VALUE_ID = av.ATTR_VALUE_ID
+             AND a.ATTR_ID = ba.BASE_ATTR_ID
+             AND ba.INPUT_TYPE = it.INPUT_TYPE
+             AND o.offer_id >= 200000
+             GROUP BY o.OFFER_ID, a.ATTR_ID
+         UNION ALL
+         SELECT o.OFFER_NAME `Main Offer Name`, o.offer_code `Main Offer Code`, a.ATTR_NAME `Feature Name`, a.ATTR_CODE `Feature Code`,
+                it.INPUT_TYPE_NAME `Feature Type`, spoa.DEFAULT_VALUE `Default Value`, GROUP_CONCAT(av.VALUE_MARK) `Optional Value`, a.CSR_VISIBLE `Visible`,
+                a.EDITABLE `Editable`, ba.NULLABLE `Nullable`, ba.COMMENTS `Comments`
+           FROM subs_plan_offer_attr spoa, offer o, offer_ver ov,
+                attr a LEFT JOIN attr_value av ON a.ATTR_ID = av.BASE_ATTR_ID,
+                base_attr ba, input_type it
+          WHERE spoa.ATTR_ID = a.ATTR_ID
+            AND spoa.OFFER_VER_ID = ov.OFFER_VER_ID
+            AND ov.OFFER_ID = o.OFFER_ID
+            AND a.ATTR_ID = ba.BASE_ATTR_ID
+            AND ba.INPUT_TYPE = it.INPUT_TYPE
+            AND o.offer_id >= 200000
+            AND NOT EXISTS
+              (SELECT 1
+                 FROM subs_plan_offer_attr_value oav
+                WHERE spoa.SUBS_PLAN_OFFER_ATTR_ID = oav.SUBS_PLAN_OFFER_ATTR_ID)
+            GROUP BY o.OFFER_ID, a.ATTR_ID"
+
+    Additional Offer:
+        "SELECT DISTINCT m.OFFER_NAME `Additional Offer Name`, m.offer_code `Additional Offer Code`, kln.lang_item_value `Name(Kin)`, eln.lang_item_value `Name(Eng)`,
+                CONCAT(IFNULL(m.auto_continue_flag, 'N'), 'o') `Renewal Flag`,
+                IFNULL(CONCAT(m.EXP_OFF, CASE m.EXP_TIME_UNIT WHEN 'H' THEN ' Hours' WHEN 'D' THEN ' Days' ELSE NULL END), 'No-Expiry') `Validity`,
+                IFNULL(ROUND(otc.`value`/11800), 'N/A') `OTC excl VAT`, IFNULL(rc.`value`, 'N/A') `Rental excl VAT`,
+                IFNULL(otc.`value`/10000, 'N/A') `OTC incl VAT`,
+                IFNULL(ROUND(rc.`value`)+ROUND(rc.`value`*0.18), 'N/A') `Rental incl VAT`,
+                CASE WHEN adv.`value` IS NULL THEN 'N/A' ELSE ROUND(rc.`value`)+ROUND(rc.`value`*0.18) END `Upfront incl VAT`,
+                dep.`value`/10000 `Deposit`, IFNULL(c.catg_name, 'Both') `Applicable Customer Group`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN pos.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-POS`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN bpt.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Bportal`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN usd.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-USSD`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN mtn.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-myMTN`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ivr.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-IVR`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ecr.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-eCare`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN bcr.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Bcare`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN fly.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Flytxt`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ecw.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-ECW`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ers.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-ERS`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN web.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-WEB`,
+                CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN del.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Dealer`,
+                IFNULL(oa.default_value, 'N/A') `PAM ID`,
+                CASE WHEN pay.payment_method IS NULL THEN 'No' ELSE 'Yes' END `Airtime`,
+                CASE WHEN rc.`value` IS NULL AND dep.`value` IS NULL THEN 'No' ELSE 'Yes' END `Charge In Bill`,
+                (SELECT IFNULL(GROUP_CONCAT(DISTINCT cd.lookup_name), 'N/A')
+                   FROM MTN_ERICSSON_OFFER_PAYMENT py, CPC_DOMAIN cd
+                  WHERE py.offer_id = m.offer_id
+                    AND py.payment_method != 26
+                    AND py.payment_method = cd.value
+                    AND cd.TABLE_NAME = 'CPC_OFFER_ERICSSON') `Others(Instant Pay)`,
+                IFNULL(pw.package_code, IFNULL(ppg.package_code, sc.target_val)) `Legacy Pack Code/ID`,
+                IFNULL(pw.package_name, IFNULL(ppg.package_name, sc.key_str1)) `Legacy Pack Name`,
+                NULL `Comments`
+           FROM offer m LEFT JOIN OFFER_APPLY_CATG oac ON m.OFFER_ID = oac.OFFER_ID LEFT JOIN CATG c ON oac.CATG_ID = c.CATG_ID
+                LEFT JOIN OFFER_APPLY_CHANNEL pos ON m.OFFER_ID = pos.OFFER_ID AND pos.CONTACT_CHANNEL_ID = 1
+                LEFT JOIN OFFER_APPLY_CHANNEL bpt ON m.OFFER_ID = bpt.OFFER_ID AND bpt.CONTACT_CHANNEL_ID = 29
+                LEFT JOIN OFFER_APPLY_CHANNEL usd ON m.OFFER_ID = usd.OFFER_ID AND usd.CONTACT_CHANNEL_ID = 5
+                LEFT JOIN OFFER_APPLY_CHANNEL mtn ON m.OFFER_ID = mtn.OFFER_ID AND mtn.CONTACT_CHANNEL_ID = 202
+                LEFT JOIN OFFER_APPLY_CHANNEL ivr ON m.OFFER_ID = ivr.OFFER_ID AND ivr.CONTACT_CHANNEL_ID = 7
+                LEFT JOIN OFFER_APPLY_CHANNEL ecr ON m.OFFER_ID = ecr.OFFER_ID AND ecr.CONTACT_CHANNEL_ID = 54
+                LEFT JOIN OFFER_APPLY_CHANNEL bcr ON m.OFFER_ID = bcr.OFFER_ID AND bcr.CONTACT_CHANNEL_ID = 18
+                LEFT JOIN OFFER_APPLY_CHANNEL fly ON m.OFFER_ID = fly.OFFER_ID AND fly.CONTACT_CHANNEL_ID = 203
+                LEFT JOIN OFFER_APPLY_CHANNEL ecw ON m.OFFER_ID = ecw.OFFER_ID AND ecw.CONTACT_CHANNEL_ID = 993
+                LEFT JOIN OFFER_APPLY_CHANNEL ers ON m.OFFER_ID = ers.OFFER_ID AND ers.CONTACT_CHANNEL_ID = 201
+                LEFT JOIN OFFER_APPLY_CHANNEL web ON m.OFFER_ID = web.OFFER_ID AND web.CONTACT_CHANNEL_ID = 3
+                LEFT JOIN OFFER_APPLY_CHANNEL del ON m.OFFER_ID = del.OFFER_ID AND del.CONTACT_CHANNEL_ID = 8
+                LEFT JOIN OFFER_APPLY_CHANNEL aoc ON m.OFFER_ID = aoc.OFFER_ID
+                LEFT JOIN dc_packages_post_gsm ppg ON m.offer_name = ppg.PACKAGE_NAME
+                LEFT JOIN dc_packages_wmx pw ON m.offer_name = pw.PACKAGE_NAME
+                LEFT JOIN dc_tariff_id_mapping sc ON m.offer_id = sc.target_id AND sc.map_type = 'IPP_OFFER_ID' AND sc.remark IS NULL
+                LEFT JOIN MULTY_LANG_ITEM_VALUE eln ON m.offer_id = eln.PRIMARY_VALUE AND eln.LANG_ITEM_ID = 2 AND eln.LANGUAGE_CODE = 'ENGLISH'
+                LEFT JOIN MULTY_LANG_ITEM_VALUE kln ON m.offer_id = kln.PRIMARY_VALUE AND kln.LANG_ITEM_ID = 2 AND kln.LANGUAGE_CODE = 'KINYARWANDA'
+                LEFT JOIN offer_attr oa ON oa.offer_id = m.offer_id AND oa.ATTR_ID = 400020
+                LEFT JOIN MTN_ERICSSON_OFFER_PAYMENT pay ON pay.offer_id = m.offer_id AND pay.payment_method = 26,
+                subs_price_plan spp
+                LEFT JOIN dc_offer_price otc ON otc.fee_type = 'OTC' AND otc.offer_id = spp.price_plan_id
+                LEFT JOIN dc_offer_price rc ON rc.fee_type = 'RC' AND rc.offer_id = spp.price_plan_id
+                LEFT JOIN dc_offer_price adv ON adv.fee_type = 'ADVANCE' AND adv.offer_id = spp.price_plan_id
+                LEFT JOIN dc_offer_price dep ON dep.fee_type = 'DEPOSIT' AND dep.offer_id = spp.price_plan_id
+          WHERE m.offer_type = 4
+            AND m.offer_id = spp.price_plan_id
+            AND spp.price_plan_type != 2
+            AND m.offer_id >= 200000
+            GROUP BY m.offer_code"
+
+    Ecrisson Offer:
+        "SELECT DISTINCT m.OFFER_NAME `Additional Offer Name`, m.offer_code `Additional Offer Code`, eo.ERICSSON_OFFER_ID `Ericsson Offer ID`,
+                oa.DEFAULT_VALUE `PAMID`, eo.RESOURCE_TYPE `Resource-Type`, eo.RESOURCE_VALUE `Resource-Value`,eo.USAGE_COUNTER_THRESHOLD `UC/UT`,
+                eo.DEDICATED_ACCOUNT_ID `Dedicated Account`, eo.USAGE_ACCUMULATOR_ID `Usage Accumulator`,
+                (SELECT GROUP_CONCAT(DISTINCT REPLACE(btd.name, 'Mtn Brand ', '')) FROM OFFER_BUSI_TYPE obt, busi_type_def btd WHERE obt.busi_type = btd.BUSINESS_TYPE AND obt.offer_id = m.offer_id) `Offer Brand`,
+                (SELECT GROUP_CONCAT(DISTINCT btd.name) FROM OFFER_BUSI_TYPE obt, busi_type_value_def btd WHERE obt.busi_type = btd.BUSINESS_TYPE AND obt.BUSI_TYPE_VALUE = btd.BUSINESS_TYPE_VALUE AND obt.offer_id = m.offer_id AND obt.busi_type = 201) `DATA Segment`,
+                (SELECT GROUP_CONCAT(DISTINCT btd.name) FROM OFFER_BUSI_TYPE obt, busi_type_value_def btd WHERE obt.busi_type = btd.BUSINESS_TYPE AND obt.BUSI_TYPE_VALUE = btd.BUSINESS_TYPE_VALUE AND obt.offer_id = m.offer_id AND obt.busi_type = 202) `Voice Segment`,
+                (SELECT GROUP_CONCAT(DISTINCT btd.name) FROM OFFER_BUSI_TYPE obt, busi_type_value_def btd WHERE obt.busi_type = btd.BUSINESS_TYPE AND obt.BUSI_TYPE_VALUE = btd.BUSINESS_TYPE_VALUE AND obt.offer_id = m.offer_id AND obt.busi_type = 203) `Yolo Segment`,
+                (SELECT GROUP_CONCAT(DISTINCT btd.name) FROM OFFER_BUSI_TYPE obt, busi_type_value_def btd WHERE obt.busi_type = btd.BUSINESS_TYPE AND obt.BUSI_TYPE_VALUE = btd.BUSINESS_TYPE_VALUE AND obt.offer_id = m.offer_id AND obt.busi_type = 204) `Prestige Segment`,
+                (SELECT GROUP_CONCAT(DISTINCT btd.name) FROM OFFER_BUSI_TYPE obt, busi_type_value_def btd WHERE obt.busi_type = btd.BUSINESS_TYPE AND obt.BUSI_TYPE_VALUE = btd.BUSINESS_TYPE_VALUE AND obt.offer_id = m.offer_id AND obt.busi_type = 205) `Blackberry Segment`,
+                (SELECT GROUP_CONCAT(DISTINCT btd.name) FROM OFFER_BUSI_TYPE obt, busi_type_value_def btd WHERE obt.busi_type = btd.BUSINESS_TYPE AND obt.BUSI_TYPE_VALUE = btd.BUSINESS_TYPE_VALUE AND obt.offer_id = m.offer_id AND obt.busi_type = 206) `Visitor Segment`,
+                NULL `Comments`
+           FROM offer m left join mtn_ericsson_offer eo on m.OFFER_ID = eo.OFFER_ID,
+                offer_attr oa, subs_price_plan spp
+          WHERE m.offer_type = 4
+            AND m.offer_id = spp.price_plan_id
+            AND spp.price_plan_type != 2
+            AND oa.offer_id = m.offer_id
+            AND oa.ATTR_ID = 400020
+            AND m.offer_id >= 200000
+            ORDER BY m.offer_code, eo.ERICSSON_OFFER_ID"
+
+    VAS Product:
+        "SELECT DISTINCT o.OFFER_NAME `VAS Product Name`,o.offer_code `VAS Product Code`, NULL `Name(Kin)`, NULL `Name(Eng)`, 'No' `Renewal Flag`,
+               'No-Expiry' `Validity`, IFNULL(ROUND(otc.`value`/11800), 'N/A') `OTC excl VAT`, IFNULL(rc.`value`, 'N/A') `Rental excl VAT`,
+               IFNULL(otc.`value`/10000, 'N/A') `OTC incl VAT`,
+               IFNULL(ROUND(rc.`value`)+ROUND(rc.`value`*0.18), 'N/A') `Rental incl VAT`,
+               CASE WHEN adv.`value` IS NULL THEN 'N/A' ELSE ROUND(rc.`value`)+ROUND(rc.`value`*0.18) END `Upfront incl VAT`,
+               dep.`value`/10000 `Deposit`,
+               IFNULL(c.catg_name, 'Both') `Applicable Customer Group`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN pos.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-POS`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN bpt.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Bportal`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN usd.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-USSD`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN mtn.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-myMTN`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ivr.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-IVR`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ecr.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-eCare`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN bcr.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Bcare`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN fly.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Flytxt`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ecw.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-ECW`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN ers.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-ERS`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN web.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-WEB`,
+               CASE WHEN aoc.offer_id IS NULL THEN 'Yes' WHEN del.offer_id IS NULL THEN 'No' ELSE 'Yes' END `Channel-Dealer`,
+               CASE WHEN pay.payment_method IS NULL THEN 'No' ELSE 'Yes' END `Airtime`,
+               CASE WHEN rc.`value` IS NULL AND dep.`value` IS NULL THEN 'No' ELSE 'Yes' END `Charge In Bill`,
+               (SELECT IFNULL(GROUP_CONCAT(DISTINCT cd.lookup_name), 'N/A')
+                  FROM MTN_ERICSSON_OFFER_PAYMENT py, CPC_DOMAIN cd
+                 WHERE py.offer_id = m.offer_id
+                   AND py.payment_method != 26
+                   AND py.payment_method = cd.value
+                   AND cd.TABLE_NAME = 'CPC_OFFER_ERICSSON') `Others(Instant Pay)`,
+               NULL `Comments`
+          FROM offer o,
+               offer_rela orl,
+               offer m
+               LEFT JOIN OFFER_APPLY_CATG oac ON m.OFFER_ID = oac.OFFER_ID LEFT JOIN CATG c ON oac.CATG_ID = c.CATG_ID
+               LEFT JOIN OFFER_APPLY_CHANNEL pos ON m.OFFER_ID = pos.OFFER_ID AND pos.CONTACT_CHANNEL_ID = 1
+               LEFT JOIN OFFER_APPLY_CHANNEL bpt ON m.OFFER_ID = bpt.OFFER_ID AND bpt.CONTACT_CHANNEL_ID = 29
+               LEFT JOIN OFFER_APPLY_CHANNEL usd ON m.OFFER_ID = usd.OFFER_ID AND usd.CONTACT_CHANNEL_ID = 5
+               LEFT JOIN OFFER_APPLY_CHANNEL mtn ON m.OFFER_ID = mtn.OFFER_ID AND mtn.CONTACT_CHANNEL_ID = 202
+               LEFT JOIN OFFER_APPLY_CHANNEL ivr ON m.OFFER_ID = ivr.OFFER_ID AND ivr.CONTACT_CHANNEL_ID = 7
+               LEFT JOIN OFFER_APPLY_CHANNEL ecr ON m.OFFER_ID = ecr.OFFER_ID AND ecr.CONTACT_CHANNEL_ID = 54
+               LEFT JOIN OFFER_APPLY_CHANNEL bcr ON m.OFFER_ID = bcr.OFFER_ID AND bcr.CONTACT_CHANNEL_ID = 18
+               LEFT JOIN OFFER_APPLY_CHANNEL fly ON m.OFFER_ID = fly.OFFER_ID AND fly.CONTACT_CHANNEL_ID = 203
+               LEFT JOIN OFFER_APPLY_CHANNEL ecw ON m.OFFER_ID = ecw.OFFER_ID AND ecw.CONTACT_CHANNEL_ID = 993
+               LEFT JOIN OFFER_APPLY_CHANNEL ers ON m.OFFER_ID = ers.OFFER_ID AND ers.CONTACT_CHANNEL_ID = 201
+               LEFT JOIN OFFER_APPLY_CHANNEL web ON m.OFFER_ID = web.OFFER_ID AND web.CONTACT_CHANNEL_ID = 3
+               LEFT JOIN OFFER_APPLY_CHANNEL del ON m.OFFER_ID = del.OFFER_ID AND del.CONTACT_CHANNEL_ID = 8
+               LEFT JOIN OFFER_APPLY_CHANNEL aoc ON m.OFFER_ID = aoc.OFFER_ID
+               LEFT JOIN MTN_ERICSSON_OFFER_PAYMENT pay ON pay.offer_id = m.offer_id AND pay.payment_method = 26
+               LEFT JOIN dc_offer_price otc ON otc.fee_type = 'OTC' AND otc.offer_id = m.offer_id
+               LEFT JOIN dc_offer_price rc ON rc.fee_type = 'RC' AND rc.offer_id = m.offer_id
+               LEFT JOIN dc_offer_price adv ON adv.fee_type = 'ADVANCE' AND adv.offer_id = m.offer_id
+               LEFT JOIN dc_offer_price dep ON dep.fee_type = 'DEPOSIT' AND dep.offer_id = m.offer_id
+         WHERE o.offer_type = 3
+           AND o.offer_id = orl.dest_offer_id
+           AND orl.rela_type = 'H'
+           AND orl.ori_offer_id = m.offer_id
+           AND m.offer_id >= 200000
+           AND o.offer_id NOT IN (230034,230035,230042,230019,230072)
+           AND NOT EXISTS(
+               SELECT 1
+                 FROM offer_attr zoa
+                WHERE zoa.offer_id = m.offer_id
+                  AND zoa.attr_id = 400159
+                  AND zoa.DEFAULT_VALUE = 'N')
+         UNION ALL
+         SELECT DISTINCT o.OFFER_NAME `VAS Product Name`,o.offer_code `VAS Product Code`, NULL `Name(Kin)`, NULL `Name(Eng)`, 'No' `Renewal Flag`,
+               'No-Expiry' `Validity`, 'N/A' `OTC excl VAT`, 'N/A' `Rental excl VAT`, 'N/A' `OTC incl VAT`, 'N/A' `Rental incl VAT`,
+               'N/A' `Upfront incl VAT`, 'N/A' `Deposit`, 'Both' `Applicable Customer Group`,
+               'Yes' `Channel-POS`, 'Yes' `Channel-Bportal`, 'Yes' `Channel-USSD`, 'Yes' `Channel-myMTN`, 'Yes' `Channel-IVR`,
+               'Yes' `Channel-eCare`, 'Yes' `Channel-Bcare`, 'Yes' `Channel-Flytxt`, 'Yes' `Channel-ECW`, 'Yes' `Channel-ERS`,
+               'Yes' `Channel-WEB`, 'Yes' `Channel-Dealer`, 'Yes' `Airtime`, 'Yes' `Charge In Bill`, 'N/A' `Others(Instant Pay)`,
+               NULL `Comments`
+          FROM offer o
+         WHERE o.offer_type = 3
+           AND o.offer_id IN (230034,230035,230042,230019,230072)"
+
+    Main & Add Relationship:
+        "SELECT ovogm.MAIN_OFFER `Main Offer Name`, ovogm.MAIN_OFFER_CODE `Main Offer Code`,ovogm.ADD_OFFER_NAME `Additional Offer Name`,
+                ovogm.ADD_OFFER_CODE `Additional Offer Code`, ovogm.DEFAULT_FLAG `Default Select`,ovogm.HIDE_FLAG `Default Hidden`,
+                ovogm.MEM_RSTR_TYPE `Restrict Type`, ovogm.OFFER_GROUP_name `Offer Group Name`,ovogm.GROUP_TYPE_NAME `Offer Group Mode`,
+                ovogm.COMMENTS `Comments`,ovspoa.attr_name `Redefined Feature`,ovspoa.default_value `Default Value`,ovspoa.optional_value `Optional Value`
+         FROM
+         (SELECT O.OFFER_NAME AS MAIN_OFFER,O.OFFER_CODE AS MAIN_OFFER_CODE,o.offer_id AS MAIN_OFFER_iD,ov.offer_ver_Id,
+         og.OFFER_GROUP_name,gt.GROUP_TYPE_name,ogm.DEFAULT_FLAG,ogm.HIDE_FLAG,ogm.MEM_RSTR_TYPE,
+         ogm.offer_Id,og.COMMENTS,o2.offer_name AS ADD_OFFER_NAME,o2.offer_code AS ADD_OFFER_CODE
+         FROM OFFER O,offer_ver ov, subs_plan_offer_select spos, offer_group og,offer_group_mem ogm,group_type gt,
+         offer o2,(SELECT offer_Id FROM offer WHERE offer_Id IN
+         (SELECT ori_Offer_Id FROM offer_rela WHERE rela_type='H' AND DEST_OFFER_ID IN (
+         SELECT DEPEND_PROD_SPEC_ID FROM DEPEND_PROD_SPEC WHERE serv_type IN (919,920,921) AND DEPEND_PROD_SPEC_ID
+         BETWEEN 200000 AND 299999) OR offer_Id NOT IN (SELECT ori_offer_Id FROM offer_rela WHERE rela_type='H'))) addoff
+         WHERE o.offer_Id=ov.offer_ver_Id AND ov.OFFER_VER_ID=spos.OFFER_VER_ID AND spos.OFFER_GROUP_ID=og.OFFER_GROUP_ID
+         AND og.OFFER_GROUP_ID = ogm.OFFER_GROUP_ID AND og.GROUP_TYPE=gt.group_type
+         AND ogm.offer_Id = addoff.offer_Id AND ogm.offer_id=o2.OFFER_ID
+         AND ogm.offer_Id IN (SELECT ori_offer_Id FROM offer_rela WHERE rela_type='H' AND dest_Offer_id IN (
+         SELECT DEPEND_PROD_SPEC_ID FROM DEPEND_PROD_SPEC WHERE serv_type IN (919,920,921) AND DEPEND_PROD_SPEC_ID
+         BETWEEN 200000 AND 299999))
+         GROUP BY o.offer_Id,ov.offer_ver_Id,ogm.offer_Id) ovogm LEFT JOIN
+         (SELECT ov.offer_id AS main_offer_Id,ov.offer_ver_Id,a.attr_Id,a.ATTR_name,spoa.DEFAULT_VALUE, spoa.offer_Id,
+         GROUP_CONCAT(av.VALUE_MARK)AS optional_value
+         FROM offer_ver ov, subs_plan_offer_attr spoa, subs_plan_offer_attr_value spoav, attr a, attr_value av
+         WHERE ov.OFFER_VER_ID=spoa.OFFER_VER_ID AND spoa.attr_id=a.ATTR_ID AND
+         spoa.SUBS_PLAN_OFFER_ATTR_ID = spoav.SUBS_PLAN_OFFER_ATTR_ID AND spoav.ATTR_VALUE_ID=av.ATTR_VALUE_ID
+         AND a.attr_Id=av.BASE_ATTR_ID
+         GROUP BY ov.offer_Id,ov.offer_ver_Id,
+         spoa.OFFER_ID,a.attr_Id) ovspoa
+         ON ovogm.MAIN_OFFER_iD = ovspoa.main_offer_Id AND ovogm.offer_ver_Id=ovspoa.offer_ver_Id AND
+         ovogm.offer_Id=ovspoa.offer_Id
+         ORDER BY ovogm.MAIN_OFFER_iD ASC,ovogm.offer_Id ASC,ovspoa.attr_Id ASC"
+
+    Main & VAS Relationship:
+        "SELECT ovogm.MAIN_OFFER `Main Offer Name`,ovogm.MAIN_OFFER_CODE `Main Offer Code`,ovogm.ADD_OFFER_NAME `VAS Product Name`,ovogm.ADD_OFFER_CODE `VAS Product Code`,
+                ovogm.DEFAULT_FLAG `Default Select`,ovogm.HIDE_FLAG `Default Hidden`,ovogm.MEM_RSTR_TYPE `Restrict Type`,
+                ovogm.OFFER_GROUP_name `Offer Group Name`,ovogm.GROUP_TYPE_NAME `Offer Group Mode`,ovogm.COMMENTS `Comments`,
+                ovspoa.attr_name `Redefined Feature`,ovspoa.default_value `Default Value`,ovspoa.optional_value `Optional Value`
+         FROM
+         (SELECT O.OFFER_NAME AS MAIN_OFFER,O.OFFER_CODE AS MAIN_OFFER_CODE,o.offer_id AS MAIN_OFFER_iD,ov.offer_ver_Id,
+         og.OFFER_GROUP_name,gt.GROUP_TYPE_name,ogm.DEFAULT_FLAG,ogm.HIDE_FLAG,ogm.MEM_RSTR_TYPE,
+         ogm.offer_Id,og.COMMENTS,o2.offer_name AS ADD_OFFER_NAME,o2.offer_code AS ADD_OFFER_CODE
+         FROM OFFER O,offer_ver ov, subs_plan_offer_select spos, offer_group og,offer_group_mem ogm,group_type gt,
+         offer o2,(SELECT ori_Offer_Id,dest_offer_Id FROM offer_rela WHERE rela_type='H') offrel,
+         (SELECT offer_Id FROM offer WHERE offer_id IN (SELECT offer_id FROM offer_attr WHERE attr_Id IN
+         (SELECT attr_id FROM attr WHERE attr_code='MTN_ZSMART_MANAGEMENT_FLAG') AND DEFAULT_VALUE LIKE '%Y%') OR offer_Id
+         NOT IN (SELECT offer_Id FROM offer_attr WHERE attr_Id IN
+         (SELECT attr_id FROM attr WHERE attr_code='MTN_ZSMART_MANAGEMENT_FLAG'))) offzs
+         WHERE o.offer_Id=ov.offer_ver_Id AND ov.OFFER_VER_ID=spos.OFFER_VER_ID AND spos.OFFER_GROUP_ID=og.OFFER_GROUP_ID
+         AND og.OFFER_GROUP_ID = ogm.OFFER_GROUP_ID AND og.GROUP_TYPE=gt.group_type
+         AND ogm.offer_Id = offrel.ori_offer_Id AND offrel.dest_offer_Id=o2.offer_id
+         AND ogm.offer_Id IN (SELECT ori_offer_Id FROM offer_rela WHERE rela_type='H' AND dest_Offer_id IN (
+         SELECT DEPEND_PROD_SPEC_ID FROM DEPEND_PROD_SPEC WHERE serv_type NOT IN (919,920,921) AND DEPEND_PROD_SPEC_ID
+         BETWEEN 200000 AND 299999)) AND ogm.offer_Id=offzs.offer_Id
+         GROUP BY o.offer_Id,ov.offer_ver_Id,ogm.offer_Id) ovogm LEFT JOIN
+         (SELECT ov.offer_id AS main_offer_Id,ov.offer_ver_Id,a.attr_Id,a.ATTR_name,spoa.DEFAULT_VALUE, spoa.offer_Id,
+         GROUP_CONCAT(av.VALUE_MARK)AS optional_value
+         FROM offer_ver ov, subs_plan_offer_attr spoa, subs_plan_offer_attr_value spoav, attr a, attr_value av
+         WHERE ov.OFFER_VER_ID=spoa.OFFER_VER_ID AND spoa.attr_id=a.ATTR_ID AND
+         spoa.SUBS_PLAN_OFFER_ATTR_ID = spoav.SUBS_PLAN_OFFER_ATTR_ID AND spoav.ATTR_VALUE_ID=av.ATTR_VALUE_ID
+         AND a.attr_Id=av.BASE_ATTR_ID
+         GROUP BY ov.offer_Id,ov.offer_ver_Id,
+         spoa.OFFER_ID,a.attr_Id) ovspoa
+         ON ovogm.MAIN_OFFER_iD = ovspoa.main_offer_Id AND ovogm.offer_ver_Id=ovspoa.offer_ver_Id AND
+         ovogm.offer_Id=ovspoa.offer_Id
+         ORDER BY ovogm.MAIN_OFFER_iD ASC,ovogm.offer_Id ASC,ovspoa.attr_Id ASC"
+
+    Additional Offer Features:
+        "select s.offer_Id,s.offer_name,s.offer_code,s.attr_name,s.attr_code,s.INPUT_TYPE_NAME,s.DEFAULT_VALUE, d.OPTIONAL_VALUE,
+         s.CSR_VISIBLE,s.EDITABLE,s.NULLABLE,s.COMMENTS from
+         (select a.offer_Id,a.offer_name,a.offer_code,c.attr_Id,c.attr_name,c.attr_code,e.INPUT_TYPE_NAME,d.DEFAULT_VALUE,
+         c.CSR_VISIBLE,c.EDITABLE,d.NULLABLE,d.COMMENTS
+         from offer a,offer_attr b,attr c,base_attr d,input_type e,
+         (select a.ori_offer_id,a.dest_offer_Id,b.offer_code from offer_rela a,offer b where a.DEST_OFFER_ID=b.OFFER_ID
+         and RELA_TYPE='H') f
+         where a.offer_Id=b.OFFER_ID and a.offer_Id=f.ori_offer_Id
+         and b.attr_id=c.attr_Id and c.attr_Id=d.base_attr_Id and d.INPUT_TYPE=e.INPUT_TYPE and
+         (a.offer_id in
+         (select ori_offer_Id from offer_rela where rela_type='H' and ori_offer_Id between 200000
+         and 299999 and DEST_OFFER_ID between 200000 and 299999 and dest_offer_Id in
+         (select depend_prod_spec_Id FROM
+         depend_prod_spec where serv_type in (921,920,919))) or a.offer_Id not in (select ori_offer_Id from
+         offer_rela where rela_type='H'))) s left join (select base_attr_Id,GROUP_CONCAT(VALUE_MARK) AS OPTIONAL_VALUE
+         from attr_value group by BASE_ATTR_ID) d on s.attr_Id=d.base_attr_Id
+          order by s.offer_Id asc,s.attr_id asc"
+    VAS Offer Features:
+        "SELECT s.offer_name `VAS Product Name`,s.offer_code `VAS Product Code`,s.attr_name `Feature Name`,s.attr_code `Feature Code`,
+                s.INPUT_TYPE_NAME `Feature Type`,s.DEFAULT_VALUE `Default Value`, d.OPTIONAL_VALUE `Optional Value`,
+                s.CSR_VISIBLE `Visible`,s.EDITABLE `Editable`,s.NULLABLE `Nullable`,s.COMMENTS `Comments`
+           FROM
+         (SELECT a.offer_Id,a.offer_name,f.offer_code,c.attr_Id,c.attr_name,c.attr_code,e.INPUT_TYPE_NAME,d.DEFAULT_VALUE,
+         c.CSR_VISIBLE,c.EDITABLE,d.NULLABLE,d.COMMENTS
+         FROM offer a,offer_attr b,attr c,base_attr d,input_type e,
+         (SELECT a.ori_offer_id,a.dest_offer_Id,b.offer_code FROM offer_rela a,offer b WHERE a.DEST_OFFER_ID=b.OFFER_ID
+         AND RELA_TYPE='H') f
+         WHERE a.offer_Id=b.OFFER_ID AND a.offer_Id=f.ori_offer_Id
+         AND b.attr_id=c.attr_Id AND c.attr_Id=d.base_attr_Id AND d.INPUT_TYPE=e.INPUT_TYPE AND
+         a.offer_id IN
+         (SELECT ori_offer_Id FROM offer_rela WHERE rela_type='H' AND ori_offer_Id BETWEEN 200000
+         AND 299999 AND DEST_OFFER_ID BETWEEN 200000 AND 299999 AND dest_offer_Id NOT IN
+         (SELECT depend_prod_spec_Id FROM
+         depend_prod_spec WHERE serv_type IN (921,920,919))) AND a.offer_Id IN (SELECT offer_Id FROM offer_attr
+         WHERE attr_Id IN (SELECT attr_id FROM attr WHERE attr_code='MTN_ZSMART_MANAGEMENT_FLAG') AND
+         default_value='Y')) s LEFT JOIN (SELECT base_attr_Id,GROUP_CONCAT(VALUE_MARK) AS OPTIONAL_VALUE
+         FROM attr_value GROUP BY BASE_ATTR_ID) d ON s.attr_Id=d.base_attr_Id
+          ORDER BY s.offer_Id ASC,s.attr_id ASC"
+    Feature:
+        "SELECT a.attr_name `Feature Name`,a.attr_code `Feature Code`,a.CSR_VISIBLE `Visible`, b.nullable `Nullable`, a.EDITABLE `Editable`,
+                c.input_type_name `Input Type`,GROUP_CONCAT(av.VALUE_MARK) `Opitional Value`, b.default_value `Default Value`,b.comments
+           FROM attr a LEFT JOIN attr_value av ON a.ATTR_ID = av.BASE_ATTR_ID,
+                base_attr b, input_type c
+          WHERE b.input_type=c.input_type
+            AND a.attr_id=b.base_attr_Id
+            AND (EXISTS
+             (SELECT 1
+                FROM offer_attr oa
+               WHERE oa.ATTR_ID = a.ATTR_ID)
+             OR EXISTS
+             (SELECT 1
+                FROM subs_plan_offer_attr spoa
+               WHERE spoa.ATTR_ID = a.ATTR_ID))
+           GROUP BY a.ATTR_CODE
+           order by a.attr_code"
+
+    VAS Product Not In Zsmart:
+        "SELECT o.OFFER_NAME `VAS Product Name`, o.offer_code `VAS Product Code`
+           FROM offer o, offer_rela orl, offer_attr oa
+          WHERE o.offer_type = 3
+            AND o.OFFER_ID = orl.DEST_OFFER_ID
+            AND orl.ORI_OFFER_ID = oa.OFFER_ID
+            AND oa.ATTR_ID = 400159
+            AND orl.rela_type='H'
+            AND oa.DEFAULT_VALUE = 'N'"

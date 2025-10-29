@@ -1,0 +1,193 @@
+A002:
+  Topic001:
+    UserList:
+      cpc
+
+    BadData:
+
+    ErrorData:
+
+
+A003:
+  Topic001:
+    UserList:
+      cpc
+
+    param_list:
+      WarningData:
+        cpc_user_name:
+          cpc
+      BadData:
+        cpc_user_name:
+          cpc
+      ErrorData:
+        cpc_user_name:
+          cpc
+
+    BadData:
+      A003 Event exists in price but not in sort workflow:
+        #zyi.检查资费里配置的事件，分拣没有输出
+        "select distinct re_id,re_name from DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL
+          where re_id not in (
+              select c.re_id
+              from
+                %(cpc_user_name)s.bwf_action a,
+                %(cpc_user_name)s.re_attr b,
+                %(cpc_user_name)s.re c
+              where a.src_re_attr=b.re_attr
+              and b.re_attr=10007
+              and a.param1=c.re_id)"
+
+    ErrorData:
+      A003 Event exists in sort workflow but not in price:
+        #zy.检查分拣里输出的事件，资费里没有配置
+        "select c.re_name
+            from
+            %(cpc_user_name)s.bwf_action a,
+            %(cpc_user_name)s.re_attr b,
+            %(cpc_user_name)s.re c
+             where a.src_re_attr=b.re_attr
+             and b.re_attr=10007
+             and a.param1=c.re_id
+             and c.re_id not in (select re_id from DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL)"
+
+      A003 OTC/Rent exists res not use in usage price:
+      #zyi.检查租费或者OTC里的余额类型，在使用费里没有使用
+        "select * from
+          (select acct_res_id from DC_AFTER_CONFIG_DATA_CHECK_REC
+          union
+          select acct_res_id from DC_AFTER_CONFIG_DATA_CHECK_OTC)  o
+          where acct_res_id not in (
+          select distinct(d.acct_res_id) acct_res_id
+          from
+          DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL a,
+          %(cpc_user_name)s.con_res b,
+          %(cpc_user_name)s.con_res_detail c,
+          %(cpc_user_name)s.cbec_acct_res d
+          where a.con_res_id=b.con_res_id
+          and b.con_res_id=c.con_res_id
+          and c.acct_res_id=d.acct_res_id
+          and b.con_res_name like '%%benefit')"
+
+      A003 Usage price used res type not exists in OTC&Rent:
+      #zyi.检查在使用费里用到的赠送余额类型，租费或者OTC没有赠送
+        "select * from
+          (select distinct(d.acct_res_id) acct_res_id
+            from
+              DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL a,
+              %(cpc_user_name)s.con_res b,
+              %(cpc_user_name)s.con_res_detail c,
+              %(cpc_user_name)s.cbec_acct_res d
+          where a.con_res_id=b.con_res_id
+          and b.con_res_id=c.con_res_id
+          and c.acct_res_id=d.acct_res_id
+          and b.con_res_name like '%%benefit' )  h where h.acct_res_id not in (
+          (select acct_res_id from DC_AFTER_CONFIG_DATA_CHECK_REC
+          union
+          select acct_res_id from DC_AFTER_CONFIG_DATA_CHECK_OTC))"
+
+      A003 Reserve rule check IN:
+      #zyi.检查预留是否有问题,这里的根节点的re_id和最大预留，最小预留需要根据现场实际情况修改
+        "select b.re_id,b.re_name,a.value ,d.value
+        from
+          %(cpc_user_name)s.RESERVE_POLICY a,
+          %(cpc_user_name)s.re b,
+          %(cpc_user_name)s.re_usage c,
+          %(cpc_user_name)s.reserve_limit d
+          where a.re_id=b.re_id
+          and b.re_id=c.re_id
+          and d.re_id=a.re_id
+          and nvl(a.value,0)<>240 or nvl(d.value,0)<>1
+          start with c.re_id in (10100)
+          connect by prior c.re_id = c.parent_re_id"
+
+      A003 Reserve rule check PS:
+      #zyi.检查预留是否有问题,这里的根节点的re_id和最大预留，最小预留需要根据现场实际情况修改
+        "select b.re_id,b.re_name,a.value ,d.value
+          from
+            %(cpc_user_name)s.RESERVE_POLICY a,
+            %(cpc_user_name)s.re b,
+            %(cpc_user_name)s.re_usage c,
+            %(cpc_user_name)s.reserve_limit d
+          where a.re_id=b.re_id
+          and b.re_id=c.re_id
+          and d.re_id=a.re_id
+          and a.value<>1048576 or d.value<>1
+          start with c.re_id in (10101)
+          connect by prior c.re_id = c.parent_re_id"
+
+      A003 Reserve rule check SMS&MMS&CRBT:
+      #zyi.检查预留是否有问题,这里的根节点的re_id和最大预留，最小预留需要根据现场实际情况修改
+        "select b.re_id,b.re_name,a.value ,d.value
+          from
+            %(cpc_user_name)s.RESERVE_POLICY a,
+            %(cpc_user_name)s.re b,
+            %(cpc_user_name)s.re_usage c,
+            %(cpc_user_name)s.reserve_limit d
+          where a.re_id=b.re_id
+          and b.re_id=c.re_id
+          and d.re_id=a.re_id
+          and a.value<>1 or d.value<>1
+          start with c.re_id in (10171,13753)
+          connect by prior c.re_id = c.parent_re_id"
+
+      A003 ZoneMap Duplicate Check1:
+      #zyi.同一个zonemap重复数据检查,存在一个value在一个zone map下,在不同的zone里异常数据检查
+        "select d.zone_map_id,d.zone_map_name,d.value from (
+          select c.zone_map_id,c.zone_map_name,a.zone_id,a.zone_name,b.value
+          from
+            %(cpc_user_name)s.zone a,
+            %(cpc_user_name)s.zone_value b,
+            %(cpc_user_name)s.zone_map c
+          where a.zone_id=b.zone_id
+          and a.zone_map_id=c.zone_map_id ) d
+          group by d.zone_map_id,d.zone_map_name,d.value
+          having count(1)>1"
+
+      A003 Table Parameter and ZoneMap Cross Check1:
+      #zyi.表格资费与zone_map的zone_name排查:表格资费与zone_map的zone_name排查，检查一个表格资费引用了一个zone map之后，是否定义了这个zone map下的所有zone的资费
+        "select *
+          from
+            %(cpc_user_name)s.zone
+           where zone_map_id in
+           (select distinct c.ZONE_MAP_ID
+           from
+            %(cpc_user_name)s.TABLE_PARAM_CELL a,
+            %(cpc_user_name)s.TABLE_PARAM_COLUMN b,
+            %(cpc_user_name)s.TABLE_PARAM c where a.col_id=b.col_id and b.zone_flag='Y'
+           and b.param_id=c.param_id)
+           and zone_id not in
+           (select distinct a.zone_id
+           from
+            %(cpc_user_name)s.TABLE_PARAM_CELL a,
+            %(cpc_user_name)s.TABLE_PARAM_COLUMN b,
+            %(cpc_user_name)s.TABLE_PARAM c where a.col_id=b.col_id and b.zone_flag='Y'
+           and b.param_id=c.param_id)"
+
+      A003 ZoneMap and Table Parameter Cross Check1:
+      #zyi.mapping资费与zone_map的zone_name排查,检查一个mapping资费里引用了一个zone map之后，是否定义了这个zone map下的所有zone的资费
+        "select *
+          from
+            %(cpc_user_name)s.zone
+          where zone_map_id in (
+           select zone_map_id from DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL )
+           and zone_id not in (select zone_id from DC_AFTER_CONFIG_DATA_CHECK_PRICE_ALL)"
+
+
+      A003 set up fee check1:
+        "select *
+          from
+            %(cpc_user_name)s.rate_plan
+          where priority<>1
+          and rate_plan_id in (select rate_plan_id from DC_AFTER_CONFIG_DATA_CHECK_SETUP_FEE)"
+
+      A003 set up fee check2:
+        "select *
+          from
+            %(cpc_user_name)s.rate_plan
+          where  priority<>2
+          and  re_price_set_id in (select re_price_set_id from DC_AFTER_CONFIG_DATA_CHECK_SETUP_FEE)
+          and rate_plan_id not in (select rate_plan_id from DC_AFTER_CONFIG_DATA_CHECK_SETUP_FEE)"
+
+
+

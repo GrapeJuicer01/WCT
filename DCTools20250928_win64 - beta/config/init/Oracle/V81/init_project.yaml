@@ -1,0 +1,19 @@
+A002:
+  create:
+    DC_LINK_V7:
+      CREATE DATABASE LINK "DC_LINK_V7"
+      CONNECT TO "CPC" IDENTIFIED BY "1jian8Shu)"
+      USING '(DESCRIPTION =
+      (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = TCP)(HOST = 172.16.25.84)(PORT = 11521))
+      )
+      (CONNECT_DATA =
+      (SERVICE_NAME = dcpdb)
+      )
+      )'
+
+  create_list:
+    DC_LINK_V7:
+      - link
+      - V20191126
+      - database link

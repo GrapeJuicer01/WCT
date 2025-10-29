@@ -1,0 +1,212 @@
+CICMSGTEMPLATE:
+  dst_table:
+    - CIC.CIC_EVENT
+    - CIC.CIC_INTER_EVENT_ATTR
+    - CIC.CIC_ENRICH_SERVICE
+    - CIC.CIC_ACTION
+    - CIC.CIC_INPUT_PARAM
+    - CIC.CIC_SERV_RTN
+    - CIC.CIC_ACM
+    - CIC.CIC_ACM_EVENT_DRIVE
+    - CIC.CIC_ACM_RULE_EXP
+    - CIC.CIC_ACM_CONDITION
+    - CIC.CIC_RULE_FILTER
+    - CIC.CIC_LEFT_OPERAND
+    - CIC.CIC_RIGHT_OPERAND
+    - CIC.CIC_ACM_FACTOR
+    #- CIC.cic_fix_available_value
+
+  mid_table:
+    - DC_MSG_LABEL
+    - DC_CIC_EVENT
+    - DC_CIC_EVENT_ATTR
+    - DC_CIC_REG_SERVICE
+    - DC_CIC_ACTION
+    - DC_CIC_INPUT_PARAM
+    - DC_CIC_SERV_RTN
+    - DC_CIC_ACM
+    - DC_ACM_EVENT_DRIVE
+
+  insert_DC_CIC_EVENT:
+    - |
+      INSERT INTO cic.cic_event
+        (event_id,
+         event_code,
+         catalog_id,
+         event_name,
+         event_cnct_method,
+         exclude_repetition,
+         comments,
+         state,
+         is_product,
+         is_interact_event,
+         batch_flag,
+         batch_task,
+         created_date,
+         created_by,
+         update_date,
+         update_by,
+         manual_flag,
+         storage_event_process,
+         manual_retry_flag,EVENT_TRIGGER)
+        SELECT max_cn + rownum,
+               event_code,
+               cc.catalog_id,
+               event_code as event_name,
+               event_cnct_method,
+               exclude_repetition,
+               null,
+               'P',
+               is_product,
+               is_interact_event,
+               batch_flag,
+               batch_task,
+               sysdate,
+               '3044336',
+               sysdate,
+               '3044336',
+               manual_flag,
+               storage_event_process,
+               MANUAL_RETRY_FLAG,ccc.contact_channel_id
+          FROM dc_cic_event de
+          left join (select COALESCE(max(event_id), 0)  max_cn
+                       from cic.cic_event)
+            on 1 = 1
+          left join cic.cic_catalog cc
+            on cc.catalog_name = de.catalog_name
+          left join cpc.CBEC_CONTACT_CHANNEL ccc on ccc.contact_channel_name = de.EVENT_TRIGGER
+          where de.event_code not in (select event_code from cic.cic_event)
+
+  insert_DC_CIC_EVENT_ATTR:
+      - |
+        insert into cic.cic_inter_event_attr
+          (event_attr_id,
+           inter_event_id,
+           parent_attr_id,
+           attr_code,
+           attr_name,
+           attr_code_path,
+           attr_name_path,
+           data_type,
+           attr_dim_id,
+           is_array,
+           is_identifier,
+           comments,
+           is_product,
+           is_sensitive,
+           masking_rule_id,
+           default_attr,
+           event_attr_type,
+           fun_id)
+          SELECT max_cn+rownum,
+                 ce.event_id,
+                 null,
+                 dea.attr_code,
+                 dea.attr_code,
+                 attr_code_path,
+                 attr_code_path,
+                 ct.data_type,
+                 attr_dim_id,
+                 is_array,
+                 is_identifier,
+                 null,
+                 dea.is_product,
+                 is_sensitive,
+                 null,
+                 default_attr,
+                 event_attr_type,
+                 fun_id
+            FROM dc_cic_event_attr dea
+            left join (select COALESCE(max(event_attr_id), 0) max_cn
+                         from cic.cic_inter_event_attr)
+              on 1 = 1
+            left join cic.cic_event ce
+              on ce.Event_Code = dea.event_code
+            left join cic.cic_function cf
+              on cf.fun_name = dea.fun_name
+            left join cic.cic_default_attr cda
+              on cda.attr_name = dea.default_attr_name
+            inner join cic.cic_data_type ct on dea.data_type_name = ct.data_type_name
+            where dea.event_code in (select event_code from dc_cic_event)
+
+      - |
+        update cic.cic_inter_event_attr ci
+           set parent_attr_id =
+               (select t.parent_event_attr_id
+                  from (SELECT cea.event_attr_id,
+                               dea.parent_attr_path,
+                               cea1.event_attr_id parent_event_attr_id,
+                               cea.inter_event_id
+                          from cic.cic_inter_event_attr cea,
+                               dc_cic_event_attr        dea,
+                               cic.cic_event            ce,
+                               cic.cic_inter_event_attr cea1
+                         where ce.event_code = dea.event_code
+                           and ce.event_id = cea.inter_event_id
+                           and dea.attr_code_path = cea.attr_code_path
+                           and dea.parent_attr_path = cea1.attr_code_path
+                           and cea1.inter_event_id = ce.event_id
+                           and dea.parent_attr_path is not null) t
+                 where t.event_attr_id = ci.event_attr_id)
+                where inter_event_id in (select event_id from cic.cic_event a,dc_cic_event b where a.event_code = b.event_code)
+
+  INSERT_DC_CIC_ACM:
+    - |
+      INSERT INTO CIC.CIC_ACM
+        (ACM_ID,
+         ACM_NAME,
+         ACM_CODE,
+         AUDIENCE_ID,
+         LIFE_CYCLE_START_DATE,
+         LIFE_CYCLE_END_DATE,
+         IS_OCCURENCE,
+         SEG_LENGTH,
+         SEG_DURATION_TIMEUNIT,
+         VALUE_UNIT,
+         DISPLAY_UNIT,
+         ACM_TYPE,
+         STATE,
+         CREATED_BY,
+         CREATED_DATE,
+         UPDATE_BY,
+         UPDATE_DATE,
+         ACM_CATALOG_ID,
+         RELEASE_TIME)
+        SELECT (select coalesce(max(acm_id)+1,1) from cic.cic_acm) acm_id,
+               d.acm_name,
+               d.acm_code,
+               a.audience_id,
+               d.life_cycle_start_date,
+               d.life_cycle_end_date,
+               d.is_occurence,
+               d.seg_length,
+               d.seg_duration_timeunit,
+               cmu.unit,
+               cmu1.unit,
+               cat.acm_type,
+               'P',
+               '3044336',
+               sysdate,
+               '',
+               sysdate,
+               cac.acm_catalog_id,
+               ''
+          FROM DC_CIC_ACM d
+          left join cic.CIC_AUDIENCE a
+            on d.audience_name = a.audience_name
+          left join cic.CIC_MEAS_UNIT cmu
+            on d.value_unit = cmu.unit_name
+          left join cic.CIC_MEAS_UNIT cmu1
+            on d.display_unit = cmu1.unit_name
+          left join cic.cic_acm_type cat
+            on cat.acm_type_name = d.acm_type_name
+          left join cic.cic_acm_catalog cac
+            on cac.acm_catalog_name = d.acm_catalog_name
+
+  DC_PROC_ENRICH_SERVICE:
+    - |
+      exec: DC_PROC_ENRICH_SERVICE
+
+  DC_PROC_ACM_EVENT_DRIVE:
+    - |
+      exec: DC_PROC_ACM_EVENT_DRIVE

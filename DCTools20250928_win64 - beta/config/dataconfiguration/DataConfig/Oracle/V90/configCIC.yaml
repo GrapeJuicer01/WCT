@@ -1,0 +1,35 @@
+CICMSGTEMPLATE:
+  dst_table:
+    - cic.CIC_TEMPLATE_LABEL
+    - cic.CIC_MSG_TEMPLATE_ATTR
+    - cic.CIC_TEMPLATE_CONTENT
+    - cic.CIC_ACTION_PARAM_VALUE
+    - cic.CIC_ACTION_PROCESS
+    - cic.CIC_MSG_TEMPLATE
+    - cic.CIC_RIGHT_OPERAND
+    - cic.CIC_LEFT_OPERAND
+    - cic.CIC_RULE_FILTER
+    - cic.CIC_RULE
+    - cic.CIC_INPUT_EVENT
+    - cic.CIC_PROCESS_CONNECT
+    - cic.CIC_PROCESS
+    - cic.CIC_FLOW_VERSION
+    - cic.CIC_FLOW_LABEL
+    - cic.CIC_EVENT_FLOW
+
+  mid_table:
+    - DC_MSG_TEMPLATE
+    - DC_MSG_TEMPLATE_JUDGE
+    - DC_MSG_TEMPLATE_PARAM
+    - DC_CIC_TEMPLATE_REL
+    - DC_TEMPLATE_OFFER
+    - DC_CIC_PROCESS
+    - DC_CIC_ACTION_PARAM_VALUE
+
+  DC_PROC_MSG_FlowLayout:
+    - |
+      exec: DC_PROC_MSG_FlowLayout
+
+  DC_PROC_FlowLayout:
+    - |
+      exec: DC_PROC_FlowLayout

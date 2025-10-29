@@ -1,0 +1,887 @@
+param_list:
+  PPRentTariff:
+    default_local_currency_precision:
+      -10000
+    default_apply_region_id:
+      731
+    default_create_user:
+      3044336
+    default_project:
+      "'PTCL'"
+
+PPRentTariff:
+  dst_table:
+    - cpc.con_res_detail
+    - cpc.con_res
+    - cpc.cbec_acct_item_type
+    - cpc.CBEC_CURRENCY_TYPE
+    - cpc.offer_ext_attr
+    - cpc.cpc_otc_price
+    - cpc.cpc_otc_price_rate
+    - cpc.cpc_otc_price_benefit
+    - cpc.REF_VALUE
+    - cpc.PRICE
+    - cpc.period
+    - cpc.sub_bal_type
+    - cpc.event_benefit
+    - cpc.RE_PP_RECURRING
+    - cpc.RE_PRICE_SET
+    - cpc.MAPPING
+    - cpc.PRICE_VER
+    - cpc.RATE_PLAN
+    - cpc.CPC_RENT_PRIORITY
+    - cpc.RATE_PLAN_ZONE
+    - cpc.MAPPING_UNIT
+
+  mid_table:
+    - DC_CONFIG_PP_RENT_TARIFF
+    - delete_price_plan_benefit
+
+
+  reserve_table:
+    cbec_acct_res:
+      "select * from cpc.cbec_acct_res where acct_res_id >= 10000"
+
+    re:
+      "select * from cpc.re  where re_id >= 10000 "
+
+
+  insert_RENT_RE:
+    - |
+      INSERT INTO cpc.RE
+        (
+         RE_ID,
+         RE_NAME,
+         RE_TYPE,
+         RE_CODE,
+         COMMENTS,
+         RE_DISPLAY_NAME
+        )
+        SELECT RE_ID_SEQ.Nextval,
+            concat(concat(t.RECURRING_RE_TYPE,'_'), t.PRICE_PLAN_NAME)  ,
+             '9',
+             null,
+             concat(%(default_project)s,r.RECURRING_RE_TYPE),
+             null
+        FROM DC_CONFIG_PP_RENT_TARIFF t
+         inner join cpc.RECURRING_RE_TYPE r
+              on t.RECURRING_RE_TYPE = r.RECURRING_RE_TYPE_NAME
+         left join  re t1
+          on  t1.RE_NAME = concat(concat(t.RECURRING_RE_TYPE,'_'), t.PRICE_PLAN_NAME)
+        where  t.SEQ = 1
+               and t1.RE_ID is  null
+
+    - |
+      INSERT INTO cpc.RE_PP_RECURRING
+       (RE_ID,
+        RECURRING_RE_TYPE,
+        PRICE_PLAN_VER_ID,
+        PRICE_PLAN_ID,
+        STATE,
+        SP_ID)
+       select r.re_id,
+              regexp_substr(r.comments, '\d'),
+              v.PRICE_PLAN_VER_ID,
+              p.price_plan_id,
+              'A',
+              NULL
+       from cpc.price_plan_ver v,
+            cpc.PRICE_PLAN p,
+            cpc.RE r,
+             DC_CONFIG_PP_RENT_TARIFF d
+       where p.PRICE_PLAN_ID = v.PRICE_PLAN_ID
+         and d.PRICE_PLAN_ID = p.PRICE_PLAN_ID
+         and SUBSTR(r.RE_NAME, INSTR(r.RE_NAME, '_') + 1) = p.PRICE_PLAN_NAME
+         and  substr(r.comments,1,LENGTH(%(default_project)s)) = %(default_project)s
+         and r.re_id not in (select re_id from cpc.RE_PP_RECURRING)
+         and d.SEQ=1
+
+    - |
+      INSERT INTO cpc.RE_PRICE_SET
+      (RE_PRICE_SET_ID,
+       RE_ID,
+       PRICE_SET_ID,
+       WORKFLOW_ID,
+       POST_WORKFLOW_ID,
+       RULE_COMMENTS)
+      select RE_PRICE_SET_ID_SEQ.NEXTVAL,
+             r.re_id,
+             p.price_set_id,
+             null,
+             null,
+             CONCAT('RENT_', SYSDATE)
+      from cpc.RE_PP_RECURRING r,
+           cpc.price_plan_member p,
+           cpc.re
+      where r.price_plan_ver_id = p.price_plan_ver_id
+        and re.re_id = r.re_id
+        and re.RE_TYPE = 9
+        and substr(re.comments,1,LENGTH(%(default_project)s)) = %(default_project)s
+        and concat(r.re_id,p.price_set_id) not in(select concat(re_id,price_set_id) from cpc.RE_PRICE_SET)
+
+  insert_RENT_RATING_RATE_PLAN:
+    - |
+      insert into CPC.RATE_PLAN
+      (RATE_PLAN_ID, RATE_PLAN_NAME, RATE_PLAN_TYPE, RATE_CHARGE_TYPE, RE_PRICE_SET_ID, MAPPING_TYPE, PRIORITY, COMMENTS,
+       CREATED_DATE, STATE, STATE_DATE, MAPPING_EXIT, SP_ID)
+      select RATE_PLAN_ID_SEQ.NEXTVAL,
+             concat(concat(t2.PRICE_PLAN_NAME, ' Rent RP '),t2.RATING_TYPE),
+             1,
+             'M',
+             t.re_price_set_id,
+             case when  t2.RATING_TYPE='Condition' then
+                      '2'
+                  when  t2.RATING_TYPE='Mapping' then
+                      '1'
+                  else
+                      'D'
+                  end MAPPING_TYPE,
+             1,
+             'Rent RP',
+             sysdate,
+             'A',
+             sysdate,
+             null,
+             null
+      from re_price_set t
+       inner join CPC.re_pp_recurring  t1
+            on t.RE_ID = t1.RE_ID
+       inner join DC_CONFIG_PP_RENT_TARIFF t2
+            on t1.PRICE_PLAN_ID = t2.PRICE_PLAN_ID
+       left join rate_plan t3
+            on t3.RATE_PLAN_NAME = concat(concat(t2.PRICE_PLAN_NAME, ' Rent RP '),t2.RATING_TYPE)
+      where  t2.SEQ = 1 and t3.RATE_PLAN_ID  is  null and t2.RECURRING_PRICE is not null
+
+    - |
+      insert into CPC.MAPPING (MAPPING_ID, MAPPING_NAME, RATE_PLAN_ID, PRIORITY, MAPPING_DEFAULT, SP_ID)
+       select MAPPING_ID_SEQ.NEXTVAL,
+             t.rate_plan_name,
+             t.rate_plan_id,
+             0,
+             null,
+             null
+       from CPC.rate_plan t
+       where t.comments = 'Rent RP'
+       and t.rate_plan_id not in(select rate_plan_id from MAPPING)
+
+    - |
+      insert into CPC.PRICE_VER (PRICE_VER_ID, MAPPING_ID, EFF_DATE, EXP_DATE, SP_ID)
+        select price_ver_id_seq.nextval,
+               t.mapping_id,
+               TO_DATE('2000-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+               null,
+               null
+        from CPC.mapping t,
+             CPC.rate_plan r
+        where t.rate_plan_id = r.rate_plan_id
+          and r.comments = 'Rent RP'
+          and t.mapping_id not in(select mapping_id from PRICE_VER)
+
+    - |
+      insert into CPC.MAPPING_CONDITION_GROUP
+       ( MAPPING_ID ,
+         GRP_ID  ,
+         SEQ_NO  ,
+         L_RE_ATTR ,
+         L_FUNCTION_ID ,
+         L_PARAM1  ,
+         L_PARAM2 ,
+         SORT_OPERATOR ,
+         L_VALUE_TYPE ,
+         R_VALUE_TYPE  ,
+         R_VALUE  ,
+         R_RE_ATTR  ,
+         R_FUNCTION_ID  ,
+         R_PARAM1 ,
+         R_PARAM2  ,
+         SP_ID  ,
+         ZONE_ID
+       )
+        select  t6.MAPPING_ID,t.SEQ,'1',TLRA.RE_ATTR,TLSF.FUNCTION_ID,
+                t.CON_L_PARAM1,t.CON_L_PARAM2,
+               TOPER.SORT_OPERATOR,null,t.CON_R_VALUE_TYPE,t.CON_R_VALUE,
+               null,null,null,null,null,z.ZONE_ID
+        from DC_CONFIG_PP_RENT_TARIFF T
+         inner join re  t1
+            on t1.RE_NAME = concat(concat(t.RECURRING_RE_TYPE,'_'), t.PRICE_PLAN_NAME)
+         inner join re_pp_recurring t2
+            on t2.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+               and t2.RE_ID = t1.RE_ID
+         inner join price_plan_member t3
+            on t2.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join RE_PRICE_SET t4
+            on t4.RE_ID = t1.RE_ID
+               and t4.PRICE_SET_ID = t3.PRICE_SET_ID
+         inner join cpc.rate_plan t5
+             on t5.RATE_PLAN_NAME = concat(concat(t.PRICE_PLAN_NAME, ' Rent RP '),t.RATING_TYPE)
+               and t5.MAPPING_TYPE = '2'
+               and t5.RE_PRICE_SET_ID = t4.RE_PRICE_SET_ID
+         inner join cpc.mapping t6
+              on t6.RATE_PLAN_ID = t5.RATE_PLAN_ID
+         left join   RE_ATTR TLRA
+             on TLRA.RE_ATTR_NAME = t.L_RE_ATTR
+         left join SORT_FUNCTION TLSF
+             on TLSF.FUNCTION = t.CON_FUNCTION
+         left join SORT_OPERATOR TOPER
+             on TOPER.SORT_OPERATOR_NAME = t.CON_SORT_OPERATOR
+         left join zone z
+             on z.zone_name =t.R_ZONE_NAME
+        where t.RATING_TYPE in ('Condition')
+              and t5.comments = 'Rent RP'
+              and t6.mapping_id not in(select mapping_id from MAPPING_CONDITION_GROUP)
+
+
+    - |
+      insert into CPC.RATE_PLAN_ZONE
+       (RATE_PLAN_ZONE_ID  ,
+        RATE_PLAN_ID ,
+        PRIORITY ,
+        MAPPING_SRC_TYPE  ,
+        MAPPING_SRC_VALUE ,
+        MAPPING_DES_TYPE ,
+        MAPPING_DES_VALUE
+       )
+        select RATE_PLAN_ZONE_ID_SEQ.nextval,
+               t5.RATE_PLAN_ID,1,'1',TLRA.RE_ATTR,
+              case when  t.R_ZONE_MAP is not null  then
+                      '0'
+                  else
+                      '1'
+                  end MAPPING_DES_TYPE,
+              case when  t.R_ZONE_MAP is not null  then
+                        z.ZONE_MAP_ID
+                  else
+                    null
+                  end MAPPING_DES_VALUE
+        from DC_CONFIG_PP_RENT_TARIFF T
+         inner join re  t1
+            on t1.RE_NAME = concat(concat(t.RECURRING_RE_TYPE,'_'), t.PRICE_PLAN_NAME)
+         inner join re_pp_recurring t2
+            on t2.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+               and t2.RE_ID = t1.RE_ID
+         inner join price_plan_member t3
+            on t2.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join RE_PRICE_SET t4
+            on t4.RE_ID = t1.RE_ID
+               and t4.PRICE_SET_ID = t3.PRICE_SET_ID
+         inner join cpc.rate_plan t5
+             on t5.RATE_PLAN_NAME = concat(concat(t.PRICE_PLAN_NAME, ' Rent RP '),t.RATING_TYPE)
+               and t5.MAPPING_TYPE = '1'
+               and t5.RE_PRICE_SET_ID = t4.RE_PRICE_SET_ID
+         inner join cpc.mapping t6
+              on t6.RATE_PLAN_ID = t5.RATE_PLAN_ID
+         left join   RE_ATTR TLRA
+             on TLRA.RE_ATTR_NAME = t.L_RE_ATTR
+         left join zone_map z
+             on z.ZONE_MAP_NAME =t.R_ZONE_MAP
+        where t.RATING_TYPE in ('Mapping')
+              and t5.comments = 'Rent RP'
+
+    - |
+      insert into CPC.MAPPING_UNIT
+       (MAPPING_ID ,
+        RATE_PLAN_ZONE_ID  ,
+        MAPPING_MATCH_TYPE ,
+        MAPPING_TYPE ,
+        MAPPING_VALUE
+       )
+        select t6.MAPPING_ID,t7.RATE_PLAN_ZONE_ID,
+             decode(t.CON_SORT_OPERATOR, '>', '1','<', '2', '=', '3', '!=', '4', '>=', '5', '<=', '6','IN', 'A'),
+               case when  t.R_ZONE_NAME  is not null  then  '0'
+                    when t.R_ZONE_NAME  is  null and  t.CON_R_VALUE  is not null  then  '1'
+                    else '2'
+                  end MAPPING_TYPE,
+               case when  t7.MAPPING_DES_TYPE=0  then
+                       z1.ZONE_ID
+                  else
+                       to_number(t.CON_R_VALUE)
+                  end MAPPING_VALUE
+        from DC_CONFIG_PP_RENT_TARIFF T
+         inner join re  t1
+            on t1.RE_NAME = concat(concat(t.RECURRING_RE_TYPE,'_'), t.PRICE_PLAN_NAME)
+         inner join re_pp_recurring t2
+            on t2.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+               and t2.RE_ID = t1.RE_ID
+         inner join price_plan_member t3
+            on t2.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join RE_PRICE_SET t4
+            on t4.RE_ID = t1.RE_ID
+               and t4.PRICE_SET_ID = t3.PRICE_SET_ID
+         inner join cpc.rate_plan t5
+             on t5.RATE_PLAN_NAME = concat(concat(t.PRICE_PLAN_NAME, ' Rent RP '),t.RATING_TYPE)
+               and t5.MAPPING_TYPE = '1'
+               and t5.RE_PRICE_SET_ID = t4.RE_PRICE_SET_ID
+         inner join cpc.mapping t6
+              on t6.RATE_PLAN_ID = t5.RATE_PLAN_ID
+         left join zone_map z
+             on z.ZONE_MAP_NAME =t.R_ZONE_MAP
+         inner join RATE_PLAN_ZONE t7
+             on t7.RATE_PLAN_ID = t5.RATE_PLAN_ID
+             and t7.MAPPING_SRC_VALUE = (select RE_ATTR from RE_ATTR r where r.RE_ATTR_NAME = t.L_RE_ATTR )
+         left join  zone z1
+             on z1.ZONE_NAME = t.R_ZONE_NAME
+        where t.RATING_TYPE in ('Mapping')
+              and t5.comments = 'Rent RP'
+
+    - |
+      insert into CPC.REF_VALUE
+      (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID, PRICE_SET_ID,
+       SP_ID,COMMENTS)
+       select REF_VALUE_ID_SEQ.NEXTVAL,
+             9,
+             t4.con_res_id,
+             sysdate,
+             'A',
+             sysdate,
+             price_id_seq.nextval,
+             t3.rate_plan_id,
+             t2.price_set_id,
+             0,
+             concat(concat(t3.rate_plan_id,' '),t1.SEQ)
+       from re_pp_recurring t
+        inner join DC_CONFIG_PP_RENT_TARIFF t1
+            on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+        inner join re_price_set t2
+            on t2.RE_ID = t.RE_ID
+        inner join RATE_PLAN t3
+            on t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+            and t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Rent RP '),t1.RATING_TYPE)
+        inner join con_res  t4
+            on t4.CON_RES_NAME = t1.CON_RES_NAME
+      where  t3.RATE_PLAN_TYPE = 1
+            and t1.RECURRING_PRICE  is not null
+
+
+    - |
+      insert into CPC.REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, CREATED_DATE, STATE, STATE_DATE, PRICE_ID,
+                     RATE_PLAN_ID, PRICE_SET_ID, SP_ID,COMMENTS)
+       select REF_VALUE_ID_SEQ.NEXTVAL,
+             1,
+             t1.RECURRING_PRICE ,
+             sysdate,
+             'A',
+             sysdate,
+             t5.price_id,
+             t5.rate_plan_id,
+             t5.price_set_id,
+             0,
+             concat(concat(t3.rate_plan_id,' '),t1.SEQ)
+       from   re_pp_recurring t
+        inner join DC_CONFIG_PP_RENT_TARIFF t1
+            on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+        inner join re_price_set t2
+            on t2.RE_ID = t.RE_ID
+        inner join RATE_PLAN t3
+            on t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+            and t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Rent RP '),t1.RATING_TYPE)
+        inner join con_res  t4
+            on t4.CON_RES_NAME = t1.CON_RES_NAME
+        inner join  CPC.ref_value t5
+            on to_number(t5.value_string) = t4.con_res_id
+            and  t5.ref_value_type = 9
+            and t5.RATE_PLAN_ID = t3.RATE_PLAN_ID
+            and t5.comments= concat(concat(t3.rate_plan_id,' '),t1.SEQ)
+       where   t3.RATE_PLAN_TYPE = 1
+            and t1.RECURRING_PRICE  is not null
+
+    - |
+      insert into CPC.PRICE (PRICE_ID, PRICE_NAME, REF_VALUE_ID, RUM, RE_ATTR, PRICE_TYPE, CALC_TYPE, PRICE_VER_ID, CON_RES_ID,
+                 CURRENCY_TYPE_ID, COMMENTS, PRIORITY, SRC_PRICE_ID, SP_ID, CONFIGURE_TYPE, MIN_RUM)
+        select t1.price_id,
+               concat(t.rate_plan_name, ' Price'),
+               t1.ref_value_id,
+               1,
+               (select re_attr from re_attr where re_attr_name='Rent Fee Cycle'),
+               null,
+               null,
+               t4.price_ver_id,
+               t2.ref_value_id,
+               null,
+               'Rent Rating',
+               1,
+               null,
+               null,
+               1,
+               null
+        from CPC.rate_plan  t
+         inner join DC_CONFIG_PP_RENT_TARIFF t5
+              on t.RATE_PLAN_NAME = concat(concat(t5.PRICE_PLAN_NAME, ' Rent RP '),t5.RATING_TYPE)
+         inner join ref_value t1
+              on t1.RATE_PLAN_ID = t.RATE_PLAN_ID
+               and t1.ref_value_type = 1
+               and (t1.COMMENTS = concat(concat(t.rate_plan_id,' '),t5.SEQ)  or  t1.COMMENTS  is null )
+         inner join ref_value t2
+              on t2.RATE_PLAN_ID = t.RATE_PLAN_ID
+              and t2.ref_value_type = 9
+              and (t2.COMMENTS = concat(concat(t.rate_plan_id,' '),t5.SEQ)  or  t1.COMMENTS  is null )
+         inner join mapping t3
+              on t3.RATE_PLAN_ID = t.RATE_PLAN_ID
+         inner join price_ver t4
+              on t4.MAPPING_ID = t3.MAPPING_ID
+        where t.RATE_PLAN_TYPE=1 and t.COMMENTS like 'Rent RP'
+             and  t1.PRICE_ID not in(select price_id from PRICE)
+
+  insert_BENEFIT_RATE_PLAN:
+
+    - |
+      insert into cpc.RATE_PLAN
+        (RATE_PLAN_ID,
+         RATE_PLAN_NAME,
+         RATE_PLAN_TYPE,
+         RATE_CHARGE_TYPE,
+         RE_PRICE_SET_ID,
+         MAPPING_TYPE,
+         PRIORITY,
+         COMMENTS,
+         CREATED_DATE,
+         STATE,
+         STATE_DATE,
+         MAPPING_EXIT,
+         SP_ID)
+        select RATE_PLAN_ID_SEQ.NEXTVAL,
+               concat(concat(t2.PRICE_PLAN_NAME, ' Benefit '),t2.RATING_TYPE),
+               3,
+               'M',
+               t.re_price_set_id,
+               case when  t2.RATING_TYPE='Condition' then
+                      '2'
+                  when  t2.RATING_TYPE='Mapping' then
+                      '1'
+                  else
+                      'D'
+                  end MAPPING_TYPE,
+               2,
+               'Rent Benefit',
+               sysdate,
+               'A',
+               sysdate,
+               null,
+               null
+            from re_price_set t
+             inner join CPC.re_pp_recurring  t1
+                 on t.RE_ID = t1.RE_ID
+             inner join DC_CONFIG_PP_RENT_TARIFF t2
+                 on t1.PRICE_PLAN_ID = t2.PRICE_PLAN_ID
+                  and t2.BENEFIT_VALUE is not null
+             left join rate_plan t3
+                 on t3.RATE_PLAN_NAME = concat(concat(t2.PRICE_PLAN_NAME, ' Benefit '),t2.RATING_TYPE)
+            where  t2.SEQ = 1  and t3.RATE_PLAN_ID  is  null and t2.BENEFIT_VALUE is not null
+
+    - |
+      insert into cpc.MAPPING (MAPPING_ID, MAPPING_NAME, RATE_PLAN_ID, PRIORITY, MAPPING_DEFAULT, SP_ID)
+        select MAPPING_ID_SEQ.NEXTVAl,
+               t.rate_plan_name,
+               t.rate_plan_id,
+               0,
+               null,
+               null
+        from cpc.rate_plan t
+        where t.comments = 'Rent Benefit'
+        and t.rate_plan_id not in(select mapping_id from MAPPING)
+
+    - |
+      insert into cpc.PRICE_VER(PRICE_VER_ID, MAPPING_ID, EFF_DATE)
+        select price_ver_id_seq.nextval,
+          t.mapping_id,
+          TO_DATE('2000-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS')
+        from cpc.mapping t,
+             cpc.rate_plan r
+        where t.rate_plan_id = r.rate_plan_id
+          and r.comments = 'Rent Benefit'
+          and t.mapping_id not in(select mapping_id from PRICE_VER)
+
+    - |
+      insert into REF_VALUE
+       (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COMMENTS, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID,
+        PRICE_SET_ID, SP_ID,CONFIG_UNIT_ID)
+        select REF_VALUE_ID_SEQ.NEXTVAL,
+               1,
+               -1*t1.BENEFIT_VALUE,
+               concat('benefit value -',t1.BENEFIT_ACCT_RES_NAME),
+               sysdate,
+               'A',
+               sysdate,
+               price_id_seq.nextval,
+               t3.rate_plan_id,
+               t2.price_set_id,
+               0,2
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+        where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+
+    - |
+      insert into REF_VALUE
+       (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COMMENTS, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID,
+        PRICE_SET_ID, SP_ID)
+        select REF_VALUE_ID_SEQ.NEXTVAL,
+               1,
+               '0',
+               concat('benefit Offset of Effective Date -',t1.BENEFIT_ACCT_RES_NAME),
+               sysdate,
+               'A',
+               sysdate,
+               price_id_seq.nextval,
+               t3.rate_plan_id,
+               t2.price_set_id,
+               0
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+        where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+
+    - |
+      insert into REF_VALUE
+       (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COMMENTS, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID,
+        PRICE_SET_ID, SP_ID)
+        select REF_VALUE_ID_SEQ.NEXTVAL,
+               1,
+               t1.BENEFIT_DURATION_UNIT,
+               concat('benefit Offset Unit -',t1.BENEFIT_ACCT_RES_NAME),
+               sysdate,
+               'A',
+               sysdate,
+               price_id_seq.nextval,
+               t3.rate_plan_id,
+               t2.price_set_id,
+               0
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+        where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+
+    - |
+      insert into REF_VALUE
+       (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COMMENTS, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID,
+        PRICE_SET_ID, SP_ID)
+        select REF_VALUE_ID_SEQ.NEXTVAL,
+               1,
+               t1.BENEFIT_DURATION,
+               concat('benefit Duration of Availability -',t1.BENEFIT_ACCT_RES_NAME),
+               sysdate,
+               'A',
+               sysdate,
+               price_id_seq.nextval,
+               t3.rate_plan_id,
+               t2.price_set_id,
+               0
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+        where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+    - |
+      insert into REF_VALUE
+       (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, COMMENTS, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID,
+        PRICE_SET_ID, SP_ID)
+        select REF_VALUE_ID_SEQ.NEXTVAL,
+               1,
+               t1.BENEFIT_DURATION_UNIT,
+               concat('benefit Duration Unit -',t1.BENEFIT_ACCT_RES_NAME),
+               sysdate,
+               'A',
+               sysdate,
+               price_id_seq.nextval,
+               t3.rate_plan_id,
+               t2.price_set_id,
+               0
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+        where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+    - |
+      insert into cpc.PERIOD
+        (PERIOD_ID,
+         PARAM_FLAG,
+         REL_EFF_OFFSET_REF  ,
+         REL_EFF_UNIT_REF ,
+         REL_EXP_OFFSET_REF ,
+         REL_EXP_UNIT_REF  )
+        select   PERIOD_ID_SEQ.nextval,
+               '1',
+               t4.REF_VALUE_ID,
+               t5.REF_VALUE_ID,
+               t6.REF_VALUE_ID,
+               t7.REF_VALUE_ID
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+          inner join ref_value t4
+              on t4.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t4.COMMENTS,'benefit Offset of Effective Date')
+          inner join ref_value t5
+              on t5.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t5.COMMENTS,'benefit Offset Unit')
+          inner join ref_value t6
+              on t6.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t6.COMMENTS,'benefit Duration of Availability')
+          inner join ref_value t7
+              on t7.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and regexp_like(t7.COMMENTS,'benefit Duration Unit')
+         where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+    - |
+      insert into cpc.sub_bal_type
+        (SUB_BAL_TYPE_ID,ACCT_RES_ID,PERIOD_ID)
+        select SUB_BAL_TYPE_ID_SEQ.nextval,
+               t9.ACCT_RES_ID,t8.PERIOD_ID
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+          inner join ref_value t4
+              on t4.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t4.COMMENTS,'benefit Offset of Effective Date')
+          inner join ref_value t5
+              on t5.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t5.COMMENTS,'benefit Offset Unit')
+          inner join ref_value t6
+              on t6.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t6.COMMENTS,'benefit Duration of Availability')
+          inner join ref_value t7
+              on t7.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and regexp_like(t7.COMMENTS,'benefit Duration Unit')
+          inner join PERIOD t8
+              on t8.REL_EFF_OFFSET_REF =t4.REF_VALUE_ID
+               and t8.REL_EFF_UNIT_REF= t5.REF_VALUE_ID
+               and t8.REL_EXP_OFFSET_REF =t6.REF_VALUE_ID
+               and t8.REL_EXP_UNIT_REF = t7.REF_VALUE_ID
+          inner join cpc.CBEC_ACCT_RES t9
+               on t9.ACCT_RES_NAME = t1.BENEFIT_ACCT_RES_NAME
+         where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+
+    - |
+      insert into cpc.event_benefit
+        (PRICE_ID,
+         PRICE_NAME,
+         REF_VALUE_ID,
+         RE_ATTR,
+         PRICE_VER_ID,
+         SUB_BAL_TYPE_ID,
+         RUM,
+         ROUND_METHOD,
+         COMMENTS)
+        select t11.PRICE_ID,
+               concat(t3.rate_plan_name, 'Benefit Detail'),
+               t11.REF_VALUE_ID,
+               (select re_attr from re_attr where re_attr_name='Occurence'),
+               t13.PRICE_VER_ID,
+               t10.SUB_BAL_TYPE_ID,
+               1,
+               '0',
+               'benefit'
+         from re_pp_recurring t
+          inner join DC_CONFIG_PP_RENT_TARIFF t1
+              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+          inner join re_price_set t2
+              on t2.RE_ID = t.RE_ID
+          inner join RATE_PLAN t3
+              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '),t1.RATING_TYPE)
+              and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+          inner join ref_value t4
+              on t4.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t4.COMMENTS,'benefit Offset of Effective Date')
+          inner join ref_value t5
+              on t5.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t5.COMMENTS,'benefit Offset Unit')
+          inner join ref_value t6
+              on t6.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and  regexp_like(t6.COMMENTS,'benefit Duration of Availability')
+          inner join ref_value t7
+              on t7.RATE_PLAN_ID = t3.RATE_PLAN_ID
+              and regexp_like(t7.COMMENTS,'benefit Duration Unit')
+          inner join PERIOD t8
+              on t8.REL_EFF_OFFSET_REF =t4.REF_VALUE_ID
+               and t8.REL_EFF_UNIT_REF= t5.REF_VALUE_ID
+               and t8.REL_EXP_OFFSET_REF =t6.REF_VALUE_ID
+               and t8.REL_EXP_UNIT_REF = t7.REF_VALUE_ID
+          inner join cpc.CBEC_ACCT_RES t9
+               on t9.ACCT_RES_NAME = t1.BENEFIT_ACCT_RES_NAME
+          inner join cpc.sub_bal_type t10
+               on t10.PERIOD_ID = t8.PERIOD_ID
+                and t10.ACCT_RES_ID = t9.ACCT_RES_ID
+          inner join ref_value t11
+               on t11.RATE_PLAN_ID=t3.RATE_PLAN_ID
+                and regexp_like(t11.COMMENTS,'benefit value')
+                and t11.ref_value_type = 1
+          inner join mapping t12
+                on t12.RATE_PLAN_ID = t3.RATE_PLAN_ID
+          inner join price_ver t13
+                on t13.MAPPING_ID = t12.MAPPING_ID
+         where t3.RATE_PLAN_TYPE = 3
+              and t1.BENEFIT_VALUE  is not null
+
+
+  delete_RENT_RATING:
+    - |
+      DROP TABLE  delete_price_plan
+    - |
+      create table delete_price_plan as  (
+          select distinct  p.price_plan_id,  p.price_plan_name,ppv.PRICE_PLAN_VER_ID, ppm.PRICE_SET_ID,rps.RE_PRICE_SET_ID,m.MAPPING_ID, rp.RATE_PLAN_ID,rv1.PRICE_ID
+                 from
+                 cpc.price_plan        p,
+                 cpc.price_plan_ver    ppv,
+                 cpc.price_plan_member ppm,
+                 cpc.price_set         ps,
+                 cpc.re_price_set      rps,
+                 cpc.re r,
+                 cpc.MAPPING m,
+                 cpc.PRICE_VER pv,
+                 cpc.price pr,
+                 cpc.re_pp_recurring rpr,
+                 cpc.recurring_re_type rrt ,
+                 cpc.rate_plan rp,
+                 cpc.ref_value rv1, cpc.ref_value rv2,
+                 cpc.con_res c ,
+                 DC_CONFIG_PP_RENT_TARIFF t
+                 where  p.price_plan_id = ppv.price_plan_id
+                 and ppv.price_plan_ver_id = ppm.price_plan_ver_id
+                 and ppm.price_set_id = ps.price_set_id
+                 and ps.price_set_id = rps.price_set_id
+                 and rps.re_id =r.re_id
+                 and r.Re_Id=rpr.Re_Id
+                 and m.RATE_PLAN_ID = rp.RATE_PLAN_ID
+                 and m.MAPPING_ID = pv.MAPPING_ID
+                 and pv.PRICE_VER_ID = pr.PRICE_VER_ID
+                 AND RPR.RECURRING_RE_TYPE =RRT.RECURRING_RE_TYPE
+                 and rps.re_price_set_id=rp.re_price_set_id
+                 and rv1.rate_plan_id=rp.rate_plan_id
+                 and rv2.rate_plan_id= rp.rate_plan_id
+                 and rv1.ref_value_type=9
+                 and rv2.ref_value_type=1
+                 and t.PRICE_PLAN_ID = p.PRICE_PLAN_ID
+                 )
+    - |
+      delete from  MAPPING_UNIT p where p.MAPPING_ID in (select d.MAPPING_ID from delete_price_plan  d)
+    - |
+      delete from  RATE_PLAN_ZONE p where p.RATE_PLAN_ID in (select d.RATE_PLAN_ID from delete_price_plan  d)
+    - |
+      delete from  PRICE p where p.PRICE_ID in (select d.PRICE_ID from delete_price_plan  d)
+    - |
+      delete from REF_VALUE p where p.RATE_PLAN_ID in  (select d.RATE_PLAN_ID from delete_price_plan  d)
+    - |
+      delete from MAPPING_CONDITION_GROUP p where p.MAPPING_ID  in  (select d.MAPPING_ID from delete_price_plan  d)
+    - |
+      delete from PRICE_VER p where p.MAPPING_ID  in  (select d.MAPPING_ID from delete_price_plan  d)
+    - |
+      delete from MAPPING p where p.MAPPING_ID  in  (select d.MAPPING_ID from delete_price_plan  d)
+    - |
+      delete from RATE_PLAN p where p.RATE_PLAN_ID  in  (select d.RATE_PLAN_ID from delete_price_plan  d)
+
+  delete_RENT_Benefit:
+    - |
+      drop table delete_price_plan_benefit
+    - |
+      create table delete_price_plan_benefit as (
+          select t1.PRICE_PLAN_ID,
+                 t1.PRICE_PLAN_NAME,
+                 t3.RATE_PLAN_ID,
+                 t3.RATE_PLAN_NAME,
+                 t11.PRICE_ID,
+                 t12.MAPPING_ID,
+                 t8.PERIOD_ID,
+                 t10.SUB_BAL_TYPE_ID
+            from re_pp_recurring t
+                   inner join DC_CONFIG_PP_RENT_TARIFF t1
+                              on t1.PRICE_PLAN_ID = t.PRICE_PLAN_ID
+                   inner join re_price_set t2
+                              on t2.RE_ID = t.RE_ID
+                   inner join RATE_PLAN t3
+                              on t3.RATE_PLAN_NAME = concat(concat(t1.PRICE_PLAN_NAME, ' Benefit '), t1.RATING_TYPE)
+                                  and t3.RE_PRICE_SET_ID = t2.RE_PRICE_SET_ID
+                   inner join ref_value t4
+                              on t4.RATE_PLAN_ID = t3.RATE_PLAN_ID
+                                  and regexp_like(t4.COMMENTS, 'benefit Offset of Effective Date')
+                   inner join ref_value t5
+                              on t5.RATE_PLAN_ID = t3.RATE_PLAN_ID
+                                  and regexp_like(t5.COMMENTS, 'benefit Offset Unit')
+                   inner join ref_value t6
+                              on t6.RATE_PLAN_ID = t3.RATE_PLAN_ID
+                                  and regexp_like(t6.COMMENTS, 'benefit Duration of Availability')
+                   inner join ref_value t7
+                              on t7.RATE_PLAN_ID = t3.RATE_PLAN_ID
+                                  and regexp_like(t7.COMMENTS, 'benefit Duration Unit')
+                   inner join PERIOD t8
+                              on t8.REL_EFF_OFFSET_REF = t4.REF_VALUE_ID
+                                  and t8.REL_EFF_UNIT_REF = t5.REF_VALUE_ID
+                                  and t8.REL_EXP_OFFSET_REF = t6.REF_VALUE_ID
+                                  and t8.REL_EXP_UNIT_REF = t7.REF_VALUE_ID
+                   inner join cpc.CBEC_ACCT_RES t9
+                              on t9.ACCT_RES_NAME = t1.BENEFIT_ACCT_RES_NAME
+                   inner join cpc.sub_bal_type t10
+                              on t10.PERIOD_ID = t8.PERIOD_ID
+                                  and t10.ACCT_RES_ID = t9.ACCT_RES_ID
+                   inner join ref_value t11
+                              on t11.RATE_PLAN_ID = t3.RATE_PLAN_ID
+                                  and regexp_like(t11.COMMENTS, 'benefit value')
+                                  and t11.ref_value_type = 1
+                   inner join mapping t12
+                              on t12.RATE_PLAN_ID = t3.RATE_PLAN_ID
+                   inner join price_ver t13
+                              on t13.MAPPING_ID = t12.MAPPING_ID
+             where t3.RATE_PLAN_TYPE = 3
+                   and t1.BENEFIT_VALUE is not null
+                    )
+
+    - |
+      delete from  event_benefit p where p.PRICE_ID in (select d.PRICE_ID from delete_price_plan_benefit  d)
+    - |
+      delete from  sub_bal_type p where p.SUB_BAL_TYPE_ID in (select d.SUB_BAL_TYPE_ID from delete_price_plan_benefit  d)
+    - |
+      delete from  PERIOD p where p.PERIOD_ID in (select d.PERIOD_ID from delete_price_plan_benefit  d)
+    - |
+      delete from REF_VALUE p where p.RATE_PLAN_ID in  (select d.RATE_PLAN_ID from delete_price_plan_benefit  d)
+    - |
+      delete from MAPPING_CONDITION_GROUP p where p.MAPPING_ID  in  (select d.MAPPING_ID from delete_price_plan_benefit  d)
+    - |
+      delete from PRICE_VER p where p.MAPPING_ID  in  (select d.MAPPING_ID from delete_price_plan_benefit  d)
+    - |
+      delete from MAPPING p where p.MAPPING_ID  in  (select d.MAPPING_ID from delete_price_plan_benefit  d)
+    - |
+      delete from RATE_PLAN p where p.RATE_PLAN_ID  in  (select d.RATE_PLAN_ID from delete_price_plan_benefit  d)

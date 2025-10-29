@@ -1,0 +1,309 @@
+UserList:
+  cpc
+
+param_list:
+  WarningData:
+    cpc_user_name:
+      cpc
+  BadData:
+    cpc_user_name:
+      cpc
+  ErrorData:
+    cpc_user_name:
+      cpc
+
+#price check sql
+WarningData:
+
+
+
+BadData:
+    Zone_same_zone_id_multiple_value:
+      des: 一个zone map下，同一个zone里存在多条相同的value值
+      sql:
+        "select d.zone_map_id, d.zone_map_name, zone_id, zone_name, d.value
+                from (select c.zone_map_id,
+                     c.zone_map_name,
+                     a.zone_id,
+                     a.zone_name,
+                     b.value
+                from cpc.zone a, cpc.zone_value b, cpc.zone_map c
+                  where a.zone_id = b.zone_id
+                  and a.zone_map_id = c.zone_map_id
+                  and b.exp_date is null) d
+                group by d.zone_map_id, d.zone_map_name, zone_id, zone_name, d.value
+                having count(1) > 1"
+
+    SortRule_OutputRe_No_Reserve:
+      des: 分拣分拣出了事件，但是在预留规则中没有配置预留
+      sql:
+        "SELECT
+             f.workflow_name,
+             a.PARAM1 AS re_id,
+             c.RE_NAME,
+             d.sort_rule_name,
+             e.NODE_NAME
+         FROM
+             cpc.bwf_action a,
+             cpc.def_re_attr b,
+             cpc.re c,
+             cpc.bwf_step d,
+             cpc.bwf_node e,
+             cpc.bwf_workflow f
+         WHERE
+             a.src_re_attr = a.obj_re_attr
+                 AND a.src_re_attr = b.re_attr
+                 AND b.def_re_attr = 21
+                 AND a.PARAM1 = c.re_id
+                 AND a.PARAM1 NOT IN (SELECT
+                     re_id
+                 FROM
+                     cpc.reserve_policy)
+                 AND a.step_id = d.STEP_ID
+                 AND d.NODE_ID = e.NODE_ID
+                 AND e.workflow_id = f.workflow_id
+                 AND f.workflow_type IN ('A' , 'B')
+                 AND a.param1 NOT IN ('900' , '972', '973')
+                 and c.re_name not like '%%SMS%%'"
+
+ErrorData:
+    Account Item not in GL:
+      des: 找到账目类型必须要在GL中存在：
+      sql:
+          "SELECT
+               a.*
+           FROM
+               cbec_acct_item_type a,
+               cbec_acct_res b
+           WHERE
+               a.acct_res_id = b.acct_res_id
+                   AND b.is_currency = 'Y'
+                   AND acct_item_type_id NOT IN (SELECT
+                       acct_item_type_id
+                   FROM
+                       cbec_gl_acct_item_type)"
+
+    Event exists in sort rule but not in price:
+      des: 分拣输出事件，但是资费里面没有配置这个事件
+      sql:
+          "select a1.SORT_RULE_NAME, c.re_id, c.re_name
+                          from bwf_step a1,
+                               bwf_action a,
+                               re_attr b,
+                               re c,
+                               def_re_attr d,
+                               reserve_re_attr e
+                          where a1.STEP_ID = a.STEP_ID
+                            and (a1.EXP_DATE is null or a1.EXP_DATE > now())
+                            and a.src_re_attr = b.re_attr
+                            and a.param1 = c.re_id
+                            and b.re_attr = d.re_attr
+                            and d.def_re_attr = e.re_attr
+                            and e.re_attr = 21
+                            and c.re_id not in (select re_id from re_usage where parent_re_id in (
+                                                   select re_id from re_price_set)
+                                                   union
+                                                   select re_id from re_price_set) "
+
+    Zone Same zone value exists in different zone:
+      des: 检查一个zone map下一个zone value同时存在不同的zone里
+      sql:
+        "SELECT
+             d.zone_map_id, d.zone_map_name, d.value
+         FROM
+             (SELECT
+                 c.zone_map_id,
+                     c.zone_map_name,
+                     a.zone_id,
+                     a.zone_name,
+                     b.value
+             FROM
+                 zone a, zone_value b, zone_map c
+             WHERE
+                 a.zone_id = b.zone_id
+                     AND a.zone_map_id = c.zone_map_id) d
+         WHERE
+             d.value NOT IN (262 , 44, 672, 7, 1)
+         GROUP BY d.zone_map_id , d.zone_map_name , d.value
+         HAVING COUNT(1) > 1"
+
+
+    Workflow use Assign error:
+      des: 检查分拣里使用Assign函数时，是否存在把一个属性值直接Assign给另外一个属性，或者使用Assign赋予值时，忘记填参数了
+      sql:
+        "select e.workflow_name,i.workflow_type_name,d.node_name,c.sort_rule_name,g.re_attr_name,a.function,h.re_attr_name
+                  from
+                      (
+                      select step_id,`function`,src_re_attr,obj_re_attr from cpc.bwf_action  where `function`='Assign' and src_re_attr<>obj_re_attr
+                      union all
+                      select step_id,`function`,src_re_attr,obj_re_attr from cpc.bwf_action  where `function`='Assign' and src_re_attr=obj_re_attr
+                      and param1 is null ) a,
+                      bwf_step c,
+                      bwf_node d,
+                      bwf_workflow e,
+                      re_attr g,
+                      re_attr h ,
+                      workflow_type i
+                  where a.step_id=c.step_id
+                  and c.node_id=d.node_id
+                  and d.workflow_id=e.workflow_id
+                  and a.src_re_attr=g.re_attr
+                  and a.obj_re_attr=h.re_attr
+                  and e.workflow_type in ('A','B','D','P')
+                  and e.workflow_type=i.workflow_type"
+
+    Precision not correct:
+      sql:
+        #精度问题，# By QLR
+        "SELECT
+                      a.UNIT_PRECISION,
+                      b.SAVE_PRECISION
+                    FROM
+                      CON_RES a,
+                      CBEC_CURRENCY_TYPE b
+                    WHERE
+                      a.CURRENCY_TYPE_ID = b.CURRENCY_TYPE_ID
+                      AND a.UNIT_PRECISION <> b.SAVE_PRECISION
+                      AND a.CON_RES_ID IN ( SELECT DISTINCT CON_RES_ID FROM PRICE )"
+
+NOUSE:
+  Offer dont relate to tariff plan:
+    #检查basic offer,main offer, additional offer没有关联tariff plan
+    "select *
+          from cpc.offer d
+          where offer_type in ('10','11','12') and status_cd='1000'
+                and not exists (
+                select c.offer_id
+                from
+                  cpc.tariff_plan a,
+                  cpc.tariff_plan_rela b,
+                  cpc.tariff_plan_rela_apply c
+                where a.tariff_plan_id=b.tariff_plan_id
+                and b.tariff_plan_rela_id=c.tariff_plan_rela_id
+                and c.offer_id=d.offer_id
+                and a.state='B'
+                and b.state='B'
+                and c.state='B')"
+
+  Charging Workflow use the condition !=:
+    #V9分拣里使用 ！= 不等于时，如果属性值为空，也会满足条件，需要单独拿出来确认
+    "select e.workflow_name,i.workflow_type_name,d.node_name,c.sort_rule_name, f.re_attr_name,a.cond_group_id,a.function,g.sort_operator_name,
+          decode(a.is_const,'Y',a.operand,'N',h.re_attr_name,'')
+          from
+              cpc.bwf_cond a,
+              cpc.bwf_cond_group b,
+              cpc.bwf_step c,
+              cpc.bwf_node d,
+              cpc.bwf_workflow e,
+              cpc.re_attr f,
+              cpc.sort_operator g,
+              cpc.re_attr h ,
+              cpc.workflow_type i
+          where a.sort_operator='4'
+          and a.cond_group_id=b.cond_group_id and b.step_id=c.step_id
+          and c.node_id=d.node_id
+          and d.workflow_id=e.workflow_id
+          and a.re_attr=f.re_attr
+          and a.sort_operator=g.sort_operator
+          and nvl(a.r_re_attr,0)=h.re_attr(+)
+          and e.workflow_type in ('A','B','D','P')
+          and e.workflow_type=i.workflow_type"
+
+  The re_attr of reservation rule is different with the re_attr configured in price plan:
+    #事件配置的预留规则与资费里配置的扣费单位不一致，比如预留配置的是秒，但是扣费是按次扣费
+    "select * from (
+           select a.re_id,b.re_attr,c.re_attr_name
+           from
+             cpc.re a,
+             cpc.reserve_limit b,
+             cpc.re_attr c
+           where a.re_id=b.re_id
+           and b.re_attr=c.re_attr) a,
+           (
+           select pp.price_plan_id,pp.price_plan_name,pp.price_plan_type,pp.state, re.re_id,re.re_name,p.price_id,p.price_name,p.re_attr,ra.re_attr_name
+           from
+             cpc.price_plan pp,
+             cpc.price_plan_ver ppv,
+             cpc.price_plan_member ppm,
+             cpc.re_price_set rps,
+             cpc.rate_plan rp,
+             cpc.rate_plan_zone rpz,
+             cpc.mapping m,
+             cpc.price_ver pv,
+             cpc.price p,
+             cpc.re re,
+             cpc.MAPPING_UNIT mu,
+             cpc.re_attr ra
+           where pp.price_plan_id = ppv.price_plan_id
+                and pp.state<>'C'
+                and ppv.price_plan_ver_id = ppm.price_plan_ver_id
+                and ppm.price_set_id = rps.price_set_id
+                and rps.re_id = re.re_id
+                and rp.re_price_set_id = rps.re_price_set_id
+                and m.rate_plan_id = rp.rate_plan_id
+                and pv.mapping_id = m.mapping_id
+                and p.price_ver_id = pv.price_ver_id
+                and rp.rate_plan_id = rpz.rate_plan_id(+)
+                and m.mapping_id = mu.mapping_id(+)
+                and p.re_attr=ra.re_attr ) b
+           where a.re_id=b.re_id
+           and a.re_attr<>b.re_attr"
+
+NeedInhance:
+  Individual price plan do not relate to tariff plan:
+    #个性化资费计划没有关联tariff plan
+    "SELECT
+                        *
+                     FROM
+                        price_plan pp
+                     WHERE
+                        pp.STATE = 'B'
+                        AND pp.PRICE_PLAN_TYPE = '3'
+                        AND pp.PRICE_PLAN_ID > 0
+                        AND NOT EXISTS (
+                        SELECT
+                            1
+                        FROM
+                            tariff_plan tp,
+                            tariff_plan_rela tpr
+                        WHERE
+                            tp.STATE = 'B'
+                            AND tpr.STATE = 'B'
+                            AND tp.tariff_plan_id = tpr.tariff_plan_id
+                            AND tpr.price_plan_id = pp.price_plan_id
+                        )"
+
+  Recurring benefit accout not used in price:
+    #租费赠送的帐本，未在使用费里使用
+    "SELECT *
+           FROM
+           	SUB_BAL_TYPE sbt
+           WHERE
+           	NOT EXISTS (
+           	SELECT 1
+           	FROM
+           		ref_value rv,con_res_detail crd
+           	WHERE
+           		rv.REF_VALUE_TYPE = '9'
+           		AND rv.VALUE_STRING = crd.CON_RES_ID
+           		AND crd.ACCT_RES_ID = sbt.ACCT_RES_ID
+           	)"
+
+  Event exists in price but not in sort rule:
+    # 资费里面有事件，但是分拣中没有输出对应的事件
+    "select *
+          from
+              cpc.re_price_set
+          where re_id not in (
+          select c.re_id
+          from
+              cpc.bwf_action a,
+              cpc.re_attr b,
+              cpc.re c,
+              cpc.def_re_attr d,
+              cpc.reserve_re_attr e
+          where a.src_re_attr=b.re_attr
+          and b.re_attr=d.re_attr
+          and d.def_re_attr=e.re_attr
+          and e.re_attr=21
+          and a.param1=c.re_id)"

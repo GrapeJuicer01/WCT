@@ -1,0 +1,194 @@
+UserList:
+  cc
+
+BadData:
+  Offer have multiple same addition offer:
+    des: 检查Main Offer下additonal offer是否重复
+    area: comm
+    sql:
+      "SELECT
+              A.OFFER_VER_ID,
+              C.OFFER_ID
+          FROM
+              SUBS_PLAN_OFFER_SELECT A,
+              OFFER_GROUP            B,
+              OFFER_GROUP_MEM        C
+          WHERE
+                  A.OFFER_GROUP_ID = B.OFFER_GROUP_ID
+              AND B.OFFER_GROUP_ID = C.OFFER_GROUP_ID
+          GROUP BY
+              A.OFFER_VER_ID,
+              C.OFFER_ID
+          HAVING
+              COUNT(1) > 1"
+  
+  Comparing the differences between CPC configuration data and TP data-ACCT_ATTR:
+    des: 检查TP侧ACCT_ATTR数据是否完整
+    area: comm
+    sql:
+      "SELECT * FROM ACCT_ATTR A LEFT JOIN CPC.BILL_ACCT_ATTR B ON A.ATTR_ID = B.ATTR_ID WHERE B.ATTR_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-ATTR:
+    des: 检查TP侧ATTR数据是否完整
+    area: comm
+    sql:
+      "SELECT * FROM ATTR A LEFT JOIN CPC.BILL_ATTR B ON A.ATTR_ID = B.ATTR_ID WHERE B.ATTR_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-ATTR_VALUE:
+    des: 检查TP侧ATTR_VALUE数据是否完整
+    area: comm
+    sql:
+      "SELECT * FROM ATTR_VALUE A LEFT JOIN CPC.BILL_ATTR_VALUE B ON A.BASE_ATTR_ID = B.ATTR_ID WHERE B.ATTR_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-ATTR_APPLY_CATG:
+    des: 检查TP侧ATTR_APPLY_CATG数据是否完整
+    area: comm
+    sql:
+      "SELECT * FROM ATTR_APPLY_CATG A LEFT JOIN CPC.BILL_ATTR_APPLY_CATG B ON A.ATTR_CATG = B.ATTR_CATG AND A.ATTR_ID = B.ATTR_ID WHERE B.ATTR_CATG IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-MAIN_OFFER:
+    des: 检查TP侧MAIN_OFFER数据是否完整
+    area: comm
+    sql:
+      "SELECT A.SUBS_PLAN_ID,B.OFFER_NAME SUBS_PLAN_NAME, B.OFFER_CODE SUBS_PLAN_CODE,
+        A.IS_BUNDLE_FLAG,A.SUBS_PLAN_ID KEY_ID,B.SALE_LIST_PRICE,B.RENT_LIST_PRICE,A.GRADE PRIORITY
+        FROM SUBS_PLAN A, OFFER B LEFT JOIN CPC.BILL_SUBS_PLAN C ON B.OFFER_ID = C.SUBS_PLAN_ID
+        WHERE A.SUBS_PLAN_ID = B.OFFER_ID AND C.SUBS_PLAN_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-MAIN_OFFER_ATTR:
+    des: 检查TP侧MAIN_OFFER_ATTR数据是否完整
+    area: comm
+    sql:
+      "SELECT A.SUBS_PLAN_OFFER_ATTR_ID SUBS_PLAN_ATTR_ID,
+       B.OFFER_ID                SUBS_PLAN_ID,
+       A.OFFER_ID,
+       A.ATTR_ID,
+       A.DEFAULT_VALUE,
+       B.OFFER_ID                KEY_ID
+       FROM SUBS_PLAN_OFFER_ATTR A LEFT JOIN CPC.BILL_SUBS_PLAN_ATTR C ON A.SUBS_PLAN_OFFER_ATTR_ID = C.SUBS_PLAN_ATTR_ID,
+       OFFER_VER B
+       WHERE A.OFFER_VER_ID = B.OFFER_VER_ID
+       AND B.EFF_DATE <= SYSDATE
+       AND (B.EXP_DATE > SYSDATE OR B.EXP_DATE IS NULL)
+       AND C.SUBS_PLAN_ATTR_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-OTHER_OFFER:
+    des: 检查TP侧选包、实物、合约数据是否完整
+    area: comm
+    sql:
+      "SELECT *
+        FROM (SELECT OFFER_ID KEY_ID, OFFER_ID, OFFER_TYPE, OFFER_NAME, OFFER_CODE
+      FROM OFFER
+      WHERE OFFER_TYPE = '5'
+      UNION ALL
+      SELECT A.OFFER_ID KEY_ID, A.OFFER_ID, A.OFFER_TYPE, A.OFFER_NAME, A.OFFER_CODE
+      FROM OFFER A,
+           SUBS_PRICE_PLAN B
+      WHERE A.OFFER_ID = B.PRICE_PLAN_ID
+        AND OFFER_TYPE = '4'
+        AND B.PRICE_PLAN_TYPE IN ('2', '3', '5', '7', '9')
+      UNION ALL
+      SELECT OFFER_ID KEY_ID, OFFER_ID, OFFER_TYPE, OFFER_NAME, OFFER_CODE
+      FROM OFFER
+      WHERE OFFER_TYPE = '10') T LEFT JOIN CPC.BILL_OFFER T1 ON T.OFFER_ID = T1.OFFER_ID
+        WHERE T1.OFFER_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-OTHER_OFFER_ATTR:
+    des: 检查TP侧选包、实物、合约属性数据是否完整
+    area: comm
+    sql:
+      "SELECT *
+        FROM (SELECT A.OFFER_ID || (SUBSTR(1000000 + ATTR_ID, 2)) OFFER_ATTR_ID,
+             A.OFFER_ID,
+             A.ATTR_ID,
+             A.DEFAULT_VALUE,
+             A.OFFER_ID                                   KEY_ID
+      FROM OFFER_ATTR A,
+           OFFER B
+      WHERE A.OFFER_ID = B.OFFER_ID
+        AND B.OFFER_TYPE = '10'
+      UNION ALL
+      SELECT A.OFFER_ID || (SUBSTR(1000000 + ATTR_ID, 2)) OFFER_ATTR_ID,
+             A.OFFER_ID,
+             A.ATTR_ID,
+             A.DEFAULT_VALUE,
+             A.OFFER_ID                                   KEY_ID
+      FROM OFFER_ATTR A,
+           OFFER B
+      WHERE A.OFFER_ID = B.OFFER_ID
+        AND B.OFFER_TYPE = '5'
+      UNION ALL
+      SELECT A.OFFER_ID || (SUBSTR(1000000 + ATTR_ID, 2)) OFFER_ATTR_ID,
+             A.OFFER_ID,
+             A.ATTR_ID,
+             A.DEFAULT_VALUE,
+             A.OFFER_ID                                   KEY_ID
+      FROM OFFER_ATTR A,
+           OFFER B,
+           SUBS_PRICE_PLAN C
+      WHERE A.OFFER_ID = B.OFFER_ID
+        AND B.OFFER_ID = C.PRICE_PLAN_ID
+        AND B.OFFER_TYPE = '4'
+        AND C.PRICE_PLAN_TYPE IN ('2', '3', '5', '7', '9')) T LEFT JOIN CPC.BILL_OFFER_ATTR T1 ON T.OFFER_ATTR_ID = T1.OFFER_ATTR_ID
+        WHERE T1.OFFER_ATTR_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-PRODUCT:
+    des: 检查TP侧产品数据是否完整
+    area: comm
+    sql:
+      "SELECT *
+        FROM (SELECT A.OFFER_ID   KEY_ID,
+             A.OFFER_ID   PROD_ID,
+             A.OFFER_TYPE PROD_TYPE,
+             A.OFFER_NAME PROD_NAME,
+             A.OFFER_CODE PROD_CODE,
+             B.SERV_TYPE,
+             C.NETWORK_TYPE,
+             NULL         PARENT_PROD_ID
+      FROM OFFER A
+               LEFT JOIN DEPEND_PROD_SPEC B ON A.OFFER_ID = B.DEPEND_PROD_SPEC_ID
+               LEFT JOIN ALL_SERV_TYPE C ON B.SERV_TYPE = C.SERV_TYPE
+      WHERE A.OFFER_TYPE = '3'
+      UNION ALL
+      SELECT A.OFFER_ID   KEY_ID,
+             A.OFFER_ID   PROD_ID,
+             A.OFFER_TYPE PROD_TYPE,
+             A.OFFER_NAME PROD_NAME,
+             A.OFFER_CODE PROD_CODE,
+             B.SERV_TYPE,
+             C.NETWORK_TYPE,
+             NULL         PARENT_PROD_ID
+      FROM OFFER A
+               LEFT JOIN INDEP_PROD_SPEC B ON A.OFFER_ID = B.INDEP_PROD_SPEC_ID
+               LEFT JOIN ALL_SERV_TYPE C ON B.SERV_TYPE = C.SERV_TYPE
+      WHERE A.OFFER_TYPE = '2'
+      UNION ALL
+      SELECT A.OFFER_ID   KEY_ID,
+             A.OFFER_ID   PROD_ID,
+             A.OFFER_TYPE PROD_TYPE,
+             A.OFFER_NAME PROD_NAME,
+             A.OFFER_CODE PROD_CODE,
+             B.SERV_TYPE,
+             C.NETWORK_TYPE,
+             NULL         PARENT_PROD_ID
+      FROM OFFER A
+               LEFT JOIN INDEP_PROD_SPEC B ON A.OFFER_ID = B.INDEP_PROD_SPEC_ID
+               LEFT JOIN ALL_SERV_TYPE C ON B.SERV_TYPE = C.SERV_TYPE
+      WHERE A.OFFER_TYPE = '1') T LEFT JOIN CPC.BILL_PROD T1 ON T.PROD_ID = T1.PROD_ID
+        WHERE  T1.PROD_ID IS NULL"
+      
+  Comparing the differences between CPC configuration data and TP data-PRODUCT_ATTR:
+    des: 检查TP侧产品属性数据是否完整
+    area: comm
+    sql:
+      "SELECT *
+        FROM (SELECT A.OFFER_ID || (SUBSTR(1000000 + ATTR_ID, 2)) PROD_ATTR_ID,
+             A.OFFER_ID                                   KEY_ID,
+             A.OFFER_ID                                   PROD_ID,
+             ATTR_ID,
+             DEFAULT_VALUE
+      FROM OFFER_ATTR A,
+           OFFER B
+      WHERE A.OFFER_ID = B.OFFER_ID
+        AND B.OFFER_TYPE IN ('1', '2', '3')) T LEFT JOIN CPC.BILL_PROD_ATTR T1 ON T.PROD_ATTR_ID = T1.PROD_ATTR_ID
+        WHERE T1.PROD_ATTR_ID IS NULL"

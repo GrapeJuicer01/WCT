@@ -1,0 +1,9 @@
+A009:
+  url: http://172.16.82.231:9779/udal
+  schemas:
+    cpc:
+      rent_user_id: 4
+      schema_id: /dbproxy_cluster/dbproxy_cluster_0001079761/schemas/schema_0001079942
+    coc:
+      rent_user_id: 4
+      schema_id: /dbproxy_cluster/dbproxy_cluster_0001079761/schemas/schema_0001079975

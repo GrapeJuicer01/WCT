@@ -1,0 +1,307 @@
+create:
+  DC_CIC_SOURCE_NBR:
+    - |
+      create table DC_CIC_SOURCE_NBR
+      (
+        contact_channel VARCHAR2(60),
+        src_nbr         VARCHAR2(128),
+        src_nbr_ton     VARCHAR2(8),
+        src_nbr_npi     VARCHAR2(8)
+      )
+    - comment on table DC_CIC_SOURCE_NBR is 'CIC REG SERVICE'
+    - comment on column DC_CIC_SOURCE_NBR.contact_channel is 'SMS/USSD/Email'
+    - comment on column DC_CIC_SOURCE_NBR.src_nbr is 'SOURCE NUMBER'
+
+  DC_CONFIG_CATALOG_ITEM:
+    - |
+      create table DC_CONFIG_CATALOG_ITEM
+      (
+        CATALOG_ITEM_ID VARCHAR2(16),
+        CATALOG_NAME    VARCHAR2(300),
+        PARENT_CATALOG_ITEM_ID VARCHAR2(16),
+        ROOT_CATALOG_NAME VARCHAR2(300),
+        CATALOG_CODE    VARCHAR2(30),
+        CATALOG_DESC    VARCHAR2(250)
+      )
+    - comment on table DC_CONFIG_CATALOG_ITEM is 'Catalog Information'
+    - comment on column DC_CONFIG_CATALOG_ITEM.CATALOG_ITEM_ID is  'Catalog Item Id:Required;Number Only'
+    - comment on column DC_CONFIG_CATALOG_ITEM.CATALOG_NAME is  'Catalog Name:Required'
+    - comment on column DC_CONFIG_CATALOG_ITEM.PARENT_CATALOG_ITEM_ID is  'Parent Catalog Id:Use Root Catalog when null;Data from catalog_item.catalog_item_id'
+    - comment on column DC_CONFIG_CATALOG_ITEM.ROOT_CATALOG_NAME is  'Root Catalog Name:Required'
+    - comment on column DC_CONFIG_CATALOG_ITEM.CATALOG_CODE is  'Catalog Code:Required;Number Only'
+    - comment on column DC_CONFIG_CATALOG_ITEM.CATALOG_DESC is  'DESCRIPTION:Required'
+
+  DC_CONFIG_ACCT_ITEM:
+    - |
+      create table DC_CONFIG_ACCT_ITEM
+       (
+            old_acct_item_id             NUMBER(8) ,
+            PRE_DEF_ACCT_ITEM_ID          NUMBER(8) ,
+            acct_item_type_name            VARCHAR2(200) not null,
+            acct_res_name                  VARCHAR2(120),
+            ACCT_ITEM_TYPE_CODE            VARCHAR2(30),
+            PARENT_ACCT_ITEM_TYPE_NAME     VARCHAR2(200),
+            tax_type                       VARCHAR2(120),
+            tax_rate                        NUMBER(8),
+            comments                       VARCHAR2(120)
+       )
+    - comment on table DC_CONFIG_ACCT_ITEM is 'MAINLY FOR LOCAL CURRENCY CHARGE'
+
+  DC_CONFIG_ACCT_ITEM_GROUP:
+    - |
+      create table DC_CONFIG_ACCT_ITEM_GROUP
+       (
+            old_acct_item_group_id            NUMBER(8) ,
+            PRE_DEF_ACCT_ITEM_GROUP_ID          NUMBER(8) ,
+            ACCT_ITEM_GROUP_NAME           VARCHAR2(200) not null,
+            GROUP_TYPE                   NUMBER(6),
+            PARENT_ACCCT_ITEM_GROUP_NAME     VARCHAR2(200),
+            IF_INCLUDE             VARCHAR2(1),
+            GROUP_DESC                       VARCHAR2(120)
+       )
+    - comment on table DC_CONFIG_ACCT_ITEM_GROUP is 'Account Item Group Configure'
+
+
+  DC_CONFIG_ACCT_ITEM_GRP_MEMBER:
+    - |
+      create table DC_CONFIG_ACCT_ITEM_GRP_MEMBER
+       (
+            ACCT_ITEM_GROUP_NAME           VARCHAR2(200) not null,
+            OLD_ACCT_ITEM_TYPE_ID    NUMBER(6) ,
+            Acct_item_type_name  VARCHAR2(200),
+            GNP_INNER_SEQ   NUMBER(6)
+       )
+    - comment on table DC_CONFIG_ACCT_ITEM_GRP_MEMBER is 'Account Item Group Member Configure'
+
+
+  DC_CONFIG_BASIC_BALANCE_INFO:
+    - |
+      create table DC_CONFIG_BASIC_BALANCE_INFO
+       (
+             old_res_id                  VARCHAR2(100),
+             pre_def_acct_res_id         NUMBER(6) ,
+             acct_res_name      VARCHAR2(240) not null,
+             bal_type           varchar2(30)  ,
+             is_currency        CHAR(1)  default 'N' check(is_currency in('Y','N')),
+             currency_code      varchar2(20),
+             refillable         CHAR(1),
+             unit_type            varchar2(20),
+             pack_inner         CHAR(1) default 'Y',
+             exclude_pack_inner CHAR(1) default 'Y',
+             comments           VARCHAR2(120),
+             service_priority   NUMBER(6)
+       )
+
+    - comment on table DC_CONFIG_BASIC_BALANCE_INFO is  'Balance Basic Information'
+    - comment on column DC_CONFIG_BASIC_BALANCE_INFO.pre_def_acct_res_id is  'optional-define acct_res_id advancely accroding to different service(unit id)
+      1-second , 10101-10400 voice account resources
+      4-byte , 10401-10800 data account resources
+      8-occurence,10801+ sms account resources
+      10001-10100 currency account resources '
+    - comment on column DC_CONFIG_BASIC_BALANCE_INFO.bal_type is  ' 2 Limited Balance
+      4 Non Currency Balance(usally used)
+      3 Given Balance
+      5 Bonus Balance
+      6 Credit Balance
+      1 Basic Balance(usally used)'
+    - comment on column DC_CONFIG_BASIC_BALANCE_INFO.unit_type is  'Optional,Mandantory when bal_type is not Basic Balance,
+      referring to CPC.CBEC_unit,common used 1-second,4-byte,8-occurence'
+    - comment on column DC_CONFIG_BASIC_BALANCE_INFO.refillable is  'referring to N New balance each time
+      L Merge when have effective one.
+      Y Unique
+      M Merge with same period'
+    - comment on column DC_CONFIG_BASIC_BALANCE_INFO.pack_inner is 'whether establish the relationship with offer when getting bonus by ordering an offer'
+    - comment on column DC_CONFIG_BASIC_BALANCE_INFO.exclude_pack_inner is 'whether can be used in the other offer when the sourced offer being deleted'
+    - comment on column DC_CONFIG_BASIC_BALANCE_INFO.service_priority is 'the priority of balance group by unit type '
+
+  DC_CONFIG_CURRENCY_TYPE:
+    - |
+      CREATE TABLE DC_CONFIG_CURRENCY_TYPE
+      (
+         CURRENCY_CODE      VARCHAR2(30) ,
+         CURRENCY_SYMBOL    VARCHAR2(10),
+         CURRENCY_NAME      VARCHAR2(60) ,
+         SAVE_PRECISION     NUMBER(15)   ,
+         DISPLAY_SCALE      NUMBER(3),
+         RATE_DISPLAY_SCALE NUMBER(3),
+         ROUND_METHOD       CHAR
+      )
+
+    - comment on table DC_CONFIG_CURRENCY_TYPE is  'Local Currency Information'
+    - comment on column DC_CONFIG_CURRENCY_TYPE.CURRENCY_CODE is  'short code of local currency type,like USD/RMB/EURO'
+    - comment on column DC_CONFIG_CURRENCY_TYPE.CURRENCY_SYMBOL is  'symbol of money like $ ¥ €'
+    - comment on column DC_CONFIG_CURRENCY_TYPE.CURRENCY_NAME is  'full name of local currency'
+    - comment on column DC_CONFIG_CURRENCY_TYPE.SAVE_PRECISION is  'rating precision of money calculation,e.g. -100000000'
+    - comment on column DC_CONFIG_CURRENCY_TYPE.DISPLAY_SCALE is  'display decimals in CRM'
+    - comment on column DC_CONFIG_CURRENCY_TYPE.RATE_DISPLAY_SCALE is  'rating precision of money calculation'
+    - comment on column DC_CONFIG_CURRENCY_TYPE.ROUND_METHOD is  '0-System Default,1-Rounding Off,3-Rounding Up,2-Rounding Down'
+
+  DC_CONFIG_TIMESPAN:
+    - |
+      CREATE TABLE DC_CONFIG_TIMESPAN
+        (
+            M_TIME_SPAN_ID NUMBER(10) NOT NULL,
+            M_TIME_SPAN_NAME VARCHAR2(100) NOT NULL,
+            O_SEQ number(5),
+            M_CYCLE_BEGIN_DATE VARCHAR2(40) NOT NULL,
+            M_CYCLE_UNIT NUMBER(10) NOT NULL,
+            M_TIME_UNIT VARCHAR2(10) NOT NULL,
+            O_DURATION_H NUMBER(10),
+            O_DURATION_M NUMBER(10),
+            O_DURATION_S NUMBER(10)
+        )
+    - comment on table DC_CONFIG_TIMESPAN is  'TIME SPAN TABLE'
+    - comment on column DC_CONFIG_TIMESPAN.M_TIME_SPAN_ID is 'TIME_SPAN_ID is bigger than 9999'
+    - comment on column DC_CONFIG_TIMESPAN.M_TIME_SPAN_NAME is 'TIME_SPAN_NAME'
+    - comment on column DC_CONFIG_TIMESPAN.O_SEQ is 'if one time span has more than one time duration, need to fill the seq like 1 or 2,if only has one duration,no need to fill'
+    - comment on column DC_CONFIG_TIMESPAN.M_CYCLE_BEGIN_DATE is  'like:2012/11/01 08:12:05'
+    - comment on column DC_CONFIG_TIMESPAN.M_CYCLE_UNIT is  'the number of time unit, should be integer,like:1,2,xxx'
+    - comment on column DC_CONFIG_TIMESPAN.M_TIME_UNIT is  'Y:Year M:Month W:Week D Day S:Exact Time(For Once) C:Billing Cycle'
+    - comment on column DC_CONFIG_TIMESPAN.O_DURATION_H is  'duration hour,should be integer'
+    - comment on column DC_CONFIG_TIMESPAN.O_DURATION_M is  'duration min,should be integer'
+    - comment on column DC_CONFIG_TIMESPAN.O_DURATION_S is  'duration sec,should be integer'
+
+
+  DC_CONFIG_BANK:
+    - |
+      CREATE TABLE DC_CONFIG_BANK
+        (
+            OLD_BANK_ID  VARCHAR2(4000)  ,
+            NEW_BANK_ID    NUMBER(10),
+            M_BANK_NAME         VARCHAR2(120) not null,
+            BANK_CODE         VARCHAR2(255),
+            Parent_BANK_NAME VARCHAR2(120),
+            COMMENTS          VARCHAR2(4000)
+        )
+    - comment on table DC_CONFIG_BANK is  'Bank Information '
+    - comment on column DC_CONFIG_BANK.COMMENTS is 'input Address or any other comments'
+
+  DC_CONFIG_CBEC_STD_ADDR:
+    - |
+      create table DC_CONFIG_CBEC_STD_ADDR
+       (
+           STD_ADDR_ID     NUMBER(9)  ,
+           STD_ADDR        VARCHAR2(255) not null,
+           ADDR_LEVEL_name VARCHAR2(255) not null
+       )
+    - comment on table DC_CONFIG_CBEC_STD_ADDR is  'STD Adress '
+    - comment on column DC_CONFIG_CBEC_STD_ADDR.STD_ADDR is  'Adress Name'
+    - comment on column DC_CONFIG_CBEC_STD_ADDR.ADDR_LEVEL_name is  '1.Country 2.Region  3.City 4.District  5.STREET  6.POSTAL CODE'
+
+  DC_CONFIG_Attr_List:
+    - |
+      create table DC_CONFIG_Attr_List
+       (
+             ATTR_ID        NUMBER(6) ,
+             ATTR_NAME      VARCHAR2(60)  ,
+             ATTR_CODE      VARCHAR2(30),
+             ATTR_TYPE      VARCHAR2(60),
+             comments       VARCHAR2(300)
+       )
+    - comment on table DC_CONFIG_Attr_List is 'Maintain the Attribute used'
+
+
+create_list:
+  DC_CIC_SOURCE_NBR:
+    - BASIC
+    - V20200107
+    - table
+
+  DC_CONFIG_BASIC_BALANCE_INFO:
+    - BASIC
+    - V20190705
+    - table
+    - VALUE_LIST:
+        BAL_TYPE:
+          TYPE: sql
+          SOURCE: select  LOOKUP_NAME from CPC.CBEC_DOMAIN_DATA where DOMAIN_TYPE_CODE='BAL_TYPE'
+        IS_CURRENCY:
+          TYPE: list
+          SOURCE: Y,N
+        REFILLABLE:
+          TYPE: list
+          SOURCE: Y,L,N,M
+        UNIT_TYPE:
+          TYPE: list
+          SOURCE: Second,Byte,Occurrence
+        PACK_INNER:
+          TYPE: list
+          SOURCE: Y,N
+        EXCLUDE_PACK_INNER:
+          TYPE: list
+          SOURCE: Y,N
+
+  DC_CONFIG_CATALOG_ITEM:
+    - BASIC
+    - V20190904
+    - table
+    - VALUE_LIST:
+        ROOT_CATALOG_NAME:
+          TYPE: sql
+          SOURCE: |
+            select catalog_name || '(' || t2.attr_value_name || ')'
+              from cpc.catalog t1
+              left join cpc.attr_value t2
+                on t2.attr_id = 800052286
+               and t1.catalog_type = t2.attr_value
+               and t2.status_cd = '1000'
+
+
+
+  DC_CONFIG_CURRENCY_TYPE:
+    - BASIC
+    - V20190513
+    - table
+    - VALUE_LIST:
+        ROUND_METHOD:
+          TYPE: list
+          SOURCE: 0,1,2,3
+
+  DC_CONFIG_ACCT_ITEM:
+    - BASIC
+    - V20200929
+    - table
+
+  DC_CONFIG_TIMESPAN:
+    - BASIC
+    - V20190508
+    - TABLE
+    - VALUE_LIST:
+        M_TIME_UNIT:
+          TYPE: list
+          SOURCE: Y,M,W,D,S,C
+
+  DC_CONFIG_BANK:
+    - BASIC
+    - V20220119
+    - TABLE
+
+  DC_CONFIG_CBEC_STD_ADDR:
+    - BASIC
+    - V20220408
+    - TABLE
+    - VALUE_LIST:
+        ADDR_LEVEL_NAME:
+          TYPE: list
+          SOURCE: Country,Region,City,District,STREET,POSTAL CODE
+
+
+  DC_CONFIG_ACCT_ITEM_GROUP:
+    - BASIC
+    - V20220505
+    - TABLE
+    - VALUE_LIST:
+        IF_INCLUDE:
+          TYPE: list
+          SOURCE: Y,N
+
+  DC_CONFIG_ACCT_ITEM_GRP_MEMBER:
+    - BASIC
+    - V20220505
+    - TABLE
+
+  DC_CONFIG_Attr_List:
+    - BASIC
+    - V20220507
+    - TABLE
+

@@ -1,0 +1,19 @@
+PricePlanReAttr:
+  dst_table:
+    - cpc.def_re_attr
+    - cpc.re_attr
+
+  mid_table:
+    - dc_config_re_attr
+
+  insert_re_attr:
+    - |
+      insert into cpc.re_attr (re_attr,re_attr_src_type,re_type,measurable,re_attr_name,re_attr_code,comments,sp_id)
+      select a.m_re_attr,'A',null,b.measurable,a.m_re_attr_name,null,a.o_comments,null
+      from DC_CONFIG_RE_ATTR a,reserve_re_attr b , re_attr c
+      where a.m_reserve_re_attr_id=b.re_attr  and a.m_re_attr=c.re_attr(+) and  c.re_attr is null
+  insert_def_re_attr:
+    - |
+      insert into cpc.def_re_attr (re_attr,def_re_attr,sp_id)
+      select m_re_attr,M_RESERVE_RE_ATTR_ID,null from DC_CONFIG_RE_ATTR a,def_re_attr b
+       where a.M_RESERVE_RE_ATTR_ID= b.def_re_attr(+) and   b.def_re_attr is null

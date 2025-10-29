@@ -1,0 +1,42 @@
+UserList:
+  abc
+
+ABCTopic:
+  01. JL_ACCOUNT_PAIR:
+    "select * from JL_ACCOUNT_PAIR"
+
+  02. JL_RULE:
+    "select * from JL_RULE"
+
+  03. JL_RULE_VER:
+    "select * from JL_RULE_VER"
+
+  04. JL_TYPE:
+    "select * from JL_TYPE"
+
+  05. jl_account_mapping_rule:
+    "select * from jl_account_mapping_rule"
+
+  06. jl_xcenter_mapping_rule:
+    "select * from jl_xcenter_mapping_rule"
+
+  07. jl_account:
+    "select * from jl_account"
+
+JournalExport:
+  01.ExportForJournal:
+    "select a.jl_rule_id, a.jl_trans_type_id,b.JL_TRANS_TYPE_CONFIG_NAME, a.jl_rule_name, a.priority_value, a.jl_rule_script
+     from JL_RULE a, jl_trans_type_config b
+     where a.jl_trans_type_id = b.JL_TRANS_TYPE_ID"
+
+  03.JournalGL:
+    "select a.jl_account_pair_id, jl_acct_pair_name, b.JL_TYPE_NAME,c.JL_ACCOUNT_CODE,c. JL_ACCOUNT_NAME, d.JL_ACCOUNT_CODE,d. JL_ACCOUNT_NAME
+     from JL_ACCOUNT_PAIR a, JL_TYPE b, jl_account c, jl_account d
+     where a.jl_type_id=b.jl_type_id
+     and a.dr_jl_account_id = c.jl_account_id
+     and a.cr_jl_account_id = d.jl_account_id
+     order by jl_account_pair_id"
+
+BoBNeed:
+  74_ABC.RM_TXN_TYPE:
+    "select * from RM_TXN_TYPE"

@@ -1,0 +1,29 @@
+TableList:
+    - offer
+    - product
+TableSql:
+    offer:
+        SELECT * FROM offer a where a.offer_id between 1000000 and 4000000
+    product:
+        select * from product a where prod_id between 50000 and 60000
+DeleteSql:
+    offer:
+        - delete from offer where offer_id between 1000000 and 2000000
+        - delete from offer where offer_id between 2000000 and 4000000
+    product:
+        - delete from product where prod_id between 50000 and 60000
+BeforeImportSql:
+    - update offer a set a.status_cd = 1000 where 1=1
+    - update product a set a.status_cd = 1000 where 1=1
+AfterImportSql:
+    - update offer a set a.status_cd = 1000 where 1=1
+    - update product a set a.status_cd = 1000 where 1=1
+SequenceList:
+    - SEQ_OFFER_ID
+    - SEQ_PRODUCT
+ThreadNumber: 8
+TablePrimaryKey:
+    offer: [offer_id,offer_type]
+    product: [product_id]
+PageLimit: 1000
+UserName: cpc

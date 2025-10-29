@@ -1,0 +1,122 @@
+DefaultUser:
+  cpc
+
+param_list:
+  WarningData:
+    cpc_user_name:
+      cpc
+  BadData:
+    cpc_user_name:
+      cpc
+  ErrorData:
+    cpc_user_name:
+      cpc
+
+WarningData:
+  offerName contains special character:
+    sql: "
+    select offer_name from offer
+    where offer_name like '%%&%%'"
+
+  offerName including special char:
+    sql: "
+    select offer_name from offer
+    where length(offer_name) <> char_length(offer_name)"
+
+  offer offline status error:
+    sql: "
+    select offer_name
+    from offer t1
+    left join offer_rel t2
+    on t1.offer_id = t2.z_offer_id
+    and t2.rel_type = 100000
+    where t1.offer_type in (12,13)
+    and ((t1.status_cd =100000 AND t2.status_cd !=100000) OR (t1.status_cd !=100000 AND t2.status_cd =100000))
+    "
+
+  offer otc charge flag error:
+    des: 未发布的版本中连接线条件丢失
+    area: cpc
+    sql: "
+    SELECT t1.offer_id,t1.service_offer_id,t1.price_id FROM cpc_otc_price t1
+    LEFT JOIN cpc_otc_price_benefit t2
+    ON t1.price_id = t2.price_id
+    LEFT JOIN cpc_otc_price_rate t3
+    ON t1.price_id = t3.price_id
+    WHERE (t2.benefit_id IS NOT NULL OR t3.rate_id IS NOT NULL)
+    AND t1.charge_flag = 'N'"
+
+  fair offer account item type is not exists:
+    des: 分摊项没有的账目类型不在销售品中
+    sql: "
+    select offer_id,acct_item_typu_id
+    from fair_offer t1
+    left join cpc_otc_price t2
+    on t1.offer_id = t2.offer_id
+    left join cpc_otc_price_rate t3
+    on t3.acct_item_type_id = t1.acct_item_type_id
+    where t3.price_id is null"
+
+  Contract offer needs Contract Tag:
+    des: 有合于的销售品需要配置Contract的Tag(PTO专用)
+    sql: "
+    SELECT t1.offer_id
+    FROM offer_serv_limit_cfg t1
+    LEFT JOIN object_label_rel t2
+    ON t1.offer_id = t2.obj_id
+    AND t2.label_id = 15000287
+    WHERE t2.obj_id IS NULL
+    "
+
+  Price Include Tax:
+    des: 一次性费用必须是含税价(PTO专用)
+    sql: "
+    SELECT t1.price_id,t1.offer_id,priority
+    FROM cpc_otc_price t1
+    inner JOIN cpc_otc_price_rate t2
+    ON t1.price_id = t2.price_id
+    WHERE t2.include_tax='N' or t2.include_tax is null
+    "
+
+  Balance only in unique gl:
+    des: 账本只能在一个gl中
+    sql: "SELECT acct_res_id,COUNT(DISTINCT gl_name)
+    FROM (
+    SELECT t2.gl_name,t3.acct_res_id,t3.acct_res_name 
+    FROM `cbec_gl_univ_merge_rela` t1
+    LEFT JOIN cbec_gl t2
+    ON t1.gl_id = t2.gl_id
+    INNER JOIN cbec_acct_res t3
+    ON CONCAT(',',t1.merge_sql,',') LIKE CONCAT('%%,',t3.acct_res_id,',%%')
+    )t
+    GROUP BY acct_res_id
+    HAVING COUNT(DISTINCT gl_name)>1"
+
+  Fair offer journal duration not null:
+    des: 分摊的时间不允许为空(PTO专用)
+    sql: "select DISTINCT T1.OFFER_ID 
+    from fair_offer t1
+    inner join fair_offer_member t2
+    on t1.fair_offer_id = t2.fair_offer_id
+    where (JOURNAL_DURATION is null or JOURNAL_DURATION_UNIT is null)
+    and t1.status_cd='A'"
+
+List MRC and rent fee is different:
+    des: List Mrc属性跟租费不一致(PTO专用)
+    sql: "select t6.offer_name,t6.offer_id,t3.param_value,t1.default_value 
+    from offer_price t2
+    left join offer_ext_attr t1
+    on t1.offer_id = t2.offer_id
+    left join offer_pricing_param t3
+    on t2.offer_price_id = t3.offer_price_id
+    left join tariff_plan_param t4
+    on t3.tariff_plan_param_id = t4.tariff_plan_param_id
+    left join price_plan_ver t5
+    on t4.price_plan_ver_id = t5.price_plan_ver_id
+    left join offer t6
+    on t6.offer_id= t2.offer_id
+    where t1.attr_id = 61510
+    and t4.label_name='RENT_BENEFIT_CHARGE_MONTH_RENT'
+    and (t1.default_value <> t3.param_value*1000000 or t1.offer_ext_attr_id is null)
+    and (t5.exp_date>now() or t5.exp_date is null)"
+  

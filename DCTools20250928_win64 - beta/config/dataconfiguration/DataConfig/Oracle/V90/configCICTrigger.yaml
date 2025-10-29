@@ -1,0 +1,206 @@
+param_list:
+  PricePlanTrigger:
+    event_code:
+        "'Usage Fee Bal Trigger Advice'"
+
+PricePlanTrigger:
+  dst_table:
+    - BAL_SUBS_EVENT
+    - BAL_PCRF
+    - BAL_THRESHOLD
+    - REF_VALUE
+    - BAL_TRIGGER
+
+  mid_table:
+    - DC_CIC_TRIGGER
+
+  insert_DC_Trigger:
+    - |
+      insert into bal_trigger
+        (trigger_id,
+         trigger_name,
+         acct_res_id,
+         price_set_id,
+         trigger_type,
+         eff_date,
+         state,
+         state_date,
+         trigger_mode)
+        SELECT bal_trigger_id_seq.nextval,
+               'Tri-' || ct.acct_res_name,
+               car.acct_res_id,
+               t.price_set_id,
+               nvl(tt.trigger_type,'1'),
+               trunc(sysdate),
+               'A',
+               sysdate,
+               case ct.trigger_mode
+                 when 'ABS' then
+                  '0'
+                 when 'Cross Trigger' then
+                  '1'
+                 when 'Precise Trigger' then
+                  '2'
+                 when 'Precise Trigger' then
+                  '3'
+                 else '1'
+               end
+          FROM (select distinct dct.offer_price_plan_name,
+                                dct.acct_res_name,
+                                dct.trigger_type_name,
+                                dct.trigger_mode
+                  from DC_CIC_TRIGGER dct) ct
+         inner join cbec_acct_res car
+            on ct.acct_res_name = car.acct_res_name
+          left join trigger_type tt
+            on ct.trigger_type_name = tt.trigger_type_name
+         inner join (SELECT pp.price_plan_name, ppm.price_set_id
+                       FROM cpc.price_plan pp,
+                            (select price_plan_ver_id, price_plan_id, max(seq)
+                               from cpc.price_plan_ver
+                              where state = 'D'
+                              group by price_plan_ver_id, price_plan_id) ppv,
+                            cpc.price_plan_member ppm
+                      where pp.price_plan_id = ppv.price_plan_id
+                        and ppv.price_plan_ver_id = ppm.price_plan_ver_id) t
+            on t.price_plan_name = ct.offer_price_plan_name
+    - |
+      insert into ref_value
+        (ref_value_id,
+         ref_value_type,
+         value_string,
+         created_date,
+         state,
+         state_date,
+         price_set_id)
+        SELECT ref_value_id_seq.nextval,
+               1,
+               ct.threshold,
+               sysdate,
+               'A',
+               sysdate,
+               bt.price_set_id
+          FROM bal_trigger bt,
+               DC_CIC_TRIGGER ct,
+               cbec_acct_res car,
+               (SELECT pp.price_plan_name, ppm.price_set_id
+                  FROM cpc.price_plan pp,
+                       (select price_plan_ver_id, price_plan_id, max(seq)
+                          from cpc.price_plan_ver
+                         where state = 'D'
+                         group by price_plan_ver_id, price_plan_id) ppv,
+                       cpc.price_plan_member ppm
+                 where pp.price_plan_id = ppv.price_plan_id
+                   and ppv.price_plan_ver_id = ppm.price_plan_ver_id) t
+         where bt.acct_res_id = car.acct_res_id
+           and ct.acct_res_name = car.acct_res_name
+           and t.price_plan_name = ct.offer_price_plan_name
+           and bt.price_set_id = t.price_set_id
+    - |
+      insert into bal_threshold
+        (bal_threshold_id, trigger_id, ref_value_id, is_ratio,THRESHOLD_INTERVAL)
+        select bal_threshold_id_seq.nextval,
+                              t1.trigger_id,
+                              rv.ref_value_id,
+                              t1.is_ratio,
+                              t1.THRESHOLD_INTERVAL from (
+        SELECT distinct bt.trigger_id,
+               ct.is_ratio,
+               THRESHOLD_INTERVAL
+          FROM DC_CIC_TRIGGER ct,
+               bal_trigger bt,
+               cbec_acct_res car,
+               (SELECT pp.price_plan_name, ppm.price_set_id
+                  FROM cpc.price_plan pp,
+                       (select price_plan_ver_id, price_plan_id, max(seq)
+                          from cpc.price_plan_ver
+                         where state = 'D'
+                         group by price_plan_ver_id, price_plan_id) ppv,
+                       cpc.price_plan_member ppm
+                 where pp.price_plan_id = ppv.price_plan_id
+                   and ppv.price_plan_ver_id = ppm.price_plan_ver_id) t
+         where ct.offer_price_plan_name = t.price_plan_name
+           --and ct.threshold = rv.value_string
+           and bt.price_set_id = t.price_set_id
+           and bt.acct_res_id = car.acct_res_id
+           and car.acct_res_name = ct.acct_res_name)t1,ref_value rv
+      where rv.price_set_id = t1.price_set_id
+
+    - |
+      insert into bal_pcrf
+        (bal_threshold_id)
+        SELECT bt.bal_threshold_id
+          FROM bal_threshold bt,
+               ref_value rv,
+               DC_CIC_TRIGGER ct,
+               bal_trigger bt,
+               cbec_acct_res car,
+               (SELECT pp.price_plan_name, ppm.price_set_id
+                  FROM cpc.price_plan pp,
+                       (select price_plan_ver_id, price_plan_id, max(seq)
+                          from cpc.price_plan_ver
+                         where state = 'D'
+                         group by price_plan_ver_id, price_plan_id) ppv,
+                       cpc.price_plan_member ppm
+                 where pp.price_plan_id = ppv.price_plan_id
+                   and ppv.price_plan_ver_id = ppm.price_plan_ver_id) t
+         where bt.ref_value_id = rv.ref_value_id
+           and ct.offer_price_plan_name = t.price_plan_name
+           and rv.price_set_id = t.price_set_id
+           and ct.threshold = rv.value_string
+           and bt.price_set_id = rv.price_set_id
+           and bt.acct_res_id = car.acct_res_id
+           and car.acct_res_name = ct.acct_res_name
+           and ct.is_pcrf = 'Y'
+
+    - |
+      insert into bal_subs_event
+        (bal_threshold_id, subs_event_id)
+        SELECT bt.bal_threshold_id, ci.event_id
+          FROM bal_threshold bt,
+               ref_value rv,
+               DC_CIC_TRIGGER ct,
+               bal_trigger bt,
+               cbec_acct_res car,
+               cbec_inter_event ci,
+               (SELECT pp.price_plan_name, ppm.price_set_id
+                  FROM cpc.price_plan pp,
+                       (select price_plan_ver_id, price_plan_id, max(seq)
+                          from cpc.price_plan_ver
+                         where state = 'D'
+                         group by price_plan_ver_id, price_plan_id) ppv,
+                       cpc.price_plan_member ppm
+                 where pp.price_plan_id = ppv.price_plan_id
+                   and ppv.price_plan_ver_id = ppm.price_plan_ver_id) t
+         where bt.ref_value_id = rv.ref_value_id
+           and ci.event_code = %(event_code)s
+           and ct.offer_price_plan_name = t.price_plan_name
+           and rv.price_set_id = t.price_set_id
+           and ct.threshold = rv.value_string
+           and bt.price_set_id = rv.price_set_id
+           and bt.acct_res_id = car.acct_res_id
+           and car.acct_res_name = ct.acct_res_name
+
+
+    - |
+      insert into bal_pre_trigger
+        (BAL_TRIGGER_ID, EVENT_ID, REDIRECT_FLAG)
+        SELECT distinct bt.trigger_id, ce.event_id, ct.REDIRECT_FLAG
+          FROM DC_CIC_TRIGGER ct,
+               bal_trigger bt,
+               cbec_acct_res car,
+               (SELECT pp.price_plan_name, ppm.price_set_id
+                  FROM cpc.price_plan pp,
+                       (select price_plan_ver_id, price_plan_id, max(seq)
+                          from cpc.price_plan_ver
+                         where state = 'D'
+                         group by price_plan_ver_id, price_plan_id) ppv,
+                       cpc.price_plan_member ppm
+                 where pp.price_plan_id = ppv.price_plan_id
+                   and ppv.price_plan_ver_id = ppm.price_plan_ver_id) t,
+               cbec_inter_event ce
+         where ct.offer_price_plan_name = t.price_plan_name
+           and bt.acct_res_id = car.acct_res_id
+           and car.acct_res_name = ct.acct_res_name
+           and ce.event_code = ct.event_code
+

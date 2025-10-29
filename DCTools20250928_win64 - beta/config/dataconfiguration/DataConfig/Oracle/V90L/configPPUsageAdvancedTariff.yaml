@@ -1,0 +1,668 @@
+PPUsageTariff:
+  dst_table:
+    - cpc.REF_VALUE
+    - cpc.PRICE_WORK_NODE
+    - cpc.PRICE
+    - cpc.ACTION_PRICE
+    - cpc.WORK_ACTION
+    - cpc.COND_RANK
+    - cpc.WORK_CONDITION
+    - cpc.WORK_NODE
+    - cpc.PRICE_VER
+    - cpc.MAPPING_UNIT
+    - cpc.MAPPING_CONDITION_GROUP
+    - cpc.MAPPING
+    - cpc.RATE_PLAN_ZONE
+    - cpc.RATE_PLAN
+    - cpc.RE_PRICE_SET
+
+  mid_table:
+    - DC_CONFIG_PP_Usage_Tariff
+    - DELETE_PRICE_PLAN_RATING
+
+  insert_pp_usage_advanced_tariff:
+
+    - |
+      INSERT INTO cpc.RE_PRICE_SET
+      (RE_PRICE_SET_ID,
+       RE_ID,
+       PRICE_SET_ID,
+       WORKFLOW_ID,
+       POST_WORKFLOW_ID,
+       RULE_COMMENTS)
+      select RE_PRICE_SET_ID_SEQ.NEXTVAL,
+             t.RE_ID,
+             t4.PRICE_SET_ID,
+             null,
+             null,
+             CONCAT('Usage_TimeSpan ', SYSDATE)
+      from DC_CONFIG_PP_USAGE_TARIFF t
+         inner join  price_plan t2
+            on   t.PRICE_PLAN_ID = t2.PRICE_PLAN_ID and t.PRICE_PLAN_NAME = t2.PRICE_PLAN_NAME
+         inner join price_plan_ver t3
+            on t3.PRICE_PLAN_ID = t2.PRICE_PLAN_ID
+         inner join PRICE_PLAN_MEMBER t4
+            on t4.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join re  r
+            on r.RE_ID = t.RE_ID and r.RE_TYPE = 1
+         left join RE_PRICE_SET  t6
+           on t6.RE_ID = t.RE_ID and t6.PRICE_SET_ID = t4.PRICE_SET_ID
+      where t6.RE_PRICE_SET_ID is  null  and t.TIME_SPAN_SEQ =1
+
+
+    - |
+      insert into CPC.RATE_PLAN
+      (RATE_PLAN_ID, RATE_PLAN_NAME, RATE_PLAN_TYPE, RATE_CHARGE_TYPE, RE_PRICE_SET_ID,
+       MAPPING_TYPE, PRIORITY, COMMENTS,
+       CREATED_DATE, STATE, STATE_DATE, MAPPING_EXIT, SP_ID)
+      select RATE_PLAN_ID_SEQ.NEXTVAL,
+             concat(t.RE_NAME, '-TimeSpan') ,
+             1,'M',t6.RE_PRICE_SET_ID,'D',1,concat(t.RE_NAME, '-TimeSpan'),sysdate,
+             'A',sysdate,'Y',null
+      from    DC_CONFIG_PP_USAGE_TARIFF t
+         inner join  price_plan t2
+            on   t.PRICE_PLAN_ID = t2.PRICE_PLAN_ID and t.PRICE_PLAN_NAME = t2.PRICE_PLAN_NAME
+         inner join price_plan_ver t3
+            on t3.PRICE_PLAN_ID = t2.PRICE_PLAN_ID
+         inner join PRICE_PLAN_MEMBER t4
+            on t4.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join re  r
+            on r.RE_ID = t.RE_ID and r.RE_TYPE = 1
+         inner join RE_PRICE_SET  t6
+           on t6.RE_ID = t.RE_ID and t6.PRICE_SET_ID = t4.PRICE_SET_ID
+         left join rate_plan t7
+            on t7.RATE_PLAN_NAME = concat(t.RE_NAME, '-TimeSpan')
+      where  t.TIME_SPAN_SEQ = 1 and t7.RATE_PLAN_ID  is  null
+
+    - |
+      insert into CPC.MAPPING (MAPPING_ID, MAPPING_NAME, RATE_PLAN_ID, PRIORITY, MAPPING_DEFAULT, SP_ID)
+       select MAPPING_ID_SEQ.NEXTVAL,
+             t.rate_plan_name,
+             t.rate_plan_id,
+             0,
+             null,
+             null
+       from CPC.rate_plan t
+       where  regexp_like(t.COMMENTS,'TimeSpan')
+       and t.rate_plan_id not in(select rate_plan_id from MAPPING)
+
+    - |
+      insert into CPC.PRICE_VER (PRICE_VER_ID, MAPPING_ID, EFF_DATE, EXP_DATE, SP_ID)
+        select price_ver_id_seq.nextval,
+               t.mapping_id,
+               TO_DATE('2000-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS'),
+               null,
+               null
+        from CPC.mapping t,
+             CPC.rate_plan r
+        where t.rate_plan_id = r.rate_plan_id
+          and regexp_like(r.COMMENTS,'TimeSpan')
+          and t.mapping_id not in(select mapping_id from PRICE_VER)
+
+    - |
+      insert into WORK_NODE (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID,
+                             WORK_NODE_TYPE,WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+       select WORK_NODE_ID_SEQ.NEXTVAL ,
+              'timespan' ,'Y','-1','C',null,'{"position":[333.5,51.5],"type":"timespan"}',
+              concat( concat(t.RE_NAME, '-TimeSpan FIRST NODE -'),t.PRICE_PLAN_ID),null
+        from DC_CONFIG_PP_USAGE_TARIFF t
+        left join WORK_NODE t1
+         on t1.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan FIRST NODE -'),t.PRICE_PLAN_ID)
+       where t.TIME_SPAN_SEQ =1 and t1.WORK_NODE_ID is null
+
+    - |
+      update WORK_NODE w set w.FIRST_WORK_NODE_ID = w.WORK_NODE_ID
+          where  regexp_like(w.COMMENTS,'TimeSpan FIRST NODE -')
+                 and w.FIRST_WORK_NODE_ID='-1' and w.IS_FIRST_NODE ='Y'
+
+
+    - |
+      insert into WORK_NODE (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID,
+                             WORK_NODE_TYPE,WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+       select  WORK_NODE_ID_SEQ.NEXTVAL ,
+              'price' ,'N',t1.WORK_NODE_ID,'A',null,'{"position":[628,3],"type":"price"}',
+              concat( concat(t.RE_NAME, '-TimeSpan SEQ1 -'),t.PRICE_PLAN_ID),null
+        from DC_CONFIG_PP_USAGE_TARIFF t
+        inner join WORK_NODE t1
+         on t1.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan FIRST NODE -'),t.PRICE_PLAN_ID)
+        left join WORK_NODE t2
+         on t2.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ1 -'),t.PRICE_PLAN_ID)
+       where t.TIME_SPAN_SEQ =1 and t2.WORK_NODE_ID is null
+
+    - |
+      insert into WORK_NODE (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID,
+                             WORK_NODE_TYPE,WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+       select WORK_NODE_ID_SEQ.NEXTVAL ,
+              'price' ,'N',t1.WORK_NODE_ID,'A',null,'{"position":[628,130],"type":"price"}',
+              concat( concat(t.RE_NAME, '-TimeSpan SEQ2 -'),t.PRICE_PLAN_ID),null
+        from DC_CONFIG_PP_USAGE_TARIFF t
+        inner join WORK_NODE t1
+         on t1.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan FIRST NODE -'),t.PRICE_PLAN_ID)
+        left join WORK_NODE t2
+         on t2.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ2 -'),t.PRICE_PLAN_ID)
+       where t.TIME_SPAN_SEQ =2 and t2.WORK_NODE_ID is null
+
+    - |
+      insert into WORK_NODE (WORK_NODE_ID, WORK_NODE_NAME, IS_FIRST_NODE, FIRST_WORK_NODE_ID,
+                             WORK_NODE_TYPE,WORK_NEXT_NODE_ID, POSITION, COMMENTS, SP_ID)
+       select WORK_NODE_ID_SEQ.NEXTVAL ,
+              'price' , 'N',t1.WORK_NODE_ID,'A',null,'{"position":[628,280],"type":"price"}',
+              concat( concat(t.RE_NAME, '-TimeSpan SEQ3 -'),t.PRICE_PLAN_ID),null
+        from DC_CONFIG_PP_USAGE_TARIFF t
+        inner join WORK_NODE t1
+         on t1.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan FIRST NODE -'),t.PRICE_PLAN_ID)
+        left join WORK_NODE t2
+         on t2.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ3 -'),t.PRICE_PLAN_ID)
+       where t.TIME_SPAN_SEQ =3 and t2.WORK_NODE_ID is null
+
+    - |
+      insert into WORK_CONDITION (WORK_CONDITION_ID, WORK_CONDITION_TYPE, EXEC_SEQ,WORK_NODE_ID,
+                                 WORK_CONDITION_NAME, WORK_OUT_NODE_ID, POSITION, COMMENTS, SP_ID)
+       select  work_condition_id_seq.nextval,
+              'timespan',t.TIME_SPAN_SEQ,t1.WORK_NODE_ID,t.TIME_SPAN_NAME,
+              case when t.TIME_SPAN_SEQ ='1'  then t2.WORK_NODE_ID
+                   when t.TIME_SPAN_SEQ ='2'  then t3.WORK_NODE_ID
+                   when t.TIME_SPAN_SEQ ='3'  then t4.WORK_NODE_ID
+               end WORK_OUT_NODE_ID,
+               null,
+              case when t.TIME_SPAN_SEQ ='1'  then t2.COMMENTS
+                   when t.TIME_SPAN_SEQ ='2'  then t3.COMMENTS
+                   when t.TIME_SPAN_SEQ ='3'  then t4.COMMENTS
+               end comments,
+              null
+       from DC_CONFIG_PP_USAGE_TARIFF t
+         inner join WORK_NODE t1
+          on t1.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan FIRST NODE -'),t.PRICE_PLAN_ID)
+         inner join WORK_NODE t2
+          on t2.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ1 -'),t.PRICE_PLAN_ID)
+         inner join WORK_NODE t3
+          on t3.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ2 -'),t.PRICE_PLAN_ID)
+         left join WORK_NODE t4
+          on t4.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ3 -'),t.PRICE_PLAN_ID)
+         left join WORK_CONDITION t5
+          on  t5.WORK_NODE_ID = t1.WORK_NODE_ID
+       where t5.WORK_CONDITION_ID  is null
+
+
+    - |
+      insert into COND_TIME_SPAN (TIME_SPAN_UP_ID,SEQ ,WORK_CONDITION_ID,TIME_SPAN_ID,
+                                  TIME_SPAN_UP_MODE,COMMENTS,SP_ID )
+       select TIME_SPAN_UP_ID_SEQ.nextval,'1',
+               case when t.TIME_SPAN_SEQ ='1'  then t1.WORK_CONDITION_ID
+                   when t.TIME_SPAN_SEQ ='2'  then t2.WORK_CONDITION_ID
+                   when t.TIME_SPAN_SEQ ='3'  then t3.WORK_CONDITION_ID
+               end WORK_CONDITION_ID,
+               t4.TIME_SPAN_ID,null,
+               case when t.TIME_SPAN_SEQ ='1'  then t1.COMMENTS
+                   when t.TIME_SPAN_SEQ ='2'  then t2.COMMENTS
+                   when t.TIME_SPAN_SEQ ='3'  then t3.COMMENTS
+               end COMMENTS, null
+         from DC_CONFIG_PP_USAGE_TARIFF t
+           inner join WORK_CONDITION t1
+             on t1.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ1 -'),t.PRICE_PLAN_ID)
+           inner join WORK_CONDITION t2
+             on t2.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ2 -'),t.PRICE_PLAN_ID)
+           left join WORK_CONDITION t3
+             on t3.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ3 -'),t.PRICE_PLAN_ID)
+           inner join TIME_SPAN t4
+            on t4.TIME_SPAN_NAME = t.TIME_SPAN_NAME
+           left join COND_TIME_SPAN t5
+            on t5.WORK_CONDITION_ID = t1.WORK_CONDITION_ID
+             or t5.WORK_CONDITION_ID = t2.WORK_CONDITION_ID
+              or t5.WORK_CONDITION_ID = t3.WORK_CONDITION_ID
+          where t5.TIME_SPAN_UP_ID is  null
+
+    - |
+      INSERT INTO WORK_ACTION (WORK_ACTION_ID, WORK_ACTION_TYPE, EXEC_SEQ, WORK_NODE_ID,
+                              WORK_ACTION_NAME, POSITION, COMMENTS, SP_ID)
+       select WORK_ACTION_ID_SEQ.NEXTVAL ,
+              'price' ,'1',
+              case when t.TIME_SPAN_SEQ ='1'  then t2.WORK_NODE_ID
+                   when t.TIME_SPAN_SEQ ='2'  then t3.WORK_NODE_ID
+                   when t.TIME_SPAN_SEQ ='3'  then t4.WORK_NODE_ID
+              end WORK_NODE_ID ,
+              t.PRICE||'/'||t.UNIT,null,
+              case when t.TIME_SPAN_SEQ ='1'  then t2.COMMENTS
+                   when t.TIME_SPAN_SEQ ='2'  then t3.COMMENTS
+                   when t.TIME_SPAN_SEQ ='3'  then t4.COMMENTS
+              end COMMENTS ,null
+        from DC_CONFIG_PP_USAGE_TARIFF t
+         inner join WORK_NODE t2
+          on t2.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ1 -'),t.PRICE_PLAN_ID)
+         inner join WORK_NODE t3
+          on t3.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ2 -'),t.PRICE_PLAN_ID)
+         left join WORK_NODE t4
+          on t4.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan SEQ3 -'),t.PRICE_PLAN_ID)
+         left join WORK_ACTION t5
+          on   t5.WORK_NODE_ID = t2.WORK_NODE_ID
+            or t5.WORK_NODE_ID = t3.WORK_NODE_ID
+            or t5.WORK_NODE_ID = t4.WORK_NODE_ID
+         where t5.WORK_ACTION_ID is  null
+
+    - |
+      insert into CPC.REF_VALUE
+      (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID, PRICE_SET_ID,
+       SP_ID,COMMENTS)
+       select  REF_VALUE_ID_SEQ.NEXTVAL,
+             9,
+             t.CON_RES_ID,
+             sysdate,
+             'A',
+             sysdate,
+             price_id_seq.nextval,
+             t7.rate_plan_id,
+             t6.PRICE_SET_ID,
+             null,
+             concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+       from   DC_CONFIG_PP_USAGE_TARIFF t
+         inner join  price_plan t2
+            on   t.PRICE_PLAN_ID = t2.PRICE_PLAN_ID and t.PRICE_PLAN_NAME = t2.PRICE_PLAN_NAME
+         inner join price_plan_ver t3
+            on t3.PRICE_PLAN_ID = t2.PRICE_PLAN_ID
+         inner join PRICE_PLAN_MEMBER t4
+            on t4.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join re  r
+            on r.RE_ID = t.RE_ID and r.RE_TYPE = 1
+         inner join RE_PRICE_SET  t6
+           on t6.RE_ID = t.RE_ID
+              and t6.PRICE_SET_ID = t4.PRICE_SET_ID
+         inner join rate_plan t7
+            on t6.RE_PRICE_SET_ID = t7.RE_PRICE_SET_ID
+               and t7.RATE_PLAN_NAME = concat(t.RE_NAME, '-TimeSpan')
+         left join ref_value t8
+            on t8.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+             and t8.REF_VALUE_TYPE=9
+        where t8.REF_VALUE_ID is null and t.TIME_SPAN_SEQ =1
+
+    - |
+      insert into CPC.REF_VALUE
+      (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, CREATED_DATE, STATE, STATE_DATE, PRICE_ID, RATE_PLAN_ID, PRICE_SET_ID,
+       SP_ID,COMMENTS)
+       select  REF_VALUE_ID_SEQ.NEXTVAL,
+             9,
+             t.CON_RES_ID,
+             sysdate,
+             'A',
+             sysdate,
+             t8.PRICE_ID,
+             t7.rate_plan_id,
+             t6.PRICE_SET_ID,
+             null,
+             concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+       from   DC_CONFIG_PP_USAGE_TARIFF t
+         inner join  price_plan t2
+            on   t.PRICE_PLAN_ID = t2.PRICE_PLAN_ID and t.PRICE_PLAN_NAME = t2.PRICE_PLAN_NAME
+         inner join price_plan_ver t3
+            on t3.PRICE_PLAN_ID = t2.PRICE_PLAN_ID
+         inner join PRICE_PLAN_MEMBER t4
+            on t4.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join re  r
+            on r.RE_ID = t.RE_ID and r.RE_TYPE = 1
+         inner join RE_PRICE_SET  t6
+           on t6.RE_ID = t.RE_ID
+              and t6.PRICE_SET_ID = t4.PRICE_SET_ID
+         inner join rate_plan t7
+            on t6.RE_PRICE_SET_ID = t7.RE_PRICE_SET_ID
+               and t7.RATE_PLAN_NAME = concat(t.RE_NAME, '-TimeSpan')
+         inner join ref_value t8
+            on t8.RATE_PLAN_ID = t7.RATE_PLAN_ID
+               and t8.PRICE_SET_ID = t6.PRICE_SET_ID
+               and t8.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),'1'),'-TimeSpan')
+         left join ref_value t9
+            on t9.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+             and t9.REF_VALUE_TYPE=9
+             and t.TIME_SPAN_SEQ>1
+        where t.TIME_SPAN_SEQ>1 and    t9.REF_VALUE_ID is null
+
+
+    - |
+      insert into CPC.REF_VALUE (REF_VALUE_ID, REF_VALUE_TYPE, VALUE_STRING, CREATED_DATE, STATE, STATE_DATE, PRICE_ID,
+                     RATE_PLAN_ID, PRICE_SET_ID, SP_ID,COMMENTS)
+       select REF_VALUE_ID_SEQ.NEXTVAL,
+             1,
+             t.PRICE,
+             sysdate,
+             'A',
+             sysdate,
+             t8.PRICE_ID,
+             t8.rate_plan_id,
+             t8.PRICE_SET_ID,
+             null,
+             concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+        from   DC_CONFIG_PP_USAGE_TARIFF t
+         inner join  price_plan t2
+            on   t.PRICE_PLAN_ID = t2.PRICE_PLAN_ID and t.PRICE_PLAN_NAME = t2.PRICE_PLAN_NAME
+         inner join price_plan_ver t3
+            on t3.PRICE_PLAN_ID = t2.PRICE_PLAN_ID
+         inner join PRICE_PLAN_MEMBER t4
+            on t4.PRICE_PLAN_VER_ID = t3.PRICE_PLAN_VER_ID
+         inner join re  r
+            on r.RE_ID = t.RE_ID and r.RE_TYPE = 1
+         inner join RE_PRICE_SET  t6
+           on t6.RE_ID = t.RE_ID
+              and t6.PRICE_SET_ID = t4.PRICE_SET_ID
+         inner join rate_plan t7
+            on t6.RE_PRICE_SET_ID = t7.RE_PRICE_SET_ID
+               and t7.RATE_PLAN_NAME = concat(t.RE_NAME, '-TimeSpan')
+         inner join ref_value t8
+            on t8.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+             and t8.REF_VALUE_TYPE=9
+             and t8.RATE_PLAN_ID = t7.RATE_PLAN_ID
+             and t8.PRICE_SET_ID = t6.PRICE_SET_ID
+         left join ref_value t9
+            on t9.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+             and t9.REF_VALUE_TYPE=1
+             and t9.RATE_PLAN_ID = t7.RATE_PLAN_ID
+             and t9.PRICE_SET_ID = t6.PRICE_SET_ID
+        where t9.REF_VALUE_ID is null
+
+
+    - |
+      insert into ACTION_PRICE (ACTION_PRICE_ID, WORK_ACTION_ID, RUM, OVERLAP_FLAG,
+                                COMMENTS , RE_ATTR, CON_RES_ID, REF_VALUE_ID, SP_ID, MIN_RUM)
+       select ACTION_PRICE_ID_SEQ.NEXTVAL,
+              case when t.TIME_SPAN_SEQ ='1'  then t1.WORK_ACTION_ID
+                   when t.TIME_SPAN_SEQ ='2'  then t2.WORK_ACTION_ID
+                   when t.TIME_SPAN_SEQ ='3'  then t3.WORK_ACTION_ID
+              end WORK_ACTION_ID,
+              case when t.UNIT ='min' then '60'
+                   when t.UNIT ='5Mins' then '300'
+                   when t.UNIT ='3Mins' then '180'
+                   when t.UNIT ='4Mins' then '240'
+                   when t.UNIT ='2Mins' then '120'
+                   when t.UNIT ='20Mins' then '1200'
+                   when t.UNIT ='30Sec' then '30'
+                   when t.UNIT ='20Sec' then '20'
+                   when t.UNIT ='15Sec' then '15'
+              end RUM,'N',
+              case when t.TIME_SPAN_SEQ ='1'  then t1.COMMENTS
+                   when t.TIME_SPAN_SEQ ='2'  then t2.COMMENTS
+                   when t.TIME_SPAN_SEQ ='3'  then t3.COMMENTS
+              end COMMENTS,
+               (select re_attr from re_attr where re_attr_name='(Second)Duration'),
+              t.CON_RES_ID,
+              t8.ref_value_id,
+              null,null
+       from   DC_CONFIG_PP_USAGE_TARIFF t
+          inner join WORK_ACTION t1
+           on  t1.COMMENTS = concat( concat(t.RE_NAME, '-TimeSpan SEQ1 -'),t.PRICE_PLAN_ID)
+          inner join WORK_ACTION t2
+           on  t2.COMMENTS = concat( concat(t.RE_NAME, '-TimeSpan SEQ2 -'),t.PRICE_PLAN_ID)
+          left join WORK_ACTION t3
+           on  t3.COMMENTS = concat( concat(t.RE_NAME, '-TimeSpan SEQ3 -'),t.PRICE_PLAN_ID)
+         inner join  price_plan tp
+            on   t.PRICE_PLAN_ID = tp.PRICE_PLAN_ID and t.PRICE_PLAN_NAME = tp.PRICE_PLAN_NAME
+         inner join price_plan_ver pv
+            on pv.PRICE_PLAN_ID = tp.PRICE_PLAN_ID
+         inner join PRICE_PLAN_MEMBER t4
+            on t4.PRICE_PLAN_VER_ID = pv.PRICE_PLAN_VER_ID
+         inner join re  r
+            on r.RE_ID = t.RE_ID and r.RE_TYPE = 1
+         inner join RE_PRICE_SET  t6
+           on t6.RE_ID = t.RE_ID
+              and t6.PRICE_SET_ID = t4.PRICE_SET_ID
+         inner join rate_plan t7
+            on t6.RE_PRICE_SET_ID = t7.RE_PRICE_SET_ID
+               and t7.RATE_PLAN_NAME = concat(t.RE_NAME, '-TimeSpan')
+         inner  join ref_value t8
+            on t8.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+             and t8.REF_VALUE_TYPE=1
+         left join ACTION_PRICE t9
+            on t9.REF_VALUE_ID = t8.REF_VALUE_ID
+        where t9.ACTION_PRICE_ID is  null
+
+
+    - |
+      insert into  PRICE (PRICE_ID, PRICE_NAME, REF_VALUE_ID, RUM, RE_ATTR, PRICE_TYPE, CALC_TYPE,
+                          PRICE_VER_ID, CON_RES_ID, CURRENCY_TYPE_ID, COMMENTS, PRIORITY, SRC_PRICE_ID,
+                          SP_ID, CONFIGURE_TYPE, MIN_RUM, EXCHANGE_RE_ATTR, EXCHANGE_RUM)
+       select  t1.PRICE_ID,'start',null,'-1',
+               (select re_attr from re_attr where re_attr_name='(Second)Duration'),
+               null,null,t3.PRICE_VER_ID,null,null,t1.COMMENTS,'1',null,null,'2',null,null,null
+       from   DC_CONFIG_PP_USAGE_TARIFF t
+         inner  join ref_value t1
+            on t1.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+             and t1.REF_VALUE_TYPE=1
+         inner join mapping t2
+              on t1.RATE_PLAN_ID = t2.RATE_PLAN_ID
+         inner join price_ver t3
+              on t3.MAPPING_ID = t2.MAPPING_ID
+         left join PRICE t4
+              on t4.PRICE_ID = t1.PRICE_ID
+       where t4.PRICE_ID is null and t.TIME_SPAN_SEQ=1
+
+    - |
+       INSERT INTO PRICE_WORK_NODE
+                  (PRICE_ID, SEQ, PRICE_NODE_NAME, WORK_NODE_ID, COMMENTS, SP_ID)
+        select  t1.PRICE_ID,'1','start',t2.WORK_NODE_ID,t2.COMMENTS,null
+        from   DC_CONFIG_PP_USAGE_TARIFF t
+         inner  join ref_value t1
+            on t1.COMMENTS  =concat(concat(concat(t.PRICE_PLAN_ID,t.RE_NAME),t.TIME_SPAN_SEQ),'-TimeSpan')
+             and t1.REF_VALUE_TYPE=1
+         inner join WORK_NODE t2
+          on t2.COMMENTS =concat( concat(t.RE_NAME, '-TimeSpan FIRST NODE -'),t.PRICE_PLAN_ID)
+         left join PRICE_WORK_NODE  t3
+          on t3.WORK_NODE_ID = t2.WORK_NODE_ID
+       where  t3.PRICE_ID is null and t3.WORK_NODE_ID  is null and  t.TIME_SPAN_SEQ=1
+
+  Delete_pp_usage_All_tariff:
+    - |
+      drop table delete_Price_Plan_rating
+    - |
+      create  table delete_Price_Plan_rating as
+      select distinct pp.price_plan_id,
+               ppv.price_plan_ver_id,
+               pp.price_plan_name,
+               re.re_id,
+               re.re_name,
+               rp.re_price_set_id,
+               rp.rate_plan_id,
+               rp.rate_plan_name,
+               ra.re_attr,
+               ra.re_attr_name,
+               zm.zone_map_id,
+               zm.zone_map_name,
+               z.zone_id,
+               z.zone_name,
+               m.mapping_id,
+               m.mapping_name,
+               p.price_id,
+               p.price_ver_id,
+               p.price_name,
+               waap.work_node_id,
+               waap.work_condition_id,
+               waap.work_condition_name,
+               waap.rank_up_id,
+               waap.offset,
+               waap.duration,
+               waap.intervals,
+               waap.looptime,
+               waap.setup_fee_flag,
+               waap.time_span_id,
+               waap.time_span_name,
+               waap.work_action_id,
+               waap.work_action_name,
+               ap.ACTION_PRICE_ID,
+               rf.ref_value_id,
+               rf.value_string,
+               ap.rum,
+               ap.min_rum,
+               rr.re_attr_name mapping_re_attr_name,
+               ap.re_attr mapping_re_attr,
+               rv.ref_value_id con_ref_value_id,
+               cr.con_res_id,
+               cr.con_res_name,
+                pd.param_name,
+               tpc.col_name
+          from price_plan        pp,
+               price_plan_ver    ppv,
+               price_plan_member ppm,
+               re_price_set      rps,
+               rate_plan         rp,
+               rate_plan_zone    rpz,
+               mapping           m,
+               price_ver         pv,
+               price             p,
+               re                re,
+               ACTION_PRICE ap,
+               ref_value rf,
+               MAPPING_UNIT mu,
+               ref_value rv,
+               PARAM_DEFINE pd,
+               TABLE_PARAM_COLUMN tpc,
+               re_attr ra,
+               zone_map zm,
+               zone z,
+               re_attr rr,
+               con_res cr,
+               re_attr rt,
+               (select pwn.price_id,
+                       wn.work_node_id,
+                       wc.work_condition_id,
+                       wc.work_condition_name,
+                       ck.rank_up_id,
+                       ck.offset,
+                       ck.duration,
+                       ck.intervals,
+                       ck.looptime,
+                       ck.setup_fee_flag,
+                       null time_span_id,
+                       null time_span_name,
+                       wa.work_action_id,
+                       wa.work_action_name,
+                       ap.action_price_id
+                  from PRICE_WORK_NODE pwn,
+                       WORK_NODE       wn,
+                       work_condition  wc,
+                       COND_RANK       ck,
+                       work_node       wd,
+                       WORK_ACTION     wa,
+                       ACTION_PRICE    ap
+                 where pwn.work_node_id = wn.work_node_id
+                   and wn.is_first_node = 'Y'
+                   and wn.work_node_id = wc.work_node_id
+                   and wc.work_condition_id = ck.work_condition_id
+                   and wc.work_out_node_id = wd.work_node_id
+                   and wn.work_node_id = wd.first_work_node_id
+                   and wd.work_node_id = wa.work_node_id
+                   and wa.work_action_id = ap.work_action_id
+                union all
+                select pwn.price_id,
+                       wn.work_node_id,
+                       null work_condition_id,
+                       null work_condition_name,
+                       null rank_up_id,
+                       null offset,
+                       null duration,
+                       null intervals,
+                       null looptime,
+                       null setup_fee_flag,
+                       null time_span_id,
+                       null time_span_name,
+                       wa.work_action_id,
+                       wa.work_action_name,
+                       ap.action_price_id
+                  from PRICE_WORK_NODE pwn,
+                       work_node       wn,
+                       work_action     wa,
+                       ACTION_PRICE    ap
+                 where pwn.work_node_id = wn.work_node_id
+                   and wn.is_first_node = 'Y'
+                   and wn.work_node_id = wa.work_node_id
+                   and wa.work_action_id = ap.work_action_id
+                  union all
+                   select pwn.price_id,
+                       wn.work_node_id,
+                       wc.work_condition_id,
+                       wc.work_condition_name,
+                       null rank_up_id,
+                       null offset,
+                       null duration,
+                       null intervals,
+                       null looptime,
+                       null setup_fee_flag,
+                       ts.time_span_id,
+                       ts.time_span_name,
+                       wa.work_action_id,
+                       wa.work_action_name,
+                       ap.action_price_id
+                  from PRICE_WORK_NODE pwn,
+                       WORK_NODE       wn,
+                       work_condition  wc,
+                       cond_time_span  ck,
+                       work_node       wd,
+                       WORK_ACTION     wa,
+                       ACTION_PRICE    ap,
+                       time_span       ts
+                 where pwn.work_node_id = wn.work_node_id
+                   and wn.is_first_node = 'Y'
+                   and wn.work_node_id = wc.work_node_id
+                   and wc.work_condition_id = ck.work_condition_id
+                   and ck.time_span_id=ts.time_span_id
+                   and wc.work_out_node_id = wd.work_node_id
+                   and wn.work_node_id = wd.first_work_node_id
+                   and wd.work_node_id = wa.work_node_id
+                   and wa.work_action_id = ap.work_action_id) waap,
+               DC_CONFIG_PP_USAGE_TARIFF  dc
+         where pp.price_plan_id = ppv.price_plan_id
+           and pp.state<>'C'
+           and ppv.price_plan_ver_id = ppm.price_plan_ver_id
+           and ppm.price_set_id = rps.price_set_id
+           and rps.re_id = re.re_id
+           and rp.re_price_set_id = rps.re_price_set_id
+           and m.rate_plan_id = rp.rate_plan_id
+           and pv.mapping_id = m.mapping_id
+           and p.price_ver_id = pv.price_ver_id
+           and p.price_id = waap.price_id
+           and waap.action_price_id = ap.action_price_id
+           and ap.ref_value_id = rf.ref_value_id
+           and ap.re_attr = rr.re_attr
+           and rf.ref_value_type in ('1', '2')
+           and rp.rate_plan_id = rpz.rate_plan_id(+)
+           and m.mapping_id = mu.mapping_id(+)
+           and rv.ref_value_type = '9'
+           and rpz.mapping_src_value = ra.re_attr(+)
+           and rpz.mapping_des_value = zm.zone_map_id(+)
+           and mu.mapping_value = z.zone_id(+)
+           and ap.con_res_id = rv.ref_value_id
+           and rv.value_string = cr.con_res_id
+           and rf.value_string = pd.param_id(+)
+           and rf.re_attr = rt.re_attr(+)
+           and rf.col_id = tpc.col_id(+)
+           and pp.PRICE_PLAN_id =dc.PRICE_PLAN_ID
+           and re.RE_NAME =dc.RE_NAME
+           order by pp.price_plan_name,re.re_name,rp.rate_plan_name,waap.work_condition_id
+
+    - |
+      delete from PRICE_WORK_NODE where PRICE_ID in (select price_id from  delete_Price_Plan_rating)
+    - |
+      delete from PRICE where price_id in (select price_id from  delete_Price_Plan_rating)
+    - |
+      delete from REF_VALUE where RATE_PLAN_ID in (select RATE_PLAN_ID from   delete_Price_Plan_rating )
+    - |
+      delete from ACTION_PRICE where ACTION_PRICE_ID in (select action_price_id from   delete_Price_Plan_rating)
+    - |
+      delete from work_action where work_action_id in (select work_action_id from  delete_Price_Plan_rating)
+    - |
+      delete from COND_RANK w where   w.WORK_CONDITION_ID in (select WORK_CONDITION_ID from  delete_Price_Plan_rating)
+    - |
+      delete from COND_TIME_SPAN w where   w.WORK_CONDITION_ID in (select WORK_CONDITION_ID from  delete_Price_Plan_rating)
+    - |
+      delete from WORK_CONDITION where work_node_id in (select work_node_id from  delete_Price_Plan_rating)
+    - |
+      delete from WORK_NODE where work_node_id in (select work_node_id from  delete_Price_Plan_rating)
+    - |
+      delete from WORK_NODE where FIRST_WORK_NODE_ID in (select work_node_id from  delete_Price_Plan_rating)
+    - |
+      delete from PRICE_VER where PRICE_VER_ID in (select price_ver_id from  delete_Price_Plan_rating)
+    - |
+      delete from MAPPING_UNIT where MAPPING_ID in (select mapping_id from  delete_Price_Plan_rating)
+    - |
+      delete from MAPPING_CONDITION_GROUP where MAPPING_ID in (select mapping_id from  delete_Price_Plan_rating)
+    - |
+      delete from MAPPING where MAPPING_ID in (select mapping_id from  delete_Price_Plan_rating)
+    - |
+      delete from RATE_PLAN_ZONE where rate_plan_zone_id in (select rate_plan_zone_id from  delete_Price_Plan_rating)
+    - |
+      delete from RATE_PLAN where RATE_PLAN_ID in (select RATE_PLAN_ID from  delete_Price_Plan_rating)
+

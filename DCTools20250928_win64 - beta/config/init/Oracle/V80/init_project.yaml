@@ -1,0 +1,23 @@
+A001:
+    create:
+        DC_TEST003:
+                create table DC_Test003 (
+                    check_item varchar2(200),
+                    check_sql varchar2(4000),
+                    check_result varchar2(20)
+                    )
+
+A003:
+    create:
+        DC_TEST004:
+                create table DC_Test004 (
+                    check_item varchar2(200),
+                    check_sql varchar2(4000),
+                    check_result varchar2(20)
+                    )
+
+    create_list:
+        DC_TEST004:
+            - A003
+            - V20190401
+            - table

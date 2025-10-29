@@ -1,0 +1,582 @@
+create:
+
+  DC_PROC_ADD_ACCT_RES:
+    - |
+      create or replace procedure DC_PROC_ADD_ACCT_RES(P_ACCT_NAME      IN VARCHAR2,
+                                                       P_BAL_TYPE       IN NUMBER,
+                                                       P_ACCT_UNIT_NAME IN varchar2,
+                                                       P_ACCT_RES_ID    OUT NUMBER)
+      /*
+        Author: Ma Shaohua 0027008775
+        P_ACCT_NAME: 帐本名字
+        P_BAL_TYPE:
+          1 Basic Balance
+          4 Non Currency Balance
+          2 Limited Balance
+          3 Given Balance
+          5 Bonus Balance
+          6 Credit Balance
+        P_ACCT_UNIT_NAME: 帐本的单位名字，因为这个参数涉及到资金和非资金，ID有重复的，所以使用名字
+          currency:
+            1 United States Dollar
+            2 European Dollar
+            3 Chinese Yuan
+            4 Britain Pound
+            10000 Belarusian Ruble
+          no currency:
+            1  Second
+            2  Minute
+            3  Hour
+            4  Byte
+            5  KB
+            6  MB
+            7  GB
+            8  Occurrence
+            9  Dollar
+            10  Cent
+        P_ACCT_RES_ID： 输出参数，帐本ID
+        PS:支持新增帐本，已存在名字相同的不新增，可重复执行
+        */
+       AS
+        v_Count   number;
+        v_Unit_Id number;
+
+        v_Insert_CbecAcctRes_SQL varchar2(2000);
+      BEGIN
+        v_Insert_CbecAcctRes_SQL := 'insert into cbec_acct_res
+          (ACCT_RES_ID,
+          BAL_TYPE,
+          ACCT_RES_NAME,
+          IS_CURRENCY,
+          STD_CODE,
+          UNIT_ID,
+          UNIT_PRECISION,
+          CURRENCY_TYPE_ID,
+          PARENT_ACCT_RES_ID, COMMENTS, MAX_VALUE, PACK_INNER, REFILLABLE, PRIORITY,  OVERDRAFT_FLAG, EFF_TYPE, STATE, SP_ID, CREATED_DATE, PARTY_TYPE, PARTY_CODE, EXCLUDE_PACK_INNER, IS_CHANNEL_BAL)
+            values
+          (:1,
+          :2,
+          :3,
+          :4,
+          :5,
+          :6,
+          :7,
+          :8,
+          null, null, null, ''Y'', null, null, ''N'', null, ''A'', 0, sysdate, null, null, ''N'', null)';
+        --检查是否存在帐本
+        SELECT count(*)
+          into v_Count
+          FROM cbec_acct_res a
+         WHERE a.acct_res_name = P_ACCT_NAME;
+        --new acct
+        if v_Count = 0 then
+          SELECT count(*)
+            into v_Count
+            FROM cbec_currency_type a
+           WHERE a.currency_name = P_ACCT_UNIT_NAME;
+          --no currency
+          if v_Count = 0 then
+            SELECT count(*)
+              into v_Count
+              FROM cbec_unit cu
+             WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+            if v_Count = 0 then
+              DBMS_OUTPUT.PUT_LINE('unit type error!!');
+            else
+              SELECT cu.unit_id
+                into v_Unit_Id
+                FROM cbec_unit cu
+               WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+              SELECT cbec_acct_res_seq.nextval into P_ACCT_RES_ID FROM dual;
+              execute immediate v_Insert_CbecAcctRes_SQL
+                using P_ACCT_RES_ID, P_BAL_TYPE, P_ACCT_NAME, 'N', P_ACCT_RES_ID, v_Unit_Id, 1, '';
+            end if;
+            --currency
+          else
+            SELECT a.currency_type_id
+              into v_Unit_Id
+              FROM cbec_currency_type a
+             WHERE a.currency_name = P_ACCT_UNIT_NAME;
+            SELECT cbec_acct_res_seq.nextval into P_ACCT_RES_ID FROM dual;
+            execute immediate v_Insert_CbecAcctRes_SQL
+              using P_ACCT_RES_ID, P_BAL_TYPE, P_ACCT_NAME, 'Y', P_ACCT_RES_ID, '', -100000000, v_Unit_Id;
+          end if;
+          DBMS_OUTPUT.PUT_LINE('帐本新增成功, P_ACCT_RES_ID: ' || P_ACCT_RES_ID);
+        else
+          SELECT A.ACCT_RES_ID
+            INTO P_ACCT_RES_ID
+            FROM cbec_acct_res A
+           WHERE A.ACCT_RES_NAME = P_ACCT_NAME;
+          DBMS_OUTPUT.PUT_LINE('帐本已存在，不需要新增, P_ACCT_RES_ID: ' || P_ACCT_RES_ID);
+        end if;
+      END;
+
+  DC_PROC_ADD_ACCT_ITEM:
+    - |
+      create or replace procedure DC_PROC_ADD_ACCT_ITEM(P_ACCT_ITEM_NAME IN VARCHAR2,
+                                                        P_ACCT_ITEM_ID   OUT NUMBER,
+                                                        P_ACCT_ITEM_TAX  IN NUMBER := null,
+                                                        P_ACCT_ID        IN NUMBER := 1,
+                                                        P_ACCT_ITEM_CODE IN VARCHAR2 := null)
+      /*
+        P_ACCT_ITEM_NAME:帐目的名字
+        P_ACCT_ITEM_ID:输出字段，新增帐目的ID
+        P_ACCT_ITEM_TAX：帐目的税，默认为空，不加税
+        P_ACCT_ID：帐目关联帐本的ID，默认为1主帐本
+        P_ACCT_ITEM_CODE：帐目的CODE，默认为空,当默认时与ID一样
+
+        PS:支持帐目新增，名字一样的不新增，可重复跑
+        支持新增一个税，如果已存在税，则不新增税
+        */
+       as
+        v_AcctItemTypeTAX_ID int;
+        v_Count              int;
+
+        Exists_Exception    exception;
+        ExistsTax_Exception exception;
+      begin
+        --new acct item
+        select count(*)
+          into v_Count
+          from cbec_acct_item_type a
+         WHERE a.acct_item_type_name = P_ACCT_ITEM_NAME
+           and a.state = 'A';
+        if v_Count = 0 then
+          --SELECT NVL(MAX(a.acct_item_type_id)+1, 1) into P_ACCT_ITEM_ID FROM cbec_acct_item_type a;
+          SELECT cbec_acct_item_type_seq.nextval into P_ACCT_ITEM_ID FROM dual;
+          if P_ACCT_ITEM_CODE is null then
+            insert into cbec_acct_item_type
+              (ACCT_ITEM_TYPE_ID,
+               ACCT_RES_ID,
+               PARENT_ID,
+               EXCHANGE_ITEM_TYPE_ID,
+               ACCT_ITEM_TYPE_NAME,
+               COMMENTS,
+               ACCT_ITEM_TYPE_CODE,
+               USAGE_TYPE,
+               GST_TYPE,
+               STATE,
+               SP_ID,
+               CREATED_DATE,
+               PARTY_TYPE,
+               PARTY_CODE,
+               EMERGENCY_FEE)
+            values
+              (P_ACCT_ITEM_ID,
+               P_ACCT_ID,
+               null,
+               null,
+               P_ACCT_ITEM_NAME,
+               null,
+               to_char(P_ACCT_ITEM_ID),
+               null,
+               null,
+               'A',
+               null,
+               sysdate,
+               null,
+               null,
+               'Y');
+          else
+            insert into cbec_acct_item_type
+              (ACCT_ITEM_TYPE_ID,
+               ACCT_RES_ID,
+               PARENT_ID,
+               EXCHANGE_ITEM_TYPE_ID,
+               ACCT_ITEM_TYPE_NAME,
+               COMMENTS,
+               ACCT_ITEM_TYPE_CODE,
+               USAGE_TYPE,
+               GST_TYPE,
+               STATE,
+               SP_ID,
+               CREATED_DATE,
+               PARTY_TYPE,
+               PARTY_CODE,
+               EMERGENCY_FEE)
+            values
+              (P_ACCT_ITEM_ID,
+               P_ACCT_ID,
+               null,
+               null,
+               P_ACCT_ITEM_NAME,
+               null,
+               P_ACCT_ITEM_CODE,
+               null,
+               null,
+               'A',
+               null,
+               sysdate,
+               null,
+               null,
+               'Y');
+          end if;
+          dbms_output.put_line('AcctItem add sucessful! AcctItem_ID:' || P_ACCT_ITEM_ID || ',Acct_item_name:' || P_ACCT_ITEM_NAME);
+        else
+          select a.acct_item_type_id
+            into P_ACCT_ITEM_ID
+            from cbec_acct_item_type a
+           WHERE a.acct_item_type_name = P_ACCT_ITEM_NAME
+             and a.state = 'A';
+          --只是新增帐本的，不新增税
+          if P_ACCT_ITEM_TAX is null then
+            raise Exists_Exception;
+          end if;
+        end if;
+
+        --new tax for acct item
+        if P_ACCT_ITEM_TAX is not null then
+          select count(*)
+            into v_Count
+            from CBEC_ACCT_ITEM_TYPE_TAX_RATE a
+           WHERE a.acct_item_type_id = P_ACCT_ITEM_ID;
+          if v_Count = 0 then
+            --SELECT NVL(MAX(A.ACCT_ITEM_TYPE_TAX_RATE_ID)+1, 1) INTO v_AcctItemTypeTAX_ID FROM CBEC_ACCT_ITEM_TYPE_TAX_RATE A;
+            SELECT CBEC_ACCT_IT_TAX_R_SEQ.Nextval
+              into v_AcctItemTypeTAX_ID
+              FROM dual;
+            insert into CBEC_ACCT_ITEM_TYPE_TAX_RATE
+              (ACCT_ITEM_TYPE_TAX_RATE_ID,
+               ACCT_ITEM_TYPE_ID,
+               RESULT_ACCT_ITEM_TYPE_ID,
+               GST_TYPE,
+               TAX_RATE,
+               EFF_DATE,
+               EXP_DATE,
+               STATE,
+               CREATED_DATE,
+               PARTY_TYPE,
+               PARTY_CODE,
+               CONDITION_GROUP_NBR,
+               SP_ID)
+            values
+              (v_AcctItemTypeTAX_ID,
+               P_ACCT_ITEM_ID,
+               P_ACCT_ITEM_ID,
+               'G',
+               P_ACCT_ITEM_TAX,
+               SYSDATE,
+               to_date('31-12-2029 10:15:20', 'dd-mm-yyyy hh24:mi:ss'),
+               'A',
+               null,
+               null,
+               null,
+               null,
+               null);
+            dbms_output.put_line('AcctItem TAX add sucessful! AcctItem_ID: ' || P_ACCT_ITEM_ID || ', TAX: ' || P_ACCT_ITEM_TAX);
+          else
+            raise ExistsTax_Exception;
+          end if;
+        end if;
+
+      exception
+        when Exists_Exception then
+          dbms_output.put_line('Error:' || P_ACCT_ITEM_NAME || '帐本已经存在，不允许新增，ID：' || P_ACCT_ITEM_ID);
+        when ExistsTax_Exception then
+          DBMS_OUTPUT.PUT_LINE('Exception: ' || P_ACCT_ITEM_NAME || '和税都存在!!');
+      end;
+
+  DC_PROC_ADD_CON_RES:
+    - |
+      create or replace procedure DC_PROC_ADD_CON_RES(P_CON_RES_NAME    IN VARCHAR2,
+                                                      P_ACCT_ITEM_TYPE  IN number,
+                                                      P_ACCT_UNIT_NAME  IN varchar2,
+                                                      P_CON_RES_ID      OUT NUMBER,
+                                                      P_BAL_SOURCE_TYPE IN NUMBER := 1,
+                                                      P_ACCT_LIST       IN VARCHAR2 := '1')
+      /*
+        P_CON_RES_NAME:消费 类型的名字
+        P_ACCT_ITEM_TYPE：消费 类型下关联的帐目ID
+        P_ACCT_UNIT_NAME：帐本的单位名字，因为这个参数涉及到资金和非资金，ID有重复的，所以使用名字
+          currency:
+            1 United States Dollar
+            2 European Dollar
+            3 Chinese Yuan
+            4 Britain Pound
+            10000 Belarusian Ruble
+          no currency:A
+            1 Second
+            2 Minute
+            3 Hour
+            4 Byte
+            5 KB
+            6 MB
+            7 GB
+            8 Occurrence
+            9 Dollar
+            10  Cent
+        P_CON_RES_ID: 输出的消费类型ID
+        P_BAL_SOURCE_TYPE：默认为1 主帐本
+          1 Basic Balance
+          2 Limited Balance
+          3 Given Balance
+          4 Non Currency Balance
+          5 Bonus Balance
+        P_ACCT_LIST：帐本列表，默认为主帐本
+          '123,343,22'
+
+        PS:支持新增消费类型 ，存在名字一样的消费类型则不新增，界面是可以新增相同的消费类型的，
+        这里限制是为了脚本可重复执行
+        消费类型下只能绑定一个帐目名字，后续可扩展
+        支持消费类型下绑多个帐本,已绑定的帐本不会再绑定
+        */
+       AS
+        --v_ConRes_Id int;
+        v_ConResDetail_Id int;
+        v_Unit_Id         int;
+        v_Count           int;
+        v_Account_Id      int;
+
+        v_Insert_ConRes_SQL       varchar2(1000);
+        v_Insert_ConResDetail_SQL varchar2(1000);
+
+        Exists_Exception exception;
+      BEGIN
+        v_Insert_ConRes_SQL := 'insert into con_res (CON_RES_ID, BAL_SOURCE_TYPE, CON_RES_NAME,
+          DEDUCT_TYPE, CON_RES_CODE, COMMENTS, PRICE_ID,
+          IS_CURRENCY, UNIT_ID, CURRENCY_TYPE_ID, UNIT_PRECISION, SP_ID)
+          values (:1, :2, :3,
+          null, null, null, null,
+          :4, :5, :6, -100000000, null)';
+
+        v_Insert_ConResDetail_SQL := 'insert into con_res_detail (CON_RES_DETAIL_ID, CON_RES_ID, ACCT_RES_ID, ACCT_ITEM_TYPE_ID,
+          PAY_INDICATOR, EXCHANGE_RATE, EXCHANGE_VALUE, PRIORITY, COMMENTS, SP_ID)
+          values (:1, :2, :3, :4,
+          ''000'', 100, 100, 0, null, null)';
+
+        --new consume res
+        SELECT count(*)
+          into v_Count
+          FROM con_res cr
+         WHERE cr.con_res_name = P_CON_RES_NAME;
+        if v_Count = 0 then
+          SELECT count(*)
+            into v_Count
+            FROM cbec_currency_type a
+           WHERE a.currency_name = P_ACCT_UNIT_NAME;
+          --no currency
+          if v_Count = 0 then
+            SELECT count(*)
+              into v_Count
+              FROM cbec_unit cu
+             WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+            if v_Count = 0 then
+              DBMS_OUTPUT.PUT_LINE('unit type error!!');
+            else
+              SELECT cu.unit_id
+                into v_Unit_Id
+                FROM cbec_unit cu
+               WHERE cu.unit_name = P_ACCT_UNIT_NAME;
+              SELECT con_res_id_seq.nextval into P_CON_RES_ID from dual;
+              execute immediate v_Insert_ConRes_SQL
+                using P_CON_RES_ID, P_BAL_SOURCE_TYPE, P_CON_RES_NAME, 'N', v_Unit_Id, '';
+            end if;
+          else
+            --currency
+            SELECT a.currency_type_id
+              into v_Unit_Id
+              FROM cbec_currency_type a
+             WHERE a.currency_name = P_ACCT_UNIT_NAME;
+            SELECT con_res_id_seq.nextval into P_CON_RES_ID from dual;
+            execute immediate v_Insert_ConRes_SQL
+              using P_CON_RES_ID, P_BAL_SOURCE_TYPE, P_CON_RES_NAME, 'Y', '', v_Unit_Id;
+          end if;
+          dbms_output.put_line('Consume res add successful! ID:' || P_CON_RES_ID);
+        else
+          SELECT cr.con_res_id
+            into P_CON_RES_ID
+            FROM con_res cr
+           WHERE cr.con_res_name = P_CON_RES_NAME;
+        end if;
+
+        --get acct list
+        for i in (SELECT to_number(REGEXP_SUBSTR(P_ACCT_LIST, '[^,]+', 1, rownum)) account_id
+                    from dual
+                  connect by rownum <=
+                             LENGTH(P_ACCT_LIST) -
+                             LENGTH(regexp_replace(P_ACCT_LIST, ',', '')) + 1) loop
+          SELECT count(*)
+            into v_Count
+            FROM con_res_detail crd
+           WHERE crd.con_res_id = P_CON_RES_ID
+             and crd.acct_res_id = i.account_id;
+          if v_Count = 0 then
+            SELECT con_res_detail_id_seq.nextval
+              into v_ConResDetail_Id
+              FROM dual;
+            execute immediate v_Insert_ConResDetail_SQL
+              using v_ConResDetail_Id, P_CON_RES_ID, i.account_id, P_ACCT_ITEM_TYPE;
+            dbms_output.put_line('Consumption type:' || P_CON_RES_NAME || ' and account:' || i.account_id || ' bind relationship add successful.');
+          else
+            v_Account_Id := i.account_id;
+            raise Exists_Exception;
+          end if;
+        end loop;
+
+      exception
+        when Exists_Exception then
+          dbms_output.put_line('Exception:消费类型:' || P_CON_RES_NAME || '和帐本:' || v_Account_Id || ' 已经存在绑定关系，不需要新增，ID：' || P_CON_RES_ID);
+      END;
+  DC_PROC_ADD_PP:
+    - |
+      create or replace procedure DC_PROC_ADD_PP(P_PP_NAME  IN VARCHAR2,
+                                                 P_PP_CODE  IN VARCHAR2,
+                                                 P_PP_ID    OUT NUMBER,
+                                                 P_PP_TYPE  IN CHAR := '3',
+                                                 P_PP_GENRE IN CHAR := 'A',
+                                                 P_PP_LEVEL IN CHAR := 'S') as
+        /*
+        P_PP_NAME
+        P_PP_CODE
+        P_PP_ID
+        P_PP_TYPE: default 3
+          1:global
+          3:individual
+        P_PP_GENRE: default A
+          A Common
+          B  Overlap
+          E  Trigger
+          F  Acm
+          H  Bill Discount
+        P_PP_LEVEL: default S
+          A:account
+          S:subscriber
+        */
+        v_Priority           int;
+        v_Count              int;
+        v_PP_Ver             int;
+        v_PriceSet_Id        int;
+        v_PricePlanVer_State char(1);
+        v_PricePlan_State    char(1);
+        v_PricePlan_Name     varchar2(400);
+        --v_PricePlan_Code varchar2(50);
+
+        v_Insert_PP_SQL       varchar2(2000);
+        v_insert_PPV_SQL      varchar2(2000);
+        v_Insert_PriceSet_SQL varchar2(2000);
+        v_Insert_PP_Mem_SQL   varchar2(2000);
+      begin
+        v_Insert_PP_SQL := 'INSERT INTO PRICE_PLAN (PRICE_PLAN_ID,
+          PRICE_PLAN_NAME,
+          PRICE_PLAN_CODE,
+          APPLY_LEVEL,
+          PRICE_PLAN_TYPE,
+          PRICE_PLAN_GENRE,
+          PRIORITY,
+          LOCK_FLAG, PRICE_PLAN_CATALOG, SP_ID, STATE, ACTIVE_DATE, ACTIVE_STAFF_ID, INACTIVE_DATE, INACTIVE_STAFF_ID, PRICE_PLAN_EXIT, POLICY_PLAN_FLAG)
+          VALUES (:1,
+          :2,
+          :3,
+          :4,
+          :5,
+          :6,
+          :7,
+          ''N'', null,null,''B'',add_months(sysdate,-12),3044336,null,null,''N'',''N'')';
+
+        v_insert_PPV_SQL := 'INSERT INTO PRICE_PLAN_VER (PRICE_PLAN_VER_ID,
+          PRICE_PLAN_ID,
+          SEQ, SP_ID, EFF_DATE, EXP_DATE, USING_STATE, STATE, CREATED_DATE, CREATED_STAFF_ID, RELEASE_DATE, RELEASE_STAFF_ID, RETIRE_DATE, RETIRE_STAFF_ID, SUBMIT_DATE, SUBMIT_STAFF_ID, APPROVED_DATE, APPROVED_STAFF_ID)
+          VALUES (:1,
+          :2,
+          1, null, add_months(sysdate,-12),null, ''A'', ''D'', add_months(sysdate,-12), 3044336, add_months(sysdate,-12), 3044336, null, null, add_months(sysdate,-12), 3044336, add_months(sysdate,-12), 3044336)';
+
+        v_Insert_PriceSet_SQL := 'INSERT INTO PRICE_SET (PRICE_SET_ID, APPLY_LEVEL, PRICE_SET_PRIORITY_ID, PRIORITY, SP_ID)
+                  values(:1,:2,10000,1,null)';
+
+        v_Insert_PP_Mem_SQL := 'INSERT INTO PRICE_PLAN_MEMBER (PRICE_PLAN_VER_ID, PRICE_SET_ID, CREATED_DATE, SP_ID)
+                  values(:1 ,:2 ,add_months(sysdate,-12), null)';
+
+        SELECT COUNT(*)
+          INTO v_Count
+          FROM PRICE_PLAN PP
+         WHERE PP.Price_Plan_Code = P_PP_CODE;
+        --NEW PRICE PLAN
+        if v_Count = 0 then
+          dbms_output.put_line('----------------Add price plan start!----------------');
+          --price_plan
+          SELECT price_plan_id_seq.nextval into P_PP_ID FROM DUAL;
+          select COALESCE(max(PRIORITY) + 1, 1) into v_Priority from price_plan;
+          execute immediate v_Insert_PP_SQL
+            using P_PP_ID, P_PP_NAME, P_PP_CODE, P_PP_LEVEL, P_PP_TYPE, P_PP_GENRE, v_Priority;
+
+          --price_plan_ver
+          SELECT price_plan_ver_id_seq.nextval into v_PP_Ver FROM DUAL;
+          execute immediate v_insert_PPV_SQL
+            using v_PP_Ver, P_PP_ID;
+
+          --price_plan_memeber,PRICE_SET
+          select price_set_id_seq.nextval into v_PriceSet_Id from dual;
+          execute immediate v_Insert_PriceSet_SQL
+            using v_PriceSet_Id, P_PP_LEVEL;
+          execute immediate v_Insert_PP_Mem_SQL
+            using v_PP_Ver, v_PriceSet_Id;
+          dbms_output.put_line('++++add price plan successful! price_plan_id:' || P_PP_ID || ',price_plan_name:' || P_PP_NAME);
+          dbms_output.put_line('----------------Add price plan end!----------------');
+        else
+          dbms_output.put_line('----------------Exists price plan start!----------------');
+          SELECT PP.PRICE_PLAN_ID,
+                 PP.PRICE_PLAN_NAME,
+                 PP.STATE,
+                 PPV.PRICE_PLAN_VER_ID,
+                 PPV.STATE,
+                 PPM.PRICE_SET_ID
+            INTO P_PP_ID,
+                 v_PricePlan_Name,
+                 v_PricePlan_State,
+                 v_PP_Ver,
+                 v_PricePlanVer_State,
+                 v_PriceSet_Id
+            FROM PRICE_PLAN        PP,
+                 PRICE_PLAN_VER    PPV,
+                 PRICE_PLAN_MEMBER PPM,
+                 PRICE_SET         PS
+           WHERE pp.Price_Plan_Code = P_PP_CODE
+             AND PP.PRICE_PLAN_ID = PPV.PRICE_PLAN_ID
+             AND PPV.PRICE_PLAN_VER_ID = PPM.PRICE_PLAN_VER_ID
+             AND PPM.PRICE_SET_ID = PS.PRICE_SET_ID;
+          dbms_output.put_line('++++price_plan_id:' || P_PP_ID || ',price_plan_name' || P_PP_NAME);
+
+          --UPDATE price plan name
+          if v_PricePlan_Name != P_PP_NAME then
+            update price_plan pp
+               set pp.price_plan_name = P_PP_NAME
+             WHERE pp.price_plan_code = P_PP_CODE;
+            dbms_output.put_line('++++modify price plan name, old:' || v_PricePlan_Name || ', new:' || P_PP_NAME);
+          end if;
+
+          --UPDATE PRICE_PLAN PP SET PP.PRICE_PLAN_CODE = 'PP_'||P_PP_CODE WHERE PP.PRICE_PLAN_CODE = P_PP_CODE;
+
+          --update price plan vesion state
+          if v_PricePlanVer_State != 'D' then
+            update price_plan_ver ppv
+               set ppv.state = 'D'
+             WHERE ppv.price_plan_ver_id = v_PP_Ver;
+          end if;
+          --update price plan state
+          IF v_PricePlan_State != 'B' THEN
+            update price_plan pp
+               set pp.state = 'B'
+             WHERE pp.price_plan_id = P_PP_ID;
+          END IF;
+          dbms_output.put_line('----------------Exists price plan end!------------------');
+        end if;
+      end;
+
+create_list:
+
+    DC_PROC_ADD_ACCT_RES:
+        - MSH_PROC
+        - V20200410
+        - procedure
+    DC_PROC_ADD_ACCT_ITEM:
+        - MSH_PROC
+        - V20200414
+        - procedure
+    DC_PROC_ADD_CON_RES:
+      - MSH_PROC
+      - V20200414
+      - procedure
+    DC_PROC_ADD_PP:
+      - MSH_PROC
+      - V20200415
+      - procedure

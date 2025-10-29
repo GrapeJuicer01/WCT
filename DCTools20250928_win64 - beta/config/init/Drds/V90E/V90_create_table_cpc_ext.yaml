@@ -1,0 +1,64 @@
+create:
+  DC_CONFIG_BRAND:
+    - |
+      create table DC_CONFIG_BRAND
+      (
+        BRAND_CODE      varchar(30) comment 'Brand Name:Required',
+        BRAND_NAME      varchar(250) comment 'Using Brand Id as Default',
+        BRAND_ID        varchar(16) comment 'Brand Id:Required;Number Only',
+        BRAND_TYPE      varchar(10) comment 'Brand Type:Required',
+        BRAND_DESC      varchar(4000) comment 'Brand Id:Required;Number Only',
+        PARENT_BRAND_NAME varchar(16) comment 'Parent Brand Name:Required for child brand',
+        PRIORITY        varchar(16) comment 'Brand Priority:Number Only'
+      )comment = 'Brand Basic info'
+
+  DC_CONFIG_CATALOG_ITEM:
+    - |
+      create table DC_CONFIG_CATALOG_ITEM
+      (
+        CATALOG_ITEM_ID varchar(16) comment 'Catalog Item Id:Required;Number Only',
+        CATALOG_NAME    varchar(300) comment 'Catalog Name:Required',
+        PARENT_CATALOG_ITEM_ID varchar(16) comment 'Parent Catalog Id:Use Root Catalog when null;Data from catalog_item.catalog_item_id',
+        ROOT_CATALOG_NAME varchar(300) comment 'Root Catalog Name:Required',
+        CATALOG_CODE    varchar(30) comment 'Catalog Code:Required;Number Only',
+        CATALOG_DESC    varchar(250) comment 'DESCRIPTION:Required'
+      )comment = 'Catalog Information'
+
+  DC_CONFIG_OFFER_REL_ROLE:
+    - |
+      create table DC_CONFIG_OFFER_REL_ROLE
+      (
+        OFFER_REL_ROLE_ID varchar(16),
+        OFFER_REL_ROLE_CODE varchar(30) comment 'Role Code:Required',
+        OFFER_REL_ROLE_NAME    varchar(50) comment  'Role Name:Required',
+        PARENT_OFFER_ROLE_ID varchar(16) comment  'Parent Offer Role Id:null for root role;Data from offer_rel_role.offer_rel_role_id',
+        APPLICABLE_AREA  varchar(300) comment  'Applicable area:Optional;Default value is "Default Area"',
+        MAX_NUM    varchar(9) comment  'Max Num:Upper Limit;Maximum of offers in this role for optional dependant;Required;',
+        MIN_NUM    varchar(9) comment  'Min Num:Lower Limit;Minimum of offers in this role for optional dependant;Required;'
+      )comment = 'Offer Relation Role'
+
+create_list:
+  DC_CONFIG_BRAND:
+    - CPC_EXT
+    - V20190624
+    - table
+
+  DC_CONFIG_CATALOG_ITEM:
+    - CPC_EXT
+    - V20190904
+    - table
+    - VALUE_LIST:
+        ROOT_CATALOG_NAME:
+          TYPE: sql
+          SOURCE: |
+            select concat(catalog_name , '(' , t2.attr_value_name , ')')
+              from cpc.catalog t1
+              left join cpc.attr_value t2
+                on t2.attr_id = 800052286
+               and t1.catalog_type = t2.attr_value
+               and t2.status_cd = '1000'
+
+  DC_CONFIG_OFFER_REL_ROLE:
+    - CPC_EXT
+    - V20191121
+    - table

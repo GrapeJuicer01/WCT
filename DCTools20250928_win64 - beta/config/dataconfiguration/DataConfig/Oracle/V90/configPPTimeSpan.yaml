@@ -1,0 +1,17 @@
+PricePlanTimeSpan:
+  dst_table:
+    - cpc.time_span
+    - cpc.time_span_detail
+
+  mid_table:
+    - dc_config_timespan
+
+  insert_time_span:
+    - |
+      insert into cpc.time_span (time_span_id,time_span_code,time_span_name,comments,sp_id)
+      select distinct m_time_span_id,null,m_time_span_name,null,null from DC_CONFIG_TIMESPAN
+  insert_time_span_detail:
+    - |
+      insert into cpc.time_span_detail (time_span_detail_id,time_span_id,seq,cycle_begin_date,cycle_unit,time_unit,duration)
+      select time_span_detail_seq.nextval,m_time_span_id,nvl(O_SEQ,1),to_date(m_cycle_begin_date,'yyyy-mm-dd hh24-mi-ss'),M_CYCLE_UNIT,m_time_unit,
+      to_number(nvl(O_DURATION_H,0)*3600)+to_number(nvl(O_DURATION_M,0)*60)+to_number(nvl(O_DURATION_S,0)) from DC_CONFIG_TIMESPAN

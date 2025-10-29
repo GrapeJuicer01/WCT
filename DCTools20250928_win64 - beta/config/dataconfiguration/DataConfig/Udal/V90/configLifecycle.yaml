@@ -1,0 +1,353 @@
+param_list:
+  Lifecycle:
+    default_create_user:
+      3044336
+    default_create_date:
+      now()
+
+Lifecycle:
+  dst_table:
+    - coc.cc_lifecycle_reminder
+    - coc.cc_lifecycle_apply
+    - coc.cc_lifecycle_event_subs
+    - coc.cc_lifecycle_state_convert
+    - coc.cc_lifecycle
+
+  mid_table:
+    - DC_CONFIG_LIFECYCLE_CONVERSION
+    - DC_CONFIG_LIFECYCLE_NOFITY
+    - DC_CONFIG_LIFECYCLE_OFFER_REL
+
+  insert_DC_CONFIG_LIFECYCLE_CONVERSION:
+    - |
+      insert into ${lifecycle_list}
+        select max_cnt as lifecycle_id,
+               t1.lifecycle_name,
+               null as flow_layout,
+               'Y',
+               'A',
+               %(default_create_user)s,
+               %(default_create_date)s,
+               3044336 ,
+               now()
+          from (select lifecycle_name
+                  from DC_CONFIG_LIFECYCLE_CONVERSION
+                 group by lifecycle_name) t1
+          left join (select IFNULL(MAX(lifecycle_id),0) max_cnt from cc_lifecycle) t2
+            on 1 = 1
+          left join cc_lifecycle t3
+            on t1.lifecycle_name = t3.lifecycle_name
+         where t3.lifecycle_id is null
+
+    - |
+      exec_py: FuncScript.add_rownum(source_data = ${lifecycle_list}, field_list = [0])
+
+    - |
+      insert into cc_lifecycle
+        (lifecycle_id,
+         lifecycle_name,
+         flow_layout,
+         is_product,
+         state,
+         created_by,
+         created_date,
+         update_by,
+         update_date)
+      from param ${lifecycle_list}
+
+    - |
+      insert into ${lifecycle_state_list}
+        select t3.max_cnt,
+               t2.lifecycle_id,
+               t4.convert_type,
+               t5.clear_bal_mode,
+               'N',
+               t6.service_offer_id,
+               t1.time_unit,
+               t1.time_type
+          from (select t1.lifecycle_name,
+                       t1.convert_type,
+                       t1.clear_bal_mode,
+                       t1.trigger_event,
+                       REPLACE(t1.elapsed_time, t2.key_name,'') time_unit,
+                       t2.key_value time_type
+                  from DC_CONFIG_LIFECYCLE_CONVERSION t1
+                  left join DC_DIM_COC_DICT t2
+                    ON t1.elapsed_time LIKE  CONCAT('%%',t2.key_name)
+                   and t2.dict_name = 'LIFECYCLE TIME UNIT'
+                 group by t1.lifecycle_name,
+                          t1.convert_type,
+                          t1.clear_bal_mode,
+                          t1.trigger_event,
+                          REPLACE(t1.elapsed_time, t2.key_name,''),
+                          t2.key_value) t1
+         inner join cc_lifecycle t2
+            on t1.lifecycle_name = t2.lifecycle_name
+          left join (select IFNULL(MAX(convert_id),0) max_cnt
+                       from cc_lifecycle_state_convert) t3
+            on 1 = 1
+          left join (select t1.convert_type,
+                            t1.auto_flag,
+                            concat(trim(t2.attr_value_name), '-',trim(t3.attr_value_name)) convert_type_name
+                       from cc_state_convert_type t1
+                       left join attr_value t2
+                         on t2.attr_id = 800052302
+                        and t2.status_cd = '1000'
+                        and t1.src_prod_state = t2.attr_value
+                       left join attr_value t3
+                         on t3.attr_id = 800052302
+                        and t3.status_cd = '1000'
+                        and t1.obj_prod_state = t3.attr_value) t4
+            on t4.convert_type_name = t1.convert_type
+          left join cc_clear_bal_mode t5
+            on t1.clear_bal_mode = t5.clear_bal_mode
+          left join service_offer t6
+            on t1.trigger_event = t6.service_offer_name
+          left join cc_lifecycle_state_convert t7
+            on t2.lifecycle_id = t7.lifecycle_id
+           and t4.convert_type = t7.convert_type
+           and t6.service_offer_id = t7.trigger_event_id
+           and t1.time_unit = t7.elapsed_day
+           and t1.time_type=t7.time_unit_type
+         where t7.convert_id is null
+           and t4.auto_flag = 'N'
+
+    - |
+      exec_py: FuncScript.add_rownum(source_data = ${lifecycle_state_list}, field_list = [0])
+
+    - |
+      insert into cc_lifecycle_state_convert
+        (convert_id,
+         lifecycle_id,
+         convert_type,
+         clear_bal_mode,
+         all_subs_flag,
+         trigger_event_id,
+         elapsed_day,
+         time_unit_type)
+        from param ${lifecycle_state_list}
+
+    - |
+      insert into cc_lifecycle_event_subs
+        (convert_id, target_subs_id)
+        select t7.convert_id, IFNULL(t9.target_subs_id,t8.target_subs_id)
+          from DC_CONFIG_LIFECYCLE_CONVERSION t1
+         inner join cc_lifecycle t2
+            on t1.lifecycle_name = t2.lifecycle_name
+         inner join DC_DIM_COC_DICT t3
+            on t1.elapsed_time LIKE  CONCAT('%%',t3.key_name)
+           and t3.dict_name = 'LIFECYCLE TIME UNIT'
+          left join (select t1.convert_type,
+                            concat(trim(t2.attr_value_name), '-',trim(t3.attr_value_name)) convert_type_name
+                       from cc_state_convert_type t1
+                       left join attr_value t2
+                         on t2.attr_id = 800052302
+                        and t2.status_cd = '1000'
+                        and t1.src_prod_state = t2.attr_value
+                       left join attr_value t3
+                         on t3.attr_id = 800052302
+                        and t3.status_cd = '1000'
+                        and t1.obj_prod_state = t3.attr_value) t4
+            on t4.convert_type_name = t1.convert_type
+          left join service_offer t6
+            on t1.trigger_event = t6.service_offer_name
+         inner join cc_lifecycle_state_convert t7
+            on t2.lifecycle_id = t7.lifecycle_id
+           and t4.convert_type = t7.convert_type
+           and t6.service_offer_id = t7.trigger_event_id
+           and REPLACE(t1.elapsed_time, t3.key_name,'') = t7.elapsed_day
+           and t3.key_value=t7.time_unit_type
+          left join cc_lifecycle_target_subs t8
+            on t1.target_subs = t8.target_subs_name
+          left join (select t1.target_subs_id,
+                            trim(t3.attr_value_name) block_reason
+                       from cc_lifecycle_target_subs t1
+                       left join cc_lifecycle_target_input t2
+                         on t1.target_subs_id = t2.target_subs_id
+                        and t2.data_type = 'S'
+                       left join attr_value t3
+                         on t2.default_value = t3.attr_value
+                        and t3.attr_id = 992001414
+                        and t3.status_cd = '1000') t9
+            on t1.block_reason = t9.block_reason
+          left join cc_lifecycle_event_subs t10
+            on t7.convert_id = t10.convert_id
+           and IFNULL(t9.target_subs_id,t8.target_subs_id) = t10.target_subs_id
+         where t10.convert_id is null
+           and IFNULL(t9.target_subs_id,t8.target_subs_id) is not null
+
+  insert_DC_CONFIG_LIFECYCLE_NOFITY:
+    - |
+      insert into ${lifecycle_reminder_list}
+        select max_cnt , t7.convert_id, t1.reminder_flow_id, t1.prior_day
+          from DC_CONFIG_LIFECYCLE_NOFITY t1
+         inner join cc_lifecycle t2
+            on t1.lifecycle_name = t2.lifecycle_name
+          left join (select IFNULL(max(reminder_id),0) max_cnt from cc_lifecycle_reminder) t8
+            on 1 = 1
+         inner join DC_DIM_COC_DICT t3
+            on t1.elapsed_time LIKE  CONCAT('%%',t3.key_name)
+           and t3.dict_name = 'LIFECYCLE TIME UNIT'
+          left join (select t1.convert_type,
+                            concat(trim(t2.attr_value_name), '-',trim(t3.attr_value_name)) convert_type_name
+                       from cc_state_convert_type t1
+                       left join attr_value t2
+                         on t2.attr_id = 800052302
+                        and t2.status_cd = '1000'
+                        and t1.src_prod_state = t2.attr_value
+                       left join attr_value t3
+                         on t3.attr_id = 800052302
+                        and t3.status_cd = '1000'
+                        and t1.obj_prod_state = t3.attr_value) t4
+            on t4.convert_type_name = t1.convert_type
+          left join service_offer t6
+            on t1.trigger_event = t6.service_offer_name
+         inner join cc_lifecycle_state_convert t7
+            on t2.lifecycle_id = t7.lifecycle_id
+           and t4.convert_type = t7.convert_type
+           and t6.service_offer_id = t7.trigger_event_id
+           and REPLACE(t1.elapsed_time, t3.key_name,'') = t7.elapsed_day
+           and t3.key_value=t7.time_unit_type
+          left join cc_lifecycle_reminder t9
+            on t7.convert_id = t9.convert_id
+           and t1.reminder_flow_id = t9.reminder_flow_id
+         where t9.reminder_id is null
+
+    - |
+      exec_py: FuncScript.add_rownum(source_data = ${lifecycle_reminder_list}, field_list = [0])
+
+    - |
+      insert into cc_lifecycle_reminder
+        (reminder_id, convert_id, reminder_flow_id, prior_day)
+      from param ${lifecycle_reminder_list}
+
+  insert_DC_CONFIG_LIFECYCLE_OFFER_REL:
+    - |
+      insert into cc_lifecycle_apply
+        (offer_id, lifecycle_id, created_by, created_date)
+        select t2.offer_id, t3.lifecycle_id, %(default_create_user)s, %(default_create_date)s
+          from dc_config_lifecycle_offer_rel t1
+         inner join offer t2
+            on t1.offer_name = t2.offer_name
+         inner join cc_lifecycle t3
+            on t1.lifecycle_name = t3.lifecycle_name
+          left join cc_lifecycle_apply t4
+            on t2.offer_id = t4.offer_id
+         where t4.offer_id is null
+
+  update_lifecycle_layout:
+    - |
+      delete from DC_TMP_LIFECYCLE_ELEMENT_INFO where 1=1
+    - |
+      INSERT INTO DC_TMP_LIFECYCLE_ELEMENT_INFO(LIFECYCLE_ID, ELEMENT_TYPE, STATUS_CD, SID)
+      SELECT
+        t2.lifecycle_id,
+        1,
+        status_cd,
+        UUID() as sid
+      FROM
+        (SELECT
+          t1.lifecycle_name,
+          t2.attr_value status_cd
+        FROM
+          dc_config_lifecycle_conversion t1
+          LEFT JOIN attr_value t2
+            ON SUBSTR(
+              t1.convert_type,
+              1,
+              INSTR(t1.convert_type, '-') - 1
+            ) = TRIM(attr_value_name)
+            AND t2.attr_id = 800052302
+            AND t2.status_cd = '1000'
+        UNION
+        SELECT
+          t1.lifecycle_name,
+          t2.attr_value status_cd
+        FROM
+          dc_config_lifecycle_conversion t1
+          LEFT JOIN attr_value t2
+            ON SUBSTR(
+              t1.convert_type,
+              INSTR(t1.convert_type, '-') + 1
+            ) = TRIM(attr_value_name)
+            AND t2.attr_id = 800052302
+            AND t2.status_cd = '1000') t1
+        INNER JOIN cc_lifecycle t2
+          ON t1.lifecycle_name = t2.lifecycle_name
+        INNER JOIN
+          (SELECT
+            LIFECYCLE_NAME
+          FROM
+            DC_CONFIG_LIFECYCLE_CONVERSION
+          GROUP BY LIFECYCLE_NAME) t3
+          ON t3.lifecycle_name = t2.lifecycle_name
+    - |
+      insert into ${lifecycle_node_list}
+        SELECT
+          t1.lifecycle_id,
+          t1.status_cd,
+          t1.sid node_id,
+          t2.node_order,
+          t2.state_name node_text,
+          t2.node_color node_color,
+          null as point_info,
+          null as node_string
+        FROM DC_TMP_LIFECYCLE_ELEMENT_INFO t1
+        INNER JOIN DC_DIM_LIFECYCLE_PROD_STATE t2
+          ON t1.status_cd = t2.state_code
+        ORDER BY t1.lifecycle_id, t2.node_order
+
+    - |
+      insert into ${lifecycle_state_convert_list}
+        SELECT
+          t1.lifecycle_id,
+          t1.convert_type,
+          t1.src_prod_state,
+          t3.state_name fromStateName,
+          t1.obj_prod_state,
+          t4.state_name toStateName,
+          t1.auto_flag
+        FROM
+          (SELECT
+            t2.lifecycle_id,
+            t4.convert_type,
+            t4.src_prod_state,
+            t4.obj_prod_state,
+            t4.auto_flag
+          FROM
+            dc_config_lifecycle_conversion t1
+            INNER JOIN cc_lifecycle t2
+              ON t1.lifecycle_name = t2.lifecycle_name
+            INNER JOIN
+              (SELECT
+                t1.convert_type,
+                t1.src_prod_state,
+                t1.obj_prod_state,
+                t1.auto_flag,
+                CONCAT(TRIM(t2.attr_value_name),'-',TRIM(t3.attr_value_name)) convert_type_name
+              FROM
+                cc_state_convert_type t1
+                LEFT JOIN attr_value t2
+                  ON t2.attr_id = 800052302
+                  AND t2.status_cd = '1000'
+                  AND t1.src_prod_state = t2.attr_value
+                LEFT JOIN attr_value t3
+                  ON t3.attr_id = 800052302
+                  AND t3.status_cd = '1000'
+                  AND t1.obj_prod_state = t3.attr_value) t4
+              ON t4.convert_type_name = t1.convert_type
+          GROUP BY t2.lifecycle_id,
+            t4.convert_type,
+            t4.src_prod_state,
+            t4.obj_prod_state,
+            t4.auto_flag) t1
+          INNER JOIN DC_DIM_LIFECYCLE_PROD_STATE t3
+            ON t1.src_prod_state = t3.state_code
+          INNER JOIN DC_DIM_LIFECYCLE_PROD_STATE t4
+            ON t1.obj_prod_state = t4.state_code
+
+    - |
+      exec_py: FuncScript.set_node_info(element_info=${lifecycle_node_list}, state_convert_info=${lifecycle_state_convert_list})
+
+    - |
+      update cc_lifecycle set flow_layout=${flow_layout} from param ${lifecycle_layout_list} where lifecycle_id = ${lifecycle_id}

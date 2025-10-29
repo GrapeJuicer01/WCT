@@ -1,0 +1,115 @@
+param_list:
+  OfferExt:
+    default_create_user:
+      3044336
+    default_create_date:
+      now()
+    default_status_cd:
+      "'1000'"
+    default_apply_region_id:
+      731
+
+OfferExt:
+  dst_table:
+    - brand
+    - catalog_item
+    - offer_rel_role
+
+  mid_table:
+    - DC_CONFIG_BRAND
+    - DC_CONFIG_CATALOG_ITEM
+    - DC_CONFIG_OFFER_REL_ROLE
+
+  insert_DC_CONFIG_BRAND:
+    - |
+      insert into cpc.brand
+        (brand_id,
+         brand_code,
+         brand_type,
+         brand_name,
+         create_date,
+         priority_value,
+         parent_brand_id,
+         status_cd,
+         brand_desc)
+        select t1.brand_id,
+               IFNULL(t1.brand_code,t1.brand_id),
+               t1.brand_type,
+               t1.brand_name,
+               %(default_create_date)s,
+               IFNULL(t1.priority,total_cnt+1),
+               1,
+               %(default_status_cd)s,
+               t1.brand_desc
+          from dc_config_brand t1
+          left join cpc.brand t2
+            on t1.brand_id = t2.brand_id
+            or t1.brand_name = t2.brand_name
+          left join (select count(*) total_cnt from cpc.brand) t3 on 1=1
+         where t2.brand_code is null
+
+  insert_DC_CONFIG_CATALOG_ITEM:
+    - |
+      insert into cpc.catalog_item
+        (catalog_item_id,
+         catalog_id,
+         catalog_item_name,
+         par_catalog_item_id,
+         catalog_item_desc,
+         catalog_item_type,
+         catalog_item_nbr,
+         catalog_item_sort,
+         status_cd,
+         create_staff,
+         create_date,
+         remark)
+        select t1.catalog_item_id,
+               t2.catalog_id,
+               t1.catalog_name,
+               IF(t1.parent_catalog_item_id='',-1,t1.parent_catalog_item_id),
+               t1.catalog_desc,
+               t2.catalog_type,
+               t1.catalog_code,
+               0,
+               %(default_status_cd)s,
+               %(default_create_user)s,
+               %(default_create_date)s,
+               'DCTools Add'
+          from DC_CONFIG_CATALOG_ITEM t1
+         inner join cpc.catalog t2
+            on t1.ROOT_CATALOG_NAME = t2.catalog_name
+          left join cpc.catalog_item t3
+            on t1.catalog_item_id = t3.catalog_item_id
+         where t3.catalog_item_id is null
+
+  insert_DC_CONFIG_OFFER_REL_ROLE:
+    - |
+      insert into cpc.offer_rel_role
+        (role_id,
+         role_name,
+         role_cd,
+         max_num,
+         min_num,
+         manage_region_id,
+         status_cd,
+         create_staff,
+         create_date,
+         par_role_id,
+         remark)
+        select t1.OFFER_REL_ROLE_ID,
+               t1.OFFER_REL_ROLE_NAME,
+               t1.OFFER_REL_ROLE_CODE,
+               t1.max_num,
+               t1.min_num,
+               IFNULL(t2.common_region_id,%(default_apply_region_id)s),
+               %(default_status_cd)s,
+               %(default_create_user)s,
+               %(default_create_date)s,
+               IF(t1.PARENT_OFFER_ROLE_ID='',-1,t1.PARENT_OFFER_ROLE_ID),
+               'DCTools Add'
+        from DC_CONFIG_OFFER_REL_ROLE t1
+        left join cpc.common_region t2
+          on t1.APPLICABLE_AREA = t2.region_name
+        left join cpc.offer_rel_role t3
+          on t1.OFFER_REL_ROLE_ID = t3.role_id
+        where t3.role_id is null

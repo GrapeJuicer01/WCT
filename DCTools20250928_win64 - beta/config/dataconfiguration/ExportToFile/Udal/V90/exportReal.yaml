@@ -1,0 +1,14 @@
+UserList:
+  cpc
+
+CPC:
+  14.Product Attr:
+    "SELECT  DISTINCT a.prod_attr_id, b.prod_id,b.prod_name,a.attr_id,c.attr_name ,a.default_value
+      FROM cpc.prod_attr  a,cpc.product b,cpc.attr_spec c
+      WHERE a.prod_id= b.prod_id  AND a.attr_id=c.attr_id"
+
+  18.Offer Attr:
+    "SELECT o.offer_id,o.offer_name,tt1.attr_id,tt1.attr_name, tt1.default_value,tt2.attr_value_name
+      FROM cpc.offer_ext_attr tt1, cpc.Offer o ,cpc.attr_value tt2
+      WHERE o.offer_id=tt1.offer_id  AND tt1.attr_id=tt2.attr_id(+)  AND tt1.default_value=tt2.attr_value(+)
+      ORDER BY o.offer_id "

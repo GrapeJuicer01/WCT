@@ -1,0 +1,8 @@
+UserList:
+  balc
+
+BoBNeed:
+  01_BALC.BC_TRANS_TYPE:
+    "select * from BC_TRANS_TYPE"
+  02_BALC.BC_ACCT_BOOK_TYPE:
+    "select * from BC_ACCT_BOOK_TYPE"

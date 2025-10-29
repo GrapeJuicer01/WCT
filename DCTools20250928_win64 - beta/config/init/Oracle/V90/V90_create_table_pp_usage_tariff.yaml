@@ -1,0 +1,84 @@
+create:
+    DC_CONFIG_PP_Usage_Tariff:
+        - |
+            create table DC_CONFIG_PP_Usage_Tariff
+              (
+                price_plan_id number(10),
+                price_plan_name VARCHAR2(512) not null,
+                re_id           NUMBER(9) not null,
+                re_name         VARCHAR2(200),
+                zone_map_name    VARCHAR2(200),
+                zone_name       VARCHAR2(200),
+                featur          VARCHAR2(30),
+                connect_type    CHAR(1),
+                price           varchar2(20) not null,
+                precision       number(9) not null,
+                unit            VARCHAR2(3) not null,
+                pulse           number(10),
+                con_res_id      NUMBER(9) not null,
+                bal_source_type NUMBER(3) not null,
+                con_res_name    VARCHAR2(255)
+              )
+        - comment on table DC_CONFIG_PP_Usage_Tariff is  'The usage tariff of price plan'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.price_plan_id is 'the price plan id ,can be null'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.price_plan_name is 'the price plan name'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.re_id is 'the re id of usage event'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.re_name is 'the event name'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.zone_map_name is  'if the price plan is mapping price,need to fill the specific zone map name of the zone map'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.zone_name is  'if the price plan is mapping price,need to fill the specific zone name'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.featur is  'if the price plan is mapping price,need to fill the specific event feature name'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.connect_type is  'when voice tariff,the connect type should be:Y or N, which means the this tariff is set up fee,can be null, defualt value N'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.price is  'the tariff of this price plan'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.precision is  'the precision of main balance price, input:8 means 8 digit precision,default value 8.If deduct benefit balance, the precision will be 1'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.unit is  'the unit of this tariff, can be:occ(occurrence),min(minute),mb(megabyte),con(connection)'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.pulse is  'the minimum of charging step when bal source type is 1, when unit is min,default value 1s, when unit is mb,defualt value 10240 bytes. when unit is con or occ not work, when bal source type is 4 default value not work '
+        - comment on column DC_CONFIG_PP_Usage_Tariff.con_res_id is  'the consume id of consume type name'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.bal_source_type is  'the balance source type of consume type name,1:Basic Balance;4:Non Currency Balance'
+        - comment on column DC_CONFIG_PP_Usage_Tariff.con_res_name is  'the consume type name '
+
+    DC_CONFIG_PP_Usage_Tariff_LOG:
+        - |
+            create table DC_CONFIG_PP_Usage_Tariff_LOG
+            (
+              price_plan_id number(10),
+              price_plan_name VARCHAR2(512),
+              re_id           NUMBER(9) not null,
+              re_name         VARCHAR2(200) not null,
+              zone_map_name   VARCHAR2(200),
+              zone_name       VARCHAR2(200),
+              featur          CHAR(30),
+              connect_type    CHAR(1),
+              price           VARCHAR2(20),
+              precision       number(9) not null,
+              unit            VARCHAR2(3),
+              pulse           number(10),
+              con_res_id      NUMBER(9) not null,
+              bal_source_type NUMBER(3),
+              con_res_name    VARCHAR2(255) not null,
+              loginfo         VARCHAR2(200),
+              fix_sql         VARCHAR2(1000)
+            )
+        - comment on table DC_CONFIG_PP_Usage_Tariff_LOG is  'this table no need to fill ,keep it blank,this table records the error data when inserting data from DC_CONFIG_PP_Usage_Tariff'
+        - comment on column DC_CONFIG_PP_Usage_Tariff_LOG.loginfo is 'the error information description'
+        - comment on column DC_CONFIG_PP_Usage_Tariff_LOG.fix_sql is  'the fix sql of this error record'
+
+create_list:
+    DC_CONFIG_PP_Usage_Tariff:
+        - PP_USAGE_TARIFF
+        - V20190515
+        - TABLE
+        - VALUE_LIST:
+            CONNECT_TYPE:
+                TYPE: list
+                SOURCE: Y,N
+            UNIT:
+                TYPE: list
+                SOURCE: occ,min,mb,con
+            BAL_SOURCE_TYPE:
+                TYPE: list
+                SOURCE: 1,4
+
+    DC_CONFIG_PP_Usage_Tariff_LOG:
+        - PP_USAGE_TARIFF
+        - V20190515
+        - TABLE

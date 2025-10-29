@@ -1,0 +1,136 @@
+create:
+    DC_OFFER_GROUP_MEM_DEF:
+        - |
+            create table DC_OFFER_GROUP_MEM_DEF
+            (
+                offer_group_name       VARCHAR2(255),
+            	offer_id               number(16),
+            	default_flag           varchar2(4),
+            	remark                 VARCHAR2(64)
+            )
+
+    DC_OFFER_CATG_MEM_DEF:
+        - |
+            create table DC_OFFER_CATG_MEM_DEF
+            (
+                offer_catg_name        VARCHAR2(255),
+                offer_catg_class       VARCHAR2(64),
+            	offer_id               number(16),
+            	EFF_DATE               VARCHAR2(64),
+            	EXP_DATE               VARCHAR2(64),
+            	remark                 VARCHAR2(64)
+            )
+
+    DC_OFFER_PACKAGE_DEF:
+        - |
+            create table DC_OFFER_PACKAGE_DEF
+            (
+                offer_package_id       number(16),
+            	mem_offer_id           number(16),
+            	default_flag           varchar2(4),
+            	remark                 VARCHAR2(64)
+            )
+
+    DC_OFFER_RELA_DEF:
+        - |
+            create table DC_OFFER_RELA_DEF
+            (
+                ori_offer_id        number(16),
+            	dest_offer_id       number(16),
+            	ori_offer_group_id  number(16),
+            	dest_offer_group_id number(16),
+            	rela_type           varchar2(64),
+            	remark              VARCHAR2(64)
+            )
+
+    DC_SUBSPLAN_OFFERGROUP_REL_DEF:
+        - |
+            create table DC_SUBSPLAN_OFFERGROUP_REL_DEF
+            (
+                subs_plan_id           number(16),
+            	offer_group_name       varchar2(64),
+            	isNecessary            varchar2(4),
+            	seq                    number(8),
+            	remark                 VARCHAR2(64)
+            )
+
+    DC_OFFER_SALE_CONSTRAINT_DEF:
+        - |
+            create table DC_OFFER_SALE_CONSTRAINT_DEF
+            (
+                constraint_type        varchar2(16),
+                offer_id               number(16),
+            	constraint_name        varchar2(64),
+            	remark                 VARCHAR2(64)
+            )
+
+    DC_OFFER_ATTR_DEF:
+        - |
+            create table DC_OFFER_ATTR_DEF
+            (
+            	subs_plan_id    number(16),
+            	offer_id        number(16),
+            	attr_code       VARCHAR2(64),
+            	default_value   VARCHAR2(4000),
+            	remark   VARCHAR2(64)
+            )
+
+create_list:
+    DC_OFFER_GROUP_MEM_DEF:
+        - OBJECT_RELA
+        - V0001
+        - table
+        - VALUE_LIST:
+            DEFAULT_FLAG:
+                TYPE: list
+                SOURCE: Y,N
+
+    DC_OFFER_CATG_MEM_DEF:
+        - OBJECT_RELA
+        - V0001
+        - table
+        - VALUE_LIST:
+            OFFER_CATG_CLASS:
+                TYPE: list
+                SOURCE: Sales Catalog,Management Catalog
+
+    DC_OFFER_PACKAGE_DEF:
+        - OBJECT_RELA
+        - V0001
+        - table
+        - VALUE_LIST:
+            DEFAULT_FLAG:
+                TYPE: list
+                SOURCE: Y,N
+
+    DC_OFFER_RELA_DEF:
+        - OBJECT_RELA
+        - V0001
+        - table
+        - VALUE_LIST:
+            RELA_TYPE:
+                TYPE: sql
+                SOURCE: select rela_type_name from rela_type
+
+    DC_SUBSPLAN_OFFERGROUP_REL_DEF:
+        - OBJECT_RELA
+        - V0001
+        - table
+        - VALUE_LIST:
+            ISNECESSARY:
+                TYPE: list
+                SOURCE: Y,N
+
+    DC_OFFER_SALE_CONSTRAINT_DEF:
+        - OBJECT_RELA
+        - V0001
+        - table
+        - VALUE_LIST:
+            CONSTRAINT_TYPE:
+                TYPE: list
+                SOURCE: SALE_AREA,SALE_CATG,SALE_CHANNEL,SALE_ORG,SALE_STAFF
+
+    DC_OFFER_ATTR_DEF:
+        - OBJECT_RELA
+        - V0001
+        - table

@@ -1,0 +1,383 @@
+create:
+  DC_BILL_CATG:
+    - |
+      create table DC_BILL_CATG
+      (
+        catg_name VARCHAR2(60),
+        parent_catg_name         VARCHAR2(60)
+      )
+    - comment on table DC_BILL_CATG is 'Product and Offer Caralog Information'
+
+  DC_CONFIG_PROD_BASIC_INFO:
+    - |
+      create table DC_CONFIG_PROD_BASIC_INFO
+      (
+          OLD_PROD_ID VARCHAR2(9),
+          NEW_PROD_ID VARCHAR2(9),
+          PROD_NAME VARCHAR2(255),
+          PROD_CODE VARCHAR2(30),
+          PROD_TYPE varchar(60),
+          NETWORK_TYPE  char,
+          SERV_TYPE  varchar(60),
+          PARENT_PROD_NAME VARCHAR2(255),
+          SERV_NUM_TYPE varchar(60),
+          CATALOG_NAME VARCHAR2(50),
+          REMARK VARCHAR2(2000)
+      )
+    - comment on table DC_CONFIG_PROD_BASIC_INFO is  'Product Basic Information'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.OLD_PROD_ID is  'Old Product Id:Product id in old system'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.NEW_PROD_ID is  'Product Id:Required;Number only'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.PROD_NAME is  'Product Name:Required'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.PROD_CODE is  'Product Code:Using Prod Id as Default'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.PROD_TYPE is  'Product Type:Main Product,Related Produnt'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.NETWORK_TYPE is  'Network Type:Define the PSTN/CDMA/GSM etc. network'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.SERV_TYPE is  'Service Type:Define the detail of Service, PSTN/IMS/GSM/CDMA. etc Service'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.PARENT_PROD_NAME is  'Parent Product Name'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.SERV_NUM_TYPE is  'Service Number Type:Virtual Service Number,Real Service Number'
+    - comment on column DC_CONFIG_PROD_BASIC_INFO.CATALOG_NAME is  'Catalog:Data from cpc.catalog_item.catalog_name'
+
+  DC_CONFIG_PROD_ATTRIBUTE:
+    - |
+      create table DC_CONFIG_PROD_ATTRIBUTE
+      (
+      	PROD_NAME VARCHAR2(250),
+      	ATTR_NAME VARCHAR2(60),
+      	DEFAULT_VALUE VARCHAR2(255),
+        EFF_DATE      VARCHAR2(20),
+        EXP_DATE      VARCHAR2(20)
+      )
+    - comment on table DC_CONFIG_PROD_ATTRIBUTE is  'Product Attribute'
+    - comment on column DC_CONFIG_PROD_ATTRIBUTE.PROD_NAME is  'Product Name:Required'
+    - comment on column DC_CONFIG_PROD_ATTRIBUTE.ATTR_NAME is  'Attribute Name:Required;Data from cpc.BILL_ATTR'
+    - comment on column DC_CONFIG_PROD_ATTRIBUTE.DEFAULT_VALUE is  'Attribute Default Value:Data from cpc.BILL_ATTR_VALUE.value'
+    - comment on column DC_CONFIG_PROD_ATTRIBUTE.EFF_DATE is  'Effect Date'
+    - comment on column DC_CONFIG_PROD_ATTRIBUTE.EXP_DATE is  'Expire Date'
+
+
+  DC_CONFIG_OFFER_BASIC_INFO:
+    - |
+      create table DC_CONFIG_OFFER_BASIC_INFO
+      (
+            NEW_OFFER_ID NUMBER(9),
+            OLD_OFFER_ID NUMBER(9),
+        	OFFER_NAME VARCHAR2(250),
+        	OFFER_NBR VARCHAR2(30),
+        	OFFER_TYPE VARCHAR2(50),
+            MAIN_PRODUCT_NAME VARCHAR2(255),
+            OFFER_CATEGORY VARCHAR2(50),
+            BUNDLE_FLAG CHAR,
+        	EFF_DATE VARCHAR2(20),
+        	EXP_DATE VARCHAR2(20),
+            EFF_TYPE VARCHAR2(30),
+            SALE_TYPE VARCHAR2(250),
+            GRADE           NUMBER(6),
+            SALE_LIST_PRICE VARCHAR2(30),
+            RENT_LIST_PRICE VARCHAR2(30),
+            OFFER_STATE           VARCHAR2(30),
+        	OFFER_DESC VARCHAR2(4000),
+        	CATALOG_ITEM_NAME VARCHAR2(50),
+        	PAYMENT_MODE VARCHAR2(100),
+            REMARK VARCHAR2(2000)
+      )
+    - comment on table DC_CONFIG_OFFER_BASIC_INFO is  'Offer Basic Information'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.NEW_OFFER_ID is 'Offer Id:Required'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.OLD_OFFER_ID is 'Offer Id in Previous System'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.OFFER_NAME is  'Offer Name:Required'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.OFFER_NBR is  'Offer Code:Required for offer needing privisioning'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.OFFER_TYPE is 'Main Offer/Additional Offer/Goods Offer CBEC_DOMAIN_DATA.DOMAIN_TYPE_CODE=OFFER_TYPE'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.SALE_TYPE is 'Sold Unlimitedly/Sold Separately/Sold in Bundle Offer CBEC_DOMAIN_DATA.DOMAIN_TYPE_CODE=OFFER_SALE_FLAG'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.GRADE is  'Priority'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.EFF_DATE is  'Sale Effect time'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.EXP_DATE is  'Sale Expiry time'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.OFFER_STATE is  'Offer State:"Initial","Active","Inactive" CBEC_DOMAIN_DATA.DOMAIN_TYPE_CODE=OFFER_STATE'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.CATALOG_ITEM_NAME is  'Catalog Name:Data from cpc.BILL_CATG'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.PAYMENT_MODE is  'Payment mode:CBEC_DOMAIN_DATA.DOMAIN_TYPE_CODE=PAYMENT_MODE_CD'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.OFFER_CATEGORY is  'OFFER_CATEGORY:CBEC_DOMAIN_DATA.DOMAIN_TYPE_CODE=OFFER_CATG'
+    - comment on column DC_CONFIG_OFFER_BASIC_INFO.MAIN_PRODUCT_NAME is  'Main Product:Main Offer link one Main Product'
+
+
+
+  DC_CONFIG_OFFER_ATTRIBUTE:
+    - |
+      create table DC_CONFIG_OFFER_ATTRIBUTE
+      (
+      	OFFER_NAME VARCHAR2(250),
+      	ATTR_CODE VARCHAR2(60),
+      	DEFAULT_VALUE VARCHAR2(255),
+        EFF_DATE      VARCHAR2(20),
+        EXP_DATE      VARCHAR2(20)
+      )
+    - comment on table DC_CONFIG_OFFER_ATTRIBUTE is  'Offer Attribute'
+    - comment on column DC_CONFIG_OFFER_ATTRIBUTE.OFFER_NAME is  'Offer Name:Required'
+    - comment on column DC_CONFIG_OFFER_ATTRIBUTE.ATTR_CODE is  'Attribute Code:Required;Data from cpc.BILL_ATTR'
+    - comment on column DC_CONFIG_OFFER_ATTRIBUTE.DEFAULT_VALUE is  'Attribute Default Value:Data from cpc.BILL_ATTR_VALUE.value'
+    - comment on column DC_CONFIG_OFFER_ATTRIBUTE.EFF_DATE is  'Effect Date'
+    - comment on column DC_CONFIG_OFFER_ATTRIBUTE.EXP_DATE is  'Expire Date'
+
+  DC_CONFIG_OFFER_PROD_REL:
+    - |
+      create table DC_CONFIG_OFFER_PROD_REL
+      (
+        OFFER_NAME VARCHAR2(255),
+        PROD_NAME VARCHAR2(250),
+        PROD_ALIAS VARCHAR2(30),
+        PROD_TYPE varchar(60),
+        NECESSARY  char
+      )
+    - comment on table DC_CONFIG_OFFER_PROD_REL is  'relationship between offer and product'
+    - comment on column DC_CONFIG_OFFER_PROD_REL.OFFER_NAME is  'Offer Name:Required'
+    - comment on column DC_CONFIG_OFFER_PROD_REL.PROD_NAME is  'Function/Main Product Name'
+    - comment on column DC_CONFIG_OFFER_PROD_REL.PROD_ALIAS is  'Product alias'
+    - comment on column DC_CONFIG_OFFER_PROD_REL.PROD_TYPE is  'Product Type:Main Product,Related Produnt'
+
+
+  DC_CONFIG_OFFER_PROD_ATTR_REL:
+    - |
+      create table DC_CONFIG_OFFER_PROD_ATTR_REL
+      (
+         OFFER_NAME VARCHAR2(255),
+         PROD_NAME VARCHAR2(255),
+         ATTR_NAME VARCHAR2(60),
+         ATTR_VALUE_NAME VARCHAR2(255),
+         DEFAULT_VALUE VARCHAR2(255)
+      )
+    - comment on table DC_CONFIG_OFFER_PROD_ATTR_REL is  'relationship between offer and product attribute'
+    - comment on column DC_CONFIG_OFFER_PROD_ATTR_REL.OFFER_NAME is  'Offer Name:Required'
+    - comment on column DC_CONFIG_OFFER_PROD_ATTR_REL.PROD_NAME is  'Product Name:Required;Product Name linked with in offer product relation'
+    - comment on column DC_CONFIG_OFFER_PROD_ATTR_REL.ATTR_NAME is  'Product Attribute Name:Required;linked with product name,data from cpc.attr_spec'
+    - comment on column DC_CONFIG_OFFER_PROD_ATTR_REL.ATTR_VALUE_NAME is  'Product Attribute value Name:linked with Product Attribute Name,data from cpc.attr_value'
+    - comment on column DC_CONFIG_OFFER_PROD_ATTR_REL.DEFAULT_VALUE is  'Product Attribute value Name:Required;linked with Product Attribute Name,data from cpc.attr_value'
+
+  DC_CONFIG_OFFER_GROUP:
+    - |
+      create table DC_CONFIG_OFFER_GROUP
+      (
+         OFFER_GROUP_NAME VARCHAR2(60),
+         OFFER_GROUP_TYPE VARCHAR2(60),
+         GROUP_TYPE       VARCHAR2(60),
+         UPPER_LIMIT      NUMBER(6),
+         LOWER_LIMIT      NUMBER(6),
+         COMMENTS         VARCHAR2(255)
+      )
+    - comment on table DC_CONFIG_OFFER_GROUP is  'Offer Group Information'
+    - comment on column DC_CONFIG_OFFER_GROUP.OFFER_GROUP_TYPE is  'Offer Group Type:A,Additional Offer Group;B,Goods Offer Group '
+    - comment on column DC_CONFIG_OFFER_GROUP.GROUP_TYPE is  'Group Type:A,Select All;B,Single Choice,C,Muti-Choice '
+
+  DC_CONFIG_OFFER_GROUP_MEM:
+    - |
+      create table DC_CONFIG_OFFER_GROUP_MEM
+      (
+         OFFER_GROUP_NAME VARCHAR2(60),
+         OFFER_NAME VARCHAR2(255),
+         DEFAULT_FLAG       CHAR,
+         HIDE_FLAG          CHAR
+      )
+    - comment on table DC_CONFIG_OFFER_GROUP_MEM is  'Offer Group relationship with Additional Offer'
+
+  DC_CONFIG_OFFER_GROUP_RELA:
+    - |
+      create table DC_CONFIG_OFFER_GROUP_RELA
+      (
+         OFFER_NAME VARCHAR2(255),
+         OFFER_GROUP_NAME VARCHAR2(60)
+      )
+    - comment on table DC_CONFIG_OFFER_GROUP_RELA is  'Main Offer relationship with Offer Group'
+
+
+
+  DC_CONFIG_PRICE_PLAN_BASIC_INFO:
+    - |
+      create table DC_CONFIG_PRICE_PLAN_BASIC_INFO
+      (
+        PRICE_PLAN_ID    VARCHAR2(9),
+        PRICE_PLAN_NAME  VARCHAR2(250),
+        PRICE_PLAN_CODE  VARCHAR2(60),
+        PRICE_PLAN_TYPE  VARCHAR2(50),
+        PRICE_PLAN_GENRE VARCHAR2(50),
+        APPLY_LEVEL      VARCHAR2(50),
+        PRICE_PLAN_EXIT  VARCHAR2(50),
+        EFF_DATE         VARCHAR2(20),
+        EXP_DATE         VARCHAR2(20),
+        PRIORITY         VARCHAR2(20)
+      )
+    - comment on table DC_CONFIG_PRICE_PLAN_BASIC_INFO is 'Price Plan Basic Information'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.PRICE_PLAN_NAME is 'Price Plan Name:Required'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.PRICE_PLAN_ID is 'Price Plan Id:Required'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.PRICE_PLAN_CODE is 'Price Plan Code:Using Price Plan Name as default'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.PRICE_PLAN_TYPE is 'Price Plan Type:"Global Price Plan","Individual Price Plan"'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.PRICE_PLAN_GENRE is 'Price Plan Genre:"Common","Overlap","Trigger","Acm","Bill Discount"'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.APPLY_LEVEL is 'Apply Level:"Account Level","Subscription Level"'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.PRICE_PLAN_EXIT is 'Exit Price Plan With Lower Priority'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.EFF_DATE is 'Price Plan Effect Date'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.EXP_DATE is 'Price Plan Expiry Date'
+    - comment on column DC_CONFIG_PRICE_PLAN_BASIC_INFO.PRIORITY is 'Price Plan Priority:Number Only'
+
+
+  DC_CONFIG_OFFER_PRICE_PLAN_REL:
+    - |
+      create table DC_CONFIG_OFFER_PRICE_PLAN_REL
+      (
+        OFFER_NAME       VARCHAR2(255),
+        PRICE_PLAN_NAME  VARCHAR2(400)
+      )
+    - comment on table DC_CONFIG_OFFER_PRICE_PLAN_REL is 'Relationship between Offer and Price Plan'
+    - comment on column DC_CONFIG_OFFER_PRICE_PLAN_REL.OFFER_NAME is 'Offer Name:Required'
+    - comment on column DC_CONFIG_OFFER_PRICE_PLAN_REL.PRICE_PLAN_NAME is 'Price Plan Name:Required'
+
+  DC_CONFIG_OFFER_REL:
+    - |
+      create table DC_CONFIG_OFFER_REL
+      (
+        SOURCE_OFFER_NAME VARCHAR(255) ,
+        DES_OFFER_NAME VARCHAR(255) ,
+        REL_TYPE VARCHAR(50) ,
+        OPER_TYPE CHAR(1)
+      )
+    - comment on table DC_CONFIG_OFFER_REL is 'Relationship between Offer'
+    - comment on column DC_CONFIG_OFFER_REL.SOURCE_OFFER_NAME is 'A Offer Name:Required;'
+    - comment on column DC_CONFIG_OFFER_REL.DES_OFFER_NAME is 'Z Offer Name:Required;Selected offer in offer relation'
+    - comment on column DC_CONFIG_OFFER_REL.REL_TYPE is 'Relationship Type:Required;Data from  CBEC_DOMAIN_DATA C WHERE C.DOMAIN_TYPE_CODE  =OFFER_RELA_TYPE '
+    - comment on column DC_CONFIG_OFFER_REL.OPER_TYPE is 'Operation Type:A means add, D means delete'
+
+
+
+create_list:
+  DC_BILL_CATG:
+    - CPC
+    - V20211009
+    - table
+
+
+  DC_CONFIG_PROD_BASIC_INFO:
+    - CPC
+    - V20211009
+    - table
+    - VALUE_LIST:
+        PROD_TYPE:
+          TYPE: list
+          SOURCE: Main Product,Related Produnt
+        SERV_TYPE:
+          TYPE: sql
+          SOURCE: SELECT * FROM BILL_SERV_TYPE
+        SERV_NUM_TYPE:
+          TYPE: list
+          SOURCE: Real Service Number,Virtual Service Number
+
+  DC_CONFIG_PROD_ATTRIBUTE:
+    - CPC
+    - V20211009
+    - table
+
+  DC_CONFIG_OFFER_BASIC_INFO:
+    - CPC
+    - V20211012
+    - table
+    - VALUE_LIST:
+        OFFER_TYPE:
+          TYPE: list
+          SOURCE: Main Offer,Additional Offer,Goods Offer
+        PAYMENT_MODE:
+          TYPE: list
+          SOURCE: Post-paid,Pre-paid,Hybrid
+        OFFER_STATE:
+          TYPE: list
+          SOURCE: Initial,Active,Inactive
+        EFF_TYPE:
+          TYPE: list
+          SOURCE: Special Day,Instant,Next Billing Cycle,Special Hour
+        SALE_TYPE:
+          TYPE: list
+          SOURCE: Sold Unlimitedly,Sold Separately,Sold in Bundle
+        BUNDLE_FLAG:
+          TYPE: list
+          SOURCE: N,Y
+        OFFER_CATEGORY:
+          TYPE: list
+          SOURCE: Related Product,Default,Individual
+
+
+  DC_CONFIG_OFFER_ATTRIBUTE:
+    - CPC
+    - V20211013
+    - table
+  DC_CONFIG_OFFER_PROD_REL:
+    - CPC
+    - V20211013
+    - table
+    - VALUE_LIST:
+        NECESSARY:
+          TYPE: list
+          SOURCE: N,Y
+        PROD_TYPE:
+          TYPE: list
+          SOURCE: Main Product,Related Produnt
+
+  DC_CONFIG_OFFER_PROD_ATTR_REL:
+    - CPC
+    - V20211013
+    - table
+
+  DC_CONFIG_OFFER_GROUP:
+    - CPC
+    - V20211015
+    - table
+    - VALUE_LIST:
+        OFFER_GROUP_TYPE:
+          TYPE: list
+          SOURCE: Additional Offer Group,Goods Offer Group
+        GROUP_TYPE:
+          TYPE: list
+          SOURCE: Select All,Single Choice,Muti-Choice
+
+  DC_CONFIG_OFFER_GROUP_MEM:
+    - CPC
+    - V20211015
+    - table
+    - VALUE_LIST:
+        DEFAULT_FLAG:
+          TYPE: list
+          SOURCE: Y,N
+        HIDE_FLAG:
+          TYPE: list
+          SOURCE: Y,N
+
+  DC_CONFIG_OFFER_GROUP_RELA:
+    - CPC
+    - V20211015
+    - table
+
+
+  DC_CONFIG_PRICE_PLAN_BASIC_INFO:
+    - CPC
+    - V20190508
+    - table
+    - VALUE_LIST:
+        PRICE_PLAN_TYPE:
+          TYPE: sql
+          SOURCE: SELECT PRICE_PLAN_TYPE_NAME FROM CPC.PRICE_PLAN_TYPE
+        PRICE_PLAN_GENRE:
+          TYPE: sql
+          SOURCE: SELECT GENRE_NAME FROM CPC.PRICE_PLAN_GENRE
+        APPLY_LEVEL:
+          TYPE: sql
+          SOURCE: SELECT APPLY_LEVEL_NAME FROM CPC.APPLY_LEVEL
+        PRICE_PLAN_EXIT:
+          TYPE: list
+          SOURCE: Y,N
+
+  DC_CONFIG_OFFER_PRICE_PLAN_REL:
+    - CPC
+    - V20190508
+    - table
+
+  DC_CONFIG_OFFER_REL:
+    - CPC
+    - V20201019
+    - table
+    - VALUE_LIST:
+        REL_TYPE:
+          TYPE: list
+          SOURCE: Mutually Exclusive,Dependent,Exchangeable,Dependent for Automatic Order,Weakly Dependent
+        OPER_TYPE:
+          TYPE: list
+          SOURCE: A,D

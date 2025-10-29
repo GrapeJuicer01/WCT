@@ -1,0 +1,51 @@
+create:
+  DC_CONFIG_BRAND:
+    - |
+      create table DC_CONFIG_BRAND
+      (
+        BRAND_CODE      VARCHAR2(30),
+        BRAND_NAME      VARCHAR2(250),
+        BRAND_ID        VARCHAR2(16),
+        BRAND_TYPE      VARCHAR2(10),
+        BRAND_DESC      VARCHAR2(4000),
+        PARENT_BRAND_NAME VARCHAR2(16),
+        PRIORITY        VARCHAR2(16)
+      )
+    - comment on table DC_CONFIG_BRAND is  'Brand Basic info'
+    - comment on column DC_CONFIG_BRAND.BRAND_NAME is  'Brand Name:Required'
+    - comment on column DC_CONFIG_BRAND.BRAND_CODE is  'Brand Code:Using Brand Id as Default'
+    - comment on column DC_CONFIG_BRAND.BRAND_TYPE is  'Brand Type:Required'
+    - comment on column DC_CONFIG_BRAND.BRAND_ID is  'Brand Id:Required;Number Only'
+    - comment on column DC_CONFIG_BRAND.PARENT_BRAND_NAME is  'Parent Brand Name:Required for child brand;'
+    - comment on column DC_CONFIG_BRAND.PRIORITY is  'Brand Priority:Number Only'
+
+  DC_CONFIG_OFFER_REL_ROLE:
+    - |
+      create table DC_CONFIG_OFFER_REL_ROLE
+      (
+        OFFER_REL_ROLE_ID VARCHAR2(16),
+        OFFER_REL_ROLE_CODE VARCHAR2(30),
+        OFFER_REL_ROLE_NAME    VARCHAR2(50),
+        PARENT_OFFER_ROLE_ID VARCHAR2(16),
+        APPLICABLE_AREA  VARCHAR2(300),
+        MAX_NUM    VARCHAR2(9),
+        MIN_NUM    VARCHAR2(9)
+      )
+    - comment on table DC_CONFIG_OFFER_REL_ROLE is 'Offer Relation Role'
+    - comment on column DC_CONFIG_OFFER_REL_ROLE.OFFER_REL_ROLE_CODE is  'Role Code:Required'
+    - comment on column DC_CONFIG_OFFER_REL_ROLE.OFFER_REL_ROLE_NAME is  'Role Name:Required'
+    - comment on column DC_CONFIG_OFFER_REL_ROLE.PARENT_OFFER_ROLE_ID is  'Parent Offer Role Id:null for root role;Data from offer_rel_role.offer_rel_role_id'
+    - comment on column DC_CONFIG_OFFER_REL_ROLE.APPLICABLE_AREA is  'Applicable area:Optional;Default value is "Default Area"'
+    - comment on column DC_CONFIG_OFFER_REL_ROLE.MAX_NUM is  'Max Num:Upper Limit;Maximum of offers in this role for optional dependant;Required;'
+    - comment on column DC_CONFIG_OFFER_REL_ROLE.MIN_NUM is  'Min Num:Lower Limit;Minimum of offers in this role for optional dependant;Required;'
+
+create_list:
+  DC_CONFIG_BRAND:
+    - CPC_EXT
+    - V20190624
+    - table
+
+  DC_CONFIG_OFFER_REL_ROLE:
+    - CPC_EXT
+    - V20191121
+    - table

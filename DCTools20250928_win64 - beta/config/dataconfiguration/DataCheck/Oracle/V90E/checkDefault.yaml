@@ -1,0 +1,75 @@
+DefaultUser:
+    cpc
+
+
+delete:
+    DC_PRICE_CHECK_RESULT_SELFTAB: delete from DC_PRICE_CHECK_RESULT_SELFTAB where check_topic='after_check'
+
+#insert into result table
+insert_result_tab:
+    insert into DC_PRICE_CHECK_RESULT_SELFTAB (check_file_name,check_group,check_item,check_sql,check_result,check_topic)
+    values (:1,:2,:3,:4,:5,:6)
+
+
+export_result:
+    DC_PRICE_CHECK_RESULT_SELFTAB:
+        select check_file_name as file_name,
+        check_group as topic_name,
+        check_item as title_name,
+        check_sql as sql_content,
+        case when check_result = 0 then 'success' else 'fail' end as result,
+        check_result as error_count,
+        to_char(create_date,'yyyy/mm/dd hh24:mi:ss') as check_time
+        from DC_PRICE_CHECK_RESULT_SELFTAB
+        where check_topic = %(check_type)s
+        and check_file_name = %(file_name)s
+        and check_group = %(topic)s
+        and check_item = %(title)s
+        and check_result <> %(only_failed)s
+
+check_title_all_list:
+    Balance Type not related to consume type:
+        des: 帐本没有与消费类型关联，说明没有使用到,SQL中帐本的范围可以修改
+        topic: BadData
+        area: A009
+
+    Charging Workflow use the condition !=:
+        des: V9分拣里使用 ！= 不等于时，如果属性值为空，也会满足条件，需要单独拿出来确认
+        topic: WarningData
+        area: comm
+
+
+    Event exists in price but not in sort rule:
+        des: 资费里面有事件，但是分拣中没有输出对应的事件
+        topic: BadData
+        area: comm
+
+    Offer dont relate to tariff plan:
+        des: 检查basic offer,main offer, additional offer没有关联tariff plan
+        topic: BadData
+        area: comm
+
+    Recurring benefit accout not used in price:
+        des: 租费赠送的帐本，未在使用费里使用(少华说太简单了，要提升，需要加状态过滤）
+        topic: ErrorData
+        area: comm
+
+    Recurring event bind sort rule:
+        des: 检查租费事件是否绑定分拣
+        topic: ErrorData
+        area: comm
+
+    Sequence_with_Column_MaxValue:
+        des: 序列和各个表中某个列的最大值进行比较
+        topic: WarningData
+        area: comm
+        rule: coding
+        code: Sequence_with_Table_Column
+
+    The re_attr of reservation rule is different with the re_attr configured in price plan:
+        des: 事件配置的预留规则与资费里配置的扣费单位不一致，比如预留配置的是秒，但是扣费是按次扣费
+        topic: BadData
+        area: comm
+
+
+

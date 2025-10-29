@@ -1,0 +1,247 @@
+param_list:
+  BillingTax:
+    default_eff_date:
+      "to_date('2010-01-01','yyyy-mm-dd')"
+    default_exp_date:
+      "to_date('2099-12-31', 'yyyy-mm-dd')"
+    default_local_currency_precision:
+      -10000
+    default_apply_region_id:
+      731
+    default_create_user:
+      3044336
+    default_project:
+      "'PTCL'"
+
+BillingTax:
+  dst_table:
+    - cpc.CBEC_TAX_CODE_MAP_VER
+    - cpc.CBEC_TAX_CODE
+    - cpc.CBEC_TAX_STD_CODE
+    - cpc.CBEC_TAX_FACT_VAL_GRP
+    - cpc.CBEC_TAX_FACT_VAL_GRP_MAP
+    - cpc.CBEC_TAX_CODE_MAP_RULE
+
+  mid_table:
+    - DC_CONFIG_BILLING_TAX
+    - DC_CONFIG_TAX_FACTOR_GRP
+    - DC_CONFIG_TAX_CODE
+    - delete_billing_tax
+
+  insert_Billing_Tax_Code:
+    - |
+      INSERT INTO cpc.CBEC_TAX_CODE
+        (  TAX_CODE   ,
+           TAX_CODE_NAME ,
+           TAX_CODE_DESC  ,
+           TAX_STD_CODE ,
+           TAX_RATE  ,
+           TAX_ACCT_ITEM_TYPE_ID ,
+           NET_FLAG ,
+           CREATE_DATE
+        )
+        SELECT t.TAX_CODE,t.TAX_CODE_NAME,t.TAX_CODE_DESC,t.TAX_STD_CODE,t.TAX_RATE,t2.ACCT_ITEM_TYPE_ID,
+               t.NET_FLAG,sysdate
+        FROM   DC_CONFIG_TAX_CODE t
+            left join CBEC_ACCT_ITEM_TYPE T2
+              on t2.ACCT_ITEM_TYPE_NAME = t.TAX_ACCT_ITEM_NAME
+            left join CBEC_TAX_CODE t3
+              on t3.TAX_CODE_NAME = t.TAX_CODE_NAME
+        where t3.TAX_CODE is null
+
+
+  insert_Billing_Tax_ALL:
+
+    - |
+      INSERT INTO cpc.CBEC_TAX_CODE_MAP_VER
+        (  TAX_CODE_MAP_VER_ID  ,
+           TAX_CODE_MAP_VER_NAME ,
+           TAX_CODE_MAP_VER_DESC  ,
+           EFF_DATE    ,
+           EXP_DATE ,
+           CREATE_DATE ,
+           STATE ,
+           STATE_DATE
+        )
+        SELECT CBEC_TAX_C_MAP_VER_ID_SEQ.nextval,
+               t.TAX_MAP_NAME,
+               t.OLD_TAX_ID || ' - '||t.COMMENTS,
+               %(default_eff_date)s,
+               %(default_exp_date)s,
+               sysdate,
+               'A',
+               sysdate
+        FROM DC_CONFIG_BILLING_TAX t
+         left join cpc.CBEC_TAX_CODE_MAP_VER t1
+               on t1.TAX_CODE_MAP_VER_DESC = t.OLD_TAX_ID || ' - '||t.COMMENTS
+        where t.RULE_SEQ =1 and t1.TAX_CODE_MAP_VER_ID  is null
+               and ( t.OPER_TYPE = 'A' or t.OPER_TYPE  is null)
+
+
+    - |
+      INSERT INTO cpc.CBEC_TAX_FACT_VAL_GRP
+        (  TAX_FACT_VAL_GRP_ID  ,
+           TAX_FACT_VAL_GRP_NAME ,
+           TAX_FACTOR_ID ,
+           REVERSE_FLAG  ,
+           REUSABLE  ,
+           CREATE_DATE ,
+           STATE  ,
+           STATE_DATE
+        )
+        select CBEC_TAX_F_VAL_GRP_ID_SEQ.nextval,
+               t.TAX_FACTOR_GRP_NAME,
+               t1.TAX_FACTOR_ID,
+               'N' ,'Y' ,
+               sysdate,
+               'A',sysdate
+           from (select distinct a.TAX_FACTOR_GRP_NAME,a.TAX_FACTOR_TYPE from DC_CONFIG_BILLING_TAX a )  t
+              inner join CBEC_TAX_FACTOR t1
+                on t.TAX_FACTOR_TYPE = t1.TAX_FACTOR_NAME
+                 and t1.PROJECT_CODE <> '0000'
+              left join CBEC_TAX_FACT_VAL_GRP  t3
+                on t3.TAX_FACT_VAL_GRP_NAME = t.TAX_FACTOR_GRP_NAME
+            where t3.TAX_FACT_VAL_GRP_NAME is null
+
+    - |
+      INSERT INTO cpc.CBEC_TAX_FACT_VAL_GRP_MAP
+        (  TAX_FACT_VAL_GRP_MAP_ID ,
+           TAX_FACT_VAL_GRP_ID ,
+           TAX_FACT_VALUE ,
+           CREATE_DATE
+        )
+        select CBEC_TAX_F_VAL_GRP_MAP_ID_SEQ.nextval,
+               t1.TAX_FACT_VAL_GRP_ID, t3.ACCT_ITEM_TYPE_ID,
+               sysdate
+           from   DC_CONFIG_TAX_FACTOR_GRP t
+              inner join CBEC_TAX_FACT_VAL_GRP  t1
+                on t1.TAX_FACT_VAL_GRP_NAME = t.TAX_FACTOR_GRP_NAME
+              inner join CBEC_TAX_FACTOR t2
+                on t2.TAX_FACTOR_ID = t1.TAX_FACTOR_ID
+                   and t2.TAX_FACTOR_NAME ='acct_item_type'
+              inner join CBEC_ACCT_ITEM_TYPE T3
+                on t3.ACCT_ITEM_TYPE_NAME = t.TAX_FACTOR_ACCT_ITEM
+              left join CBEC_TAX_FACT_VAL_GRP_MAP t4
+                on t4.TAX_FACT_VAL_GRP_ID = t1.TAX_FACT_VAL_GRP_ID
+                   and t4.TAX_FACT_VALUE = t3.ACCT_ITEM_TYPE_ID
+            where  t4.TAX_FACT_VAL_GRP_MAP_ID is null
+                   and ( t.OPER_TYPE = 'A' or t.OPER_TYPE  is null)
+
+    - |
+      INSERT INTO cpc.CBEC_TAX_CODE_MAP_RULE
+        (  TAX_CODE_MAP_RULE_ID  ,
+           TAX_CODE_MAP_RULE_NAME  ,
+           TAX_CODE_MAP_VER_ID ,
+           TAX_CODE ,
+           RULE_PRIORITY,
+           TAX_FACT1_VAL,
+           TAX_FACT1_VAL_GRP_ID,
+           TAX_FACT2_VAL ,
+           TAX_FACT2_VAL_GRP_ID ,
+           TAX_FACT3_VAL,
+           TAX_FACT3_VAL_GRP_ID,
+           TAX_FACT4_VAL,
+           TAX_FACT4_VAL_GRP_ID,
+           TAX_FACT5_VAL,
+           CREATE_DATE
+        )
+        select  CBEC_TAX_C_MAP_RULE_ID_SEQ.nextval,
+               t.TAX_RULE_NAME, t1.TAX_CODE_MAP_VER_ID,t2.TAX_CODE , t.RULE_SEQ,
+               '*',null,null,t3.TAX_FACT_VAL_GRP_ID,null,null,null,null,null,sysdate
+            from   DC_CONFIG_BILLING_TAX t
+              inner join CBEC_TAX_CODE_MAP_VER  t1
+                on  t1.TAX_CODE_MAP_VER_NAME = t.TAX_MAP_NAME
+              inner join CBEC_TAX_STD_CODE s
+                on s.TAX_STD_CODE_NAME = t.TAX_STD_CODE
+              inner join CBEC_TAX_CODE t2
+                on t2.TAX_CODE_NAME = s.TAX_STD_CODE||' '||t.TAX_ACCT_ITEM_NAME||'-'||t.TAX_RATE||'‰'
+              inner join CBEC_TAX_FACT_VAL_GRP T3
+                on t3.TAX_FACT_VAL_GRP_NAME = t.TAX_FACTOR_GRP_NAME
+              left join CBEC_TAX_CODE_MAP_RULE t4
+                on t4.TAX_CODE_MAP_VER_ID =  t1.TAX_CODE_MAP_VER_ID
+                    and t4.TAX_CODE = t2.TAX_CODE
+                    and t4.TAX_FACT2_VAL_GRP_ID = t3.TAX_FACT_VAL_GRP_ID
+            where  t4.TAX_CODE_MAP_RULE_ID is null
+                  and ( t.OPER_TYPE = 'A' or t.OPER_TYPE  is null)
+
+  Insert_Billing_Tax_FACTOR:
+    - |
+     INSERT INTO cpc.CBEC_TAX_FACT_VAL_GRP
+        (  TAX_FACT_VAL_GRP_ID ,
+           TAX_FACT_VAL_GRP_NAME ,
+           TAX_FACTOR_ID ,
+           REVERSE_FLAG,
+           REUSABLE,
+           CREATE_DATE,
+           STATE ,
+           STATE_DATE
+        )
+        select CBEC_TAX_F_VAL_GRP_ID_SEQ.nextval,
+               t.TAX_FACTOR_GRP_NAME,
+               t1.TAX_FACTOR_ID,
+               'N' ,'Y' ,
+               sysdate,
+               'A',sysdate
+           from  DC_CONFIG_TAX_FACTOR_GRP t
+              inner join CBEC_TAX_FACTOR t1
+                on t.TAX_FACTOR = t1.TAX_FACTOR_NAME
+                 and t1.PROJECT_CODE  ='7'
+              left join CBEC_TAX_FACT_VAL_GRP  t3
+                on t3.TAX_FACT_VAL_GRP_NAME = t.TAX_FACTOR_GRP_NAME
+            where t3.TAX_FACT_VAL_GRP_NAME is null
+                  and t.TAX_FACT_VALUE_NAME is null
+
+    - |
+      INSERT INTO cpc.CBEC_TAX_FACT_VAL_GRP_MAP
+        (  TAX_FACT_VAL_GRP_MAP_ID ,
+           TAX_FACT_VAL_GRP_ID ,
+           TAX_FACT_VALUE ,
+           CREATE_DATE
+        )
+        select CBEC_TAX_F_VAL_GRP_MAP_ID_SEQ.nextval,
+               t1.TAX_FACT_VAL_GRP_ID, t3.ACCT_ITEM_TYPE_ID,
+               sysdate
+           from   DC_CONFIG_TAX_FACTOR_GRP t
+              inner join CBEC_TAX_FACT_VAL_GRP  t1
+                on t1.TAX_FACT_VAL_GRP_NAME = t.TAX_FACTOR_GRP_NAME
+              inner join CBEC_TAX_FACTOR t2
+                on t2.TAX_FACTOR_ID = t1.TAX_FACTOR_ID
+                   and t2.TAX_FACTOR_NAME ='Acct Item Type'
+              inner join CBEC_ACCT_ITEM_TYPE T3
+                on t3.ACCT_ITEM_TYPE_NAME = t.TAX_FACT_VALUE_NAME
+              left join CBEC_TAX_FACT_VAL_GRP_MAP t4
+                on t4.TAX_FACT_VAL_GRP_ID = t1.TAX_FACT_VAL_GRP_ID
+                   and t4.TAX_FACT_VALUE = t3.ACCT_ITEM_TYPE_ID
+            where  t4.TAX_FACT_VAL_GRP_MAP_ID is null
+                and t.TAX_FACT_VALUE_NAME is not null
+
+  Delete_Billing_tax_All:
+    - |
+      drop table delete_billing_tax
+    - |
+      create table delete_billing_tax as
+        select  t4.TAX_CODE_MAP_RULE_ID,
+               t.TAX_RULE_NAME, t1.TAX_CODE_MAP_VER_ID,t2.TAX_CODE , t.RULE_SEQ,
+               t3.TAX_FACT_VAL_GRP_ID
+            from   DC_CONFIG_BILLING_TAX t
+              inner join CBEC_TAX_CODE_MAP_VER  t1
+                on  t1.TAX_CODE_MAP_VER_NAME = t.TAX_MAP_NAME
+              inner join CBEC_TAX_STD_CODE s
+                on s.TAX_STD_CODE_NAME = t.TAX_STD_CODE
+              inner join CBEC_TAX_CODE t2
+                on t2.TAX_CODE_NAME = s.TAX_STD_CODE||' '||t.TAX_ACCT_ITEM_NAME||'-'||t.TAX_RATE||'‰'
+              inner join CBEC_TAX_FACT_VAL_GRP T3
+                on t3.TAX_FACT_VAL_GRP_NAME = t.TAX_FACTOR_GRP_NAME
+              inner join CBEC_TAX_CODE_MAP_RULE t4
+                on t4.TAX_CODE_MAP_VER_ID =  t1.TAX_CODE_MAP_VER_ID
+                    and t4.TAX_CODE = t2.TAX_CODE
+                    and t4.TAX_FACT2_VAL_GRP_ID = t3.TAX_FACT_VAL_GRP_ID
+            where   t.OPER_TYPE ='D'
+
+    - |
+      delete from  CBEC_TAX_CODE_MAP_RULE t  where t.TAX_CODE_MAP_RULE_ID in (select d.TAX_CODE_MAP_RULE_ID from delete_billing_tax d)
+    - |
+      delete from  CBEC_TAX_CODE_MAP_VER t
+        where t.TAX_CODE_MAP_VER_ID in (select d.TAX_CODE_MAP_VER_ID from delete_billing_tax d)
+         and t.TAX_CODE_MAP_VER_ID not in (select c.TAX_CODE_MAP_VER_ID from CBEC_TAX_CODE_MAP_RULE c )
+

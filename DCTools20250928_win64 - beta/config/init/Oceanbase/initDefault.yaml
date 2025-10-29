@@ -1,0 +1,184 @@
+#Create a comm table for All kinds project
+
+#数据表的命名方式：
+#所有的表都是以 DC_ 开头
+#接下来就是动作，比如DC_Config_****, DC_Check_*****,DC_Parameter_****
+#环境的第一张表就是DC_Comm_Table，所有新增的表，都在这里进行注册，如果需要重新初始化，也可以使用本表进行跟踪
+#可以考虑后期的数据版本也可以做对应的记录
+
+create:
+    DC_COMM_TABLE:
+            create table DC_COMM_TABLE(
+                name varchar2(200) constraint PK_DC_COMM_TABLE primary key,
+                topic Varchar2(50),
+                create_date Date,
+                seq varchar2(5),
+                version varchar2(10),
+                type varchar2(10),
+                is_export char(1) default 'Y',
+                base_table varchar2(200)
+            )
+
+    DC_COMM_CONFIG_EXEC_LOG:
+            create table DC_COMM_CONFIG_EXEC_LOG(
+                file_name varchar2(200),
+                topic_name varchar2(200),
+                title_name varchar2(200),
+                exec_begin_time date,
+                exec_end_time date,
+                total_record int,
+                exec_sql varchar2(4000),
+                exec_result int
+            )
+
+    DC_OPERATOR_LOG:
+            create table DC_OPERATOR_LOG(
+                topic varchar2(100),
+                reserve1 varchar2(200),
+                reserve2 varchar2(200),
+                reserve3 varchar2(200),
+                reserve4 varchar2(200),
+                reserve5 varchar2(200),
+                reserve6 varchar2(200),
+                reserve7 varchar2(200),
+                reserve8 varchar2(200),
+                reserve9 varchar2(200),
+                reserve10 varchar2(200),
+                reserve11 varchar2(200),
+                reserve12 varchar2(200),
+                reserve13 varchar2(200),
+                reserve14 varchar2(200),
+                reserve15 varchar2(200),
+                comments varchar2(500)
+                )
+
+    DC_PRICE_CHECK_RESULT_SELFTAB:
+            create table DC_price_check_result_selftab (
+                check_file_name varchar2(100),
+                check_topic varchar2(20),
+                check_group varchar2(50),
+                check_item varchar2(200),
+                check_sql varchar2(4000),
+                check_result number(9),
+                remark varchar2(200),
+                create_date Date default sysdate
+                )
+
+    DC_TABLE_STATISTICS_INFO:
+        create table DC_TABLE_STATISTICS_INFO(
+        table_name  varchar2(128),
+        check_date  date,
+        cnt_num     number(9),
+        check_ver   varchar2(64)
+        )
+
+    DC_TABLE_COMPARE_RESULT:
+        create table DC_TABLE_COMPARE_RESULT(
+        table_name      varchar2(128),
+        compare_time    date,
+        old_ver         varchar2(64),
+        old_num         number(9),
+        cur_ver         varchar2(64),
+        cur_num         number(9),
+        diff_num        number(9)
+        )
+
+    DC_TABLE_SEQUENCE_BACKUP:
+        create table DC_TABLE_SEQUENCE_BACKUP
+        (
+        sequence_owner varchar2(128),
+        sequence_name varchar2(128),
+        min_value number,
+        max_value number,
+        increment_by number,
+        cycle_flag varchar2(1),
+        order_flag varchar2(1),
+        cache_size number,
+        last_number number,
+        scale_flag varchar2(1),
+        extend_flag varchar2(1),
+        session_flag varchar2(1),
+        keep_value varchar2(1),
+        create_time date,
+        new_value number,
+        run_result integer
+        )
+    DC_IMPORT_DATA_HIS:
+        create table DC_IMPORT_DATA_HIS
+        (
+        user_name  varchar2(32),
+        import_time date,
+        import_version varchar2(64),
+        file_name varchar2(128),
+        cfg_file_content clob,
+        host_name varchar2(32),
+        comments  varchar2(512)
+        )
+    DC_TOOLS_RELEASE_SEQ:
+        create table dc_tools_release_seq
+        (
+        cur_seq       number(16),
+        update_date   date,
+        update_by     varchar2(255),
+        file_name     varchar2(255),
+        active_state  varchar2(8),
+        remark        varchar2(512)
+        )
+
+create_list:
+    DC_COMM_CONFIG_EXEC_LOG:
+      - COMM
+      - V20200119
+      - table
+
+    DC_COMM_TABLE:
+      - COMM
+      - V20191118
+      - table
+
+    DC_OPERATOR_LOG:
+      - COMM
+      - V20190401
+      - table
+
+    DC_PRICE_CHECK_RESULT_SELFTAB:
+      - COMM
+      - V20200616
+      - table
+
+    DC_TABLE_STATISTICS_INFO:
+      - COMM
+      - V20190609
+      - table
+
+    DC_TABLE_COMPARE_RESULT:
+      - COMM
+      - V20190609
+      - table
+
+    DC_TABLE_SEQUENCE_BACKUP:
+      - COMM
+      - V20190828
+      - table
+
+    DC_IMPORT_DATA_HIS:
+      - DC_IMPORT_DATA_HIS
+      - V20200722
+      - table
+
+    DC_TOOLS_RELEASE_SEQ:
+        - DC_TOOLS_RELEASE_SEQ
+        - V20220226
+        - table
+
+check:
+  topic:
+    select distinct topic from DC_COMM_TABLE order by topic
+  tables:
+    select name,type from DC_COMM_TABLE where topic = ?
+  all_tables:
+    select name,type from DC_COMM_TABLE where topic not in ('after_check_mid', 'backup_init','backup_config','comm')
+  insert_comm_table:
+    insert into DC_COMM_TABLE(name, topic,create_date,version,type,base_table) values(?,?,sysdate,?,?,?)
+  delete_comm_table:
+    delete from dc_comm_table where name = ?

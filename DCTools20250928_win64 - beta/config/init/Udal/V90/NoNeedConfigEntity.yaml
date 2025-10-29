@@ -1,0 +1,137 @@
+create:
+  DC_DIM_CPC_DICT:
+    - |
+      CREATE TABLE DC_DIM_CPC_DICT
+      (
+             key_id int(10) AUTO_INCREMENT comment 'Key Id',
+             dict_name varchar(250) comment 'Dict Name',
+             key_name varchar(250) comment 'Key Name',
+             key_value varchar(250) comment 'Key Value',
+             primary key (key_id)
+      )comment = 'Cpc Dict'
+    - sharding @@table name='DC_DIM_CPC_DICT' set type='single' and dn='cpc_0001'
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER STATE','Active',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER STATE','In Progress',1200)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER STATE','Offer Offline',1600)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PROD REL TYPE','Composition',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PROD REL TYPE','Use',1100)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PROD EXIST TYPE','New&Existing',1200)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PROD EXIST TYPE','New',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PROD EXIST TYPE','Existing',1100)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EXIST TYPE','Existing',1100)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EXIST TYPE','New',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EXIST TYPE','New&Existing',1200)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EFFECT BASE TYPE','Completion Time',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EFFECT BASE TYPE','Acceptance Time',2000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PERIOD TIME TYPE','Relative Time',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PERIOD TIME TYPE','Absolute Time',1100)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER PERIOD TIME TYPE','Forever',1200)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL SCOPE','User Level',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL SCOPE','Package Level',1100)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL SCOPE','Account Level',1200)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL SCOPE','Customer Level',1300)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL CONSTRAINT TYPE','Non-mandatory',null)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL CONSTRAINT TYPE','Mandatory',null)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL CONSTRAINT TYPE','Default',null)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EXPIRE PROCESS MODE','Auto Renew',10)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EXPIRE PROCESS MODE','Agreement Renew',20)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EXPIRE PROCESS MODE','Auto Unsubscribe',30)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER EXPIRE PROCESS MODE','Auto De-register',40)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL STATUS','valid',1000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER REL STATUS','invalid',1100)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER RESTRICTION TYPE','Sales Area',3000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER RESTRICTION TYPE','Customer Tag',6000)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER RESTRICTION TYPE','Applicable Channel',9001)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER ATTRIBUTE TYPE','Optional Attribute',null)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OFFER ATTRIBUTE TYPE','Extra Attribute',null)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OBJECT TYPE','Offer',null)
+    - insert into DC_DIM_CPC_DICT(dict_name,key_name,key_value) values ('OBJECT TYPE','Product',null)
+
+
+  DC_DIM_COC_DICT:
+    - |
+      CREATE TABLE DC_DIM_COC_DICT
+      (
+             key_id int(10) AUTO_INCREMENT comment 'Key Id',
+             dict_name varchar(250) comment 'Dict Name',
+             key_name varchar(250) comment 'Key Name',
+             key_value varchar(250) comment 'Key Value',
+             primary key (key_id)
+      )comment = 'Coc Dict'
+    - sharding @@table name='DC_DIM_COC_DICT' set type='single' and dn='coc_0001'
+    - insert into DC_DIM_COC_DICT(dict_name,key_name,key_value) values ('LIFECYCLE TIME UNIT','Month','C')
+    - insert into DC_DIM_COC_DICT(dict_name,key_name,key_value) values ('LIFECYCLE TIME UNIT','Day','A')
+    - insert into DC_DIM_COC_DICT(dict_name,key_name,key_value) values ('LIFECYCLE TIME UNIT','CalenderMonth','B')
+
+  DC_TMP_LIFECYCLE_ELEMENT_INFO:
+    - |
+      create table DC_TMP_LIFECYCLE_ELEMENT_INFO
+      (
+        element_id  int(10) AUTO_INCREMENT comment 'Element ID',
+        lifecycle_id decimal(6) comment 'Lifecycle ID',
+        element_type decimal(1) comment 'Element Type:1 is Node;2 is line',
+        status_cd decimal(6) comment 'Lifecycle Status code',
+        point_1 varchar(10) comment 'Elment Position:top left corner for the node;start point for the line',
+        point_2 varchar(10) comment 'Elment Position:end point for the line',
+        convert_type decimal(7) comment 'Convert Type:Convert Type Id;Data from oc.cc_state_convert_type.convert_type',
+        node_string varchar(2000) comment 'Node or line Json info in show page',
+        sid varchar(50) comment 'Node sid in show page',
+        primary key (element_id)
+      )comment = 'Tempory table use for saving node and line info'
+    - sharding @@table name='DC_TMP_LIFECYCLE_ELEMENT_INFO' set type='single' and dn='coc_0001'
+
+  DC_DIM_LIFECYCLE_PROD_STATE:
+    - |
+      create table DC_DIM_LIFECYCLE_PROD_STATE
+      (
+        prod_state char(1) comment 'Product State:G,A,D,E,B',
+        state_name varchar(100) comment 'Lifecycle Node text show in Page',
+        state_code decimal(6) comment 'Lifecycle Node state code',
+        node_color char(7) comment 'Lifecycle Node color show in Page',
+        node_order decimal(2) comment 'Lifecycle display',
+        primary key (state_code)
+      )comment = 'Lifecycle Node for Page'
+    - sharding @@table name='DC_DIM_LIFECYCLE_PROD_STATE' set type='single' and dn='coc_0001'
+    - insert into DC_DIM_LIFECYCLE_PROD_STATE(prod_state,state_name,state_code,node_color,node_order) values ('G','Inactive',130000,'#E6E4E4',1)
+    - insert into DC_DIM_LIFECYCLE_PROD_STATE(prod_state,state_name,state_code,node_color,node_order) values ('A','Active',100000,'#29B922',2)
+    - insert into DC_DIM_LIFECYCLE_PROD_STATE(prod_state,state_name,state_code,node_color,node_order) values ('D','One-Way Block',120001,'#FBAC01',3)
+    - insert into DC_DIM_LIFECYCLE_PROD_STATE(prod_state,state_name,state_code,node_color,node_order) values ('E','Two-Way Block',120002,'#3DB7F6',4)
+    - insert into DC_DIM_LIFECYCLE_PROD_STATE(prod_state,state_name,state_code,node_color,node_order) values ('B','Termination',110000,'#F72424',5)
+    - insert into DC_DIM_LIFECYCLE_PROD_STATE(prod_state,state_name,state_code,node_color,node_order) values ('G','Non-provision',140000,'#E6E4E4',1)
+
+  DC_DIM_TEMPLATE_CONSTRAINT_FIELD:
+    - |
+      create table DC_DIM_TEMPLATE_CONSTRAINT_FIELD
+      (
+        topic_name varchar(50),
+        table_name varchar(50),
+        field_name varchar(50),
+        field_value varchar(500),
+        field_order integer
+      )
+
+create_list:
+  DC_DIM_CPC_DICT:
+    - CPC
+    - V20190624
+    - table
+
+  DC_DIM_COC_DICT:
+    - LIFECYCLE
+    - V20200907
+    - table
+
+  DC_DIM_LIFECYCLE_PROD_STATE:
+    - LIFECYCLE
+    - V20190624
+    - table
+
+  DC_TMP_LIFECYCLE_ELEMENT_INFO:
+    - LIFECYCLE
+    - V20190527
+    - table
+
+  DC_DIM_TEMPLATE_CONSTRAINT_FIELD:
+    - COMMON
+    - V20190628
+    - table

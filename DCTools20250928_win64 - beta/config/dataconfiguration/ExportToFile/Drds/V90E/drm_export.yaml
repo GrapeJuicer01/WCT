@@ -1,0 +1,10 @@
+UserList:
+  drm
+
+BoBNeed:
+  51_DRM.ORGANIZATION:
+    "select * from ORGANIZATION"
+  52_DRM.STAFF:
+    "select * from STAFF"
+
+

@@ -1,0 +1,57 @@
+create:
+    DC_CONFIG_RE_ATTR:
+        - |
+            CREATE TABLE DC_CONFIG_RE_ATTR
+              (
+                  M_RE_ATTR NUMBER(6) NOT NULL,
+                  M_RE_ATTR_NAME VARCHAR2(100) NOT NULL,
+                  M_RESERVE_RE_ATTR_ID NUMBER(6) NOT NULL,
+                  O_COMMENTS VARCHAR2(1000)
+              )
+        - comment on table DC_CONFIG_RE_ATTR is  'RE_ATTR TABLE'
+        - comment on column DC_CONFIG_RE_ATTR.M_RE_ATTR is 'RE_ATTR_ID greater than 9999'
+        - comment on column DC_CONFIG_RE_ATTR.M_RE_ATTR_NAME is  'RE_ATTR_NAME'
+        - comment on column DC_CONFIG_RE_ATTR.M_RESERVE_RE_ATTR_ID is  'the re_attr of reserve_re_attr'
+        - comment on column DC_CONFIG_RE_ATTR.O_COMMENTS is  'the comment of re attr'
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10000, '(Second)Duration', 4, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10001, 'Usage Charge Fee', 14, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10002, 'Occurence', 74, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10003, 'Up+Down Bytes', 235, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10004, 'Product Status', 208, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10005, 'Call Type ID', 7, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10006, 'OCS Result Code', 264, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10007, 'Event Type', 21, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10008, 'Billing Number', 40, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10009, 'Call Origin', 1, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10010, 'Rating Group', 356, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10011, 'Peer Number', 41, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10012, 'Service Identifier', 398, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10013, 'Calling VLR Number', 324, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10014, 'Called Station Id', 18, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10015, 'Roam Type', 338, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10016, 'SGSN Address', 334, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10017, 'Call Destination', 2, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10018, 'CCR Type', 336, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10019, 'ISMP Service Type', 384, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10020, 'MSC Address', 329, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10021, 'Cdr Type', 13, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10022, 'Original Charge 1', 55, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10023, 'Recurr Reserve', 999, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10024, 'Not use basic bal', 477, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10025, 'Called Party Number', 28, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10026, 'Rule Calc Exit', 830, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10027, 'OCS_RESULT_ADJUST_METHOD', 199, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10028, '3GPP-SGSN-MCC-MNC', 417, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10029, 'SeviceType', 297, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10030, 'Event Charge', 27, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10031, 'OnlineFlag', 846, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10032, 'OCS_RESERVE_TYPE', 701, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10033, 'Block Reason', 209, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10034, 'Event Charge 1', 42, null)
+        - insert into DC_CONFIG_RE_ATTR (M_RE_ATTR,M_RE_ATTR_NAME, M_RESERVE_RE_ATTR_ID, O_COMMENTS) values (10035, 'Prepay Flag', 16, null)
+
+create_list:
+    DC_CONFIG_RE_ATTR:
+        - PP_RE_ATTR
+        - V20190509
+        - TABLE
