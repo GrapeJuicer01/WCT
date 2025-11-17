@@ -1,7 +1,0 @@
-SOURCEDB:
-    DB_TYPE: oracle
-    TNS: cpc/1jian8Shu!@10.10.177.86:1522/cc
-
-TARGETDB:
-    DB_TYPE: oracle
-    TNS: cpc/1jian8Shu!@10.10.177.86:1522/cc

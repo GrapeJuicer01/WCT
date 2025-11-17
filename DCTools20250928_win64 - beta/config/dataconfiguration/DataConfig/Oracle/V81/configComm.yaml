@@ -1,5 +1,0 @@
-RunSeq:
-  - "configObject.yaml"
-  - "configObjectRelationship.yaml"
-  - "configLifecycle.yaml"
-  - "configAdvice.yaml"

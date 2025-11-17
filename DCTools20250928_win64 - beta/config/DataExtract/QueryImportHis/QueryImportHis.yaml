@@ -1,7 +1,0 @@
-DefaultUser:
-  cc
-
-SQL:
-  default:
-    "select A.import_time, A.file_name,A.host_name from dc_import_data_his A
-    where A.user_name = '%s' order by A.import_time desc"
